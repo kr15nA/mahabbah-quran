@@ -30,7 +30,19 @@ export async function POST(req: NextRequest) {
     if (role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const body = await req.json()
-    const id = await insertClass(body)
+    
+    if (!body.name || !body.name.trim()) return NextResponse.json({ error: 'Nama kelas wajib diisi' }, { status: 400 })
+    const programId = parseInt(body.program_id, 10)
+    if (isNaN(programId) || programId <= 0) return NextResponse.json({ error: 'Program tidak valid' }, { status: 400 })
+    const teacherId = parseInt(body.teacher_id, 10)
+    if (isNaN(teacherId) || teacherId <= 0) return NextResponse.json({ error: 'Guru tidak valid' }, { status: 400 })
+
+    const id = await insertClass({
+      name: body.name.trim(),
+      program_id: programId,
+      teacher_id: teacherId,
+      level: body.level?.trim() || undefined
+    })
     return NextResponse.json({ data: { id } }, { status: 201 })
   } catch (error: any) {
     if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })

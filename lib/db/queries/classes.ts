@@ -29,6 +29,46 @@ export async function getClassesByTeacher(teacherId: number): Promise<ClassRow[]
   return rows as ClassRow[]
 }
 
+export async function searchClasses(params: {
+  search?: string
+  isActiveFilter?: boolean | null
+  limit: number
+  offset: number
+}): Promise<{ data: ClassRow[]; total: number }> {
+  const searchPattern = params.search ? `%${params.search}%` : null
+  const { isActiveFilter, limit, offset } = params
+
+  const dataRows = await sql`
+    SELECT 
+      c.*, 
+      p.name AS program_name, 
+      u.full_name AS teacher_name,
+      COUNT(DISTINCT s.id)::int AS student_count
+    FROM classes c
+    JOIN programs p ON p.id = c.program_id
+    JOIN users u ON u.id = c.teacher_id
+    LEFT JOIN students s ON s.class_id = c.id AND s.deleted_at IS NULL
+    WHERE (${searchPattern}::text IS NULL OR c.name ILIKE ${searchPattern} OR u.full_name ILIKE ${searchPattern})
+      AND (${isActiveFilter}::boolean IS NULL OR c.is_active = ${isActiveFilter})
+    GROUP BY c.id, p.name, u.full_name
+    ORDER BY c.created_at DESC, c.id DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `
+
+  const countRows = await sql`
+    SELECT COUNT(*) as total
+    FROM classes c
+    JOIN users u ON u.id = c.teacher_id
+    WHERE (${searchPattern}::text IS NULL OR c.name ILIKE ${searchPattern} OR u.full_name ILIKE ${searchPattern})
+      AND (${isActiveFilter}::boolean IS NULL OR c.is_active = ${isActiveFilter})
+  `
+
+  return {
+    data: dataRows as ClassRow[],
+    total: Number((countRows[0] as any).total),
+  }
+}
+
 export async function getClassesByParent(parentId: number): Promise<ClassRow[]> {
   const rows = await sql`
     SELECT DISTINCT c.*, p.name AS program_name, u.full_name AS teacher_name,
