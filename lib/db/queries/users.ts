@@ -216,3 +216,74 @@ export async function updateUser(
     WHERE id = ${id}
   `
 }
+
+export async function searchAllUsers(params: {
+  search?: string
+  role?: string
+  isActive?: boolean | null
+  limit: number
+  offset: number
+}): Promise<{ data: UserRow[]; total: number }> {
+  const searchPattern = params.search ? `%${params.search}%` : null
+  const { role, isActive, limit, offset } = params
+
+  const dataRows = await sql`
+    SELECT 
+      id, 
+      full_name, 
+      email, 
+      phone, 
+      role, 
+      avatar_url, 
+      is_active, 
+      last_login_at, 
+      created_at, 
+      updated_at
+    FROM users
+    WHERE deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR full_name ILIKE ${searchPattern} OR COALESCE(email, '') ILIKE ${searchPattern})
+      AND (${role}::text IS NULL OR role = ${role})
+      AND (${isActive}::boolean IS NULL OR is_active = ${isActive})
+    ORDER BY created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `
+
+  const countRows = await sql`
+    SELECT COUNT(*) as total
+    FROM users
+    WHERE deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR full_name ILIKE ${searchPattern} OR COALESCE(email, '') ILIKE ${searchPattern})
+      AND (${role}::text IS NULL OR role = ${role})
+      AND (${isActive}::boolean IS NULL OR is_active = ${isActive})
+  `
+
+  return {
+    data: dataRows as UserRow[],
+    total: Number((countRows[0] as any).total),
+  }
+}
+
+export async function updateSystemUser(
+  id: number,
+  data: Partial<{
+    full_name: string
+    email: string | null
+    phone: string | null
+    role: string
+    is_active: boolean
+    password_hash: string
+  }>
+): Promise<void> {
+  await sql`
+    UPDATE users 
+    SET 
+      full_name = CASE WHEN ${data.full_name !== undefined} THEN ${data.full_name ?? null}::varchar ELSE full_name END,
+      email = CASE WHEN ${data.email !== undefined} THEN ${data.email ?? null}::varchar ELSE email END,
+      phone = CASE WHEN ${data.phone !== undefined} THEN ${data.phone ?? null}::varchar ELSE phone END,
+      role = CASE WHEN ${data.role !== undefined} THEN ${data.role ?? null}::varchar ELSE role END,
+      is_active = CASE WHEN ${data.is_active !== undefined} THEN ${data.is_active ?? null}::boolean ELSE is_active END,
+      password_hash = CASE WHEN ${data.password_hash !== undefined} THEN ${data.password_hash ?? null}::varchar ELSE password_hash END,
+      updated_at = CASE WHEN ${Object.keys(data).length > 0} THEN NOW() ELSE updated_at END
+    WHERE id = ${id}
+  `
+}

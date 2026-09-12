@@ -19,6 +19,7 @@ import {
   BookMarked,
   Layers,
   Star,
+  Shield,
 } from 'lucide-react'
 
 const NAV = [
@@ -35,6 +36,7 @@ const NAV = [
   { id: 'analitik', href: '/admin/analitik', label: 'Analitik', icon: BarChart2 },
   { id: 'ai', href: '/admin/ai', label: 'AI Mahabbah', icon: Brain },
   { id: 'notifikasi', href: '/admin/notifikasi', label: 'Notifikasi', icon: Bell },
+  { id: 'pengguna', href: '/admin/pengguna', label: 'Pengguna', icon: Shield },
   { id: 'pengaturan', href: '/admin/pengaturan', label: 'Pengaturan', icon: Settings },
 ]
 
