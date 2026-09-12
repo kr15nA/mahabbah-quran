@@ -178,3 +178,16 @@ export const academicYears = pgTable('academic_years', {
 }, (table) => ({
   activeYearIdx: uniqueIndex('idx_active_academic_year').on(table.isActive).where(sql`is_active = true`)
 }))
+
+export const enrollments = pgTable('enrollments', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),
+  academicYearId: bigint('academic_year_id', { mode: 'number' }).notNull().references(() => academicYears.id),
+  classId: bigint('class_id', { mode: 'number' }).notNull().references(() => classes.id),
+  enrollmentDate: date('enrollment_date').notNull().defaultNow(),
+  status: varchar('status', { length: 20 }).notNull().default('active'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  studentYearIdx: uniqueIndex('idx_enrollments_student_year').on(table.studentId, table.academicYearId)
+}))

@@ -29,6 +29,7 @@ const NAV = [
   { id: 'guru', href: '/admin/guru', label: 'Data Guru', icon: User },
   { id: 'program', href: '/admin/program', label: 'Program', icon: BookOpen },
   { id: 'tahun-ajaran', href: '/admin/tahun-ajaran', label: 'Tahun Ajaran', icon: Calendar },
+  { id: 'enrollment', href: '/admin/enrollment', label: 'Penempatan Kelas', icon: Layers },
   { id: 'kelas', href: '/admin/kelas', label: 'Kelas', icon: Layers },
   { id: 'absensi', href: '/admin/absensi', label: 'Absensi', icon: Calendar },
   { id: 'hafalan', href: '/admin/hafalan', label: 'Hafalan', icon: BookMarked },

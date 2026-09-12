@@ -8,6 +8,20 @@
       "when": 1789236511526,
       "tag": "0000_groovy_quasimodo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789249621342,
+      "tag": "0001_curvy_prima",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789250651834,
+      "tag": "0002_soft_manta",
+      "breakpoints": true
     }
   ]
 }
