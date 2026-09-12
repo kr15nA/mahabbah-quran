@@ -23,6 +23,15 @@ export async function getNotificationsByUser(userId: number, page = 1, limit = 2
   return rows as NotificationRow[]
 }
 
+export async function getNotificationById(id: number): Promise<NotificationRow | null> {
+  const rows = await sql`
+    SELECT * FROM notifications
+    WHERE id = ${id}
+    LIMIT 1
+  `
+  return (rows[0] as NotificationRow) ?? null
+}
+
 export async function getUnreadCount(userId: number): Promise<number> {
   const rows = await sql`
     SELECT COUNT(*)::int AS count

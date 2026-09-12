@@ -53,8 +53,20 @@ export async function getAttendanceSummaryByStudent(studentId: number, month?: s
       COUNT(*)::int AS total
     FROM attendance
     WHERE student_id = ${studentId}
+      AND (${month ?? null}::text IS NULL OR TO_CHAR(attendance_date, 'YYYY-MM') = ${month})
   `
   return rows[0] as { hadir: number; izin: number; sakit: number; alfa: number; total: number }
+}
+
+export async function getAttendanceByStudentMonth(studentId: number, month?: string): Promise<AttendanceRow[]> {
+  const rows = await sql`
+    SELECT a.*
+    FROM attendance a
+    WHERE a.student_id = ${studentId}
+      AND (${month ?? null}::text IS NULL OR TO_CHAR(a.attendance_date, 'YYYY-MM') = ${month})
+    ORDER BY a.attendance_date DESC
+  `
+  return rows as AttendanceRow[]
 }
 
 export async function getMonthlyAttendanceStats(classId?: number, monthsCount = 8): Promise<MonthlyAttendanceStat[]> {

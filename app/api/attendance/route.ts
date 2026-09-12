@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth, requireClassAccess, requireClassStudentAccess } from '@/lib/auth/rbac'
-import { getAttendanceByClassDate, upsertAttendance } from '@/lib/db/queries/attendance'
+import { requireAuth, requireClassAccess, requireClassStudentAccess, requireStudentAccess } from '@/lib/auth/rbac'
+import { getAttendanceByClassDate, upsertAttendance, getAttendanceByStudentMonth } from '@/lib/db/queries/attendance'
 
 export async function GET(req: NextRequest) {
   try {
+    const { session, role } = await requireAuth()
     const { searchParams } = new URL(req.url)
-    const classId = Number(searchParams.get('class_id') || 1)
+    
+    if (role === 'ORANG_TUA') {
+      const studentId = searchParams.get('student_id')
+      if (!studentId) return NextResponse.json({ error: 'student_id is required' }, { status: 400 })
+      await requireStudentAccess(Number(studentId))
+      
+      const month = searchParams.get('month') || undefined
+      const list = await getAttendanceByStudentMonth(Number(studentId), month)
+      return NextResponse.json({ data: list })
+    }
+
+    const classIdStr = searchParams.get('class_id')
+    if (!classIdStr) return NextResponse.json({ error: 'class_id is required' }, { status: 400 })
+    
+    const classId = Number(classIdStr)
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
 
     await requireClassAccess(classId)
@@ -14,6 +29,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data: list })
   } catch (error: any) {
     if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
+    console.error('GET /api/attendance error:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
