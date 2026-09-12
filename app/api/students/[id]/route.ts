@@ -1,38 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth/session'
+import { requireAuth, requireStudentAccess } from '@/lib/auth/rbac'
 import { getStudentById, updateStudent, softDeleteStudent } from '@/lib/db/queries/students'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const resolvedParams = await params
+    const id = Number(resolvedParams.id)
+    
+    await requireStudentAccess(id)
 
-  const resolvedParams = await params
-  const id = Number(resolvedParams.id)
-  const student = await getStudentById(id)
+    const student = await getStudentById(id)
+    if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 })
 
-  if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 })
-
-  return NextResponse.json({ data: student })
+    return NextResponse.json({ data: student })
+  } catch (error: any) {
+    if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession()
-  if (!session || session.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  try {
+    const { role } = await requireAuth()
+    if (role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const resolvedParams = await params
-  const id = Number(resolvedParams.id)
-  const body = await req.json()
+    const resolvedParams = await params
+    const id = Number(resolvedParams.id)
+    const body = await req.json()
 
-  await updateStudent(id, body)
-  return NextResponse.json({ success: true })
+    await updateStudent(id, body)
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession()
-  if (!session || session.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  try {
+    const { role } = await requireAuth()
+    if (role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const resolvedParams = await params
-  const id = Number(resolvedParams.id)
-  await softDeleteStudent(id)
-  return NextResponse.json({ success: true })
+    const resolvedParams = await params
+    const id = Number(resolvedParams.id)
+    await softDeleteStudent(id)
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
 }

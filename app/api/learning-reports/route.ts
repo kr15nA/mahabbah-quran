@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth/session'
+import { requireAuth, requireStudentAccess } from '@/lib/auth/rbac'
 import {
   getLearningReportsByTeacherDate,
   getLearningReportsByStudent,
@@ -10,35 +10,48 @@ import { insertHafalanRecord } from '@/lib/db/queries/hafalan'
 import { insertTahsinRecord } from '@/lib/db/queries/tahsin'
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const { session, role } = await requireAuth()
 
-  const { searchParams } = new URL(req.url)
-  const studentId = searchParams.get('student_id')
-  const date = searchParams.get('date') ?? undefined
+    const { searchParams } = new URL(req.url)
+    const studentId = searchParams.get('student_id')
+    const date = searchParams.get('date') ?? undefined
 
-  if (studentId) {
-    const reports = await getLearningReportsByStudent(Number(studentId))
-    return NextResponse.json({ data: reports })
+    if (studentId) {
+      await requireStudentAccess(Number(studentId))
+      const reports = await getLearningReportsByStudent(Number(studentId))
+      return NextResponse.json({ data: reports })
+    }
+
+    if (role === 'GURU') {
+      const reports = await getLearningReportsByTeacherDate(session.userId, date)
+      return NextResponse.json({ data: reports })
+    }
+
+    if (role === 'SUPER_ADMIN') {
+      const reports = await getAllReportsAdmin()
+      return NextResponse.json({ data: reports })
+    }
+
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  } catch (error: any) {
+    if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
-
-  if (session.role === 'guru') {
-    const reports = await getLearningReportsByTeacherDate(session.userId, date)
-    return NextResponse.json({ data: reports })
-  }
-
-  const reports = await getAllReportsAdmin()
-  return NextResponse.json({ data: reports })
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session || session.role !== 'guru') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
   try {
+    const { session, role } = await requireAuth()
+    if (role !== 'GURU') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await req.json()
+    if (!body.student_id) return NextResponse.json({ error: 'student_id is required' }, { status: 400 })
+
+    await requireStudentAccess(body.student_id)
+
     const reportDate = body.report_date || new Date().toISOString().split('T')[0]
 
     let hafalanRecordId: number | undefined
@@ -83,7 +96,8 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ data: { id: reportId } }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('POST /api/learning-reports error:', error)
     return NextResponse.json({ error: 'Failed to create report' }, { status: 500 })
   }

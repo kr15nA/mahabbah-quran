@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth/session'
+import { requireAuth, requireReportAccess } from '@/lib/auth/rbac'
 import { getLearningReportById, updateLearningReport } from '@/lib/db/queries/learning-reports'
 import { generateAIReport } from '@/lib/ai/report-generator'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession()
-  if (!session || (session.role !== 'guru' && session.role !== 'admin')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
   try {
+    const { role } = await requireAuth()
+    if (role !== 'GURU' && role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const resolvedParams = await params
     const id = Number(resolvedParams.id)
+    
+    await requireReportAccess(id)
+
     const report = await getLearningReportById(id)
 
     if (!report) {
@@ -26,7 +29,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     })
 
     return NextResponse.json({ data: { reportText, parentAdvice } })
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('AI Report generation error:', error)
     return NextResponse.json({ error: 'Gagal membuat laporan dengan AI' }, { status: 500 })
   }

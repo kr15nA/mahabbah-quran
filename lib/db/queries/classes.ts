@@ -29,6 +29,21 @@ export async function getClassesByTeacher(teacherId: number): Promise<ClassRow[]
   return rows as ClassRow[]
 }
 
+export async function getClassesByParent(parentId: number): Promise<ClassRow[]> {
+  const rows = await sql`
+    SELECT DISTINCT c.*, p.name AS program_name, u.full_name AS teacher_name,
+      0 AS student_count
+    FROM classes c
+    JOIN programs p ON p.id = c.program_id
+    JOIN users u ON u.id = c.teacher_id
+    JOIN students s ON s.class_id = c.id
+    JOIN student_parents sp ON sp.student_id = s.id
+    WHERE sp.parent_id = ${parentId} AND c.is_active = TRUE AND s.deleted_at IS NULL
+    ORDER BY c.name
+  `
+  return rows as ClassRow[]
+}
+
 export async function getClassById(id: number): Promise<ClassRow | null> {
   const rows = await sql`
     SELECT c.*, p.name AS program_name, u.full_name AS teacher_name
