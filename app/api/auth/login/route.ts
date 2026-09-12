@@ -21,6 +21,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Pengguna tidak ditemukan' }, { status: 401 })
     }
 
+    if (!user.is_active) {
+      return NextResponse.json({ error: 'Akun telah dinonaktifkan' }, { status: 403 })
+    }
+
     const isValid = await bcrypt.compare(password, user.password_hash)
     if (!isValid) {
       return NextResponse.json({ error: 'Password salah' }, { status: 401 })
