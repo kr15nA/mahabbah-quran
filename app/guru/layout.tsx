@@ -7,6 +7,7 @@ import {
   Calendar,
   FileText,
   BookMarked,
+  LogOut,
 } from 'lucide-react'
 
 const NAV = [
@@ -18,6 +19,7 @@ const NAV = [
 ]
 
 import AppShell from '@/components/layout/AppShell'
+import AccountMenu from '@/components/layout/AccountMenu'
 
 export default function GuruLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -33,8 +35,14 @@ export default function GuruLayout({ children }: { children: React.ReactNode }) 
   )
 
   const topbarRight = (
-    <div className="w-8 h-8 rounded-full bg-[#7B4BD6] text-white font-bold text-xs flex items-center justify-center">
-      AS
+    <div className="flex items-center gap-3">
+      <div className="md:hidden">
+        <AccountMenu 
+          initials="AS" 
+          onLogout={handleLogout} 
+          colorClass="bg-[#7B4BD6] text-white" 
+        />
+      </div>
     </div>
   )
 

@@ -51,9 +51,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const topbarLeft = (
-    <div>
-      <div className="text-[11px] text-gray-400 font-medium">Kamis, 4 September 2026</div>
-      <div className="text-sm font-bold text-gray-900 leading-none truncate">Assalamu'alaikum, Admin Pembina 👋</div>
+    <div className="flex flex-col justify-center py-1">
+      <div className="text-[10px] sm:text-[11px] text-gray-400 font-medium leading-tight mb-0.5">Kamis, 4 September 2026</div>
+      <div className="text-xs sm:text-sm font-bold text-gray-900 leading-tight whitespace-normal break-words min-w-0 pr-2">Assalamu'alaikum, Admin Pembina 👋</div>
     </div>
   )
 
@@ -98,7 +98,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       topbarLeft={topbarLeft}
       topbarRight={topbarRight}
     >
-      {children}
+      <div className="w-full min-w-0">
+        <div className="mx-auto w-full max-w-screen-2xl">
+          {children}
+        </div>
+      </div>
     </AppShell>
   )
 }
