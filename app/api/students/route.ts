@@ -9,13 +9,21 @@ export async function GET(req: NextRequest) {
     const { session, role } = await requireAuth()
 
     const { searchParams } = new URL(req.url)
-    const q = searchParams.get('q') ?? undefined
+    const search = searchParams.get('search') || searchParams.get('q') || undefined
     const classId = searchParams.get('class_id') ? Number(searchParams.get('class_id')) : undefined
+    const programId = searchParams.get('program_id') ? Number(searchParams.get('program_id')) : undefined
     const status = searchParams.get('status') ?? undefined
+    const page = searchParams.get('page') ? Number(searchParams.get('page')) : undefined
+    const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : 10
 
     if (role === 'SUPER_ADMIN') {
-      const students = await searchStudents(q, { class_id: classId, status })
-      return NextResponse.json({ data: students })
+      const pagination = page ? { limit, offset: (page - 1) * limit } : undefined
+      const { data, total } = await searchStudents(search, { class_id: classId, program_id: programId, status }, pagination)
+      
+      if (page) {
+        return NextResponse.json({ data, meta: { total, page, limit } })
+      }
+      return NextResponse.json({ data })
     } else if (role === 'GURU') {
       const students = await getStudentsByTeacher(session.userId)
       return NextResponse.json({ data: students })

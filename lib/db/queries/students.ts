@@ -83,11 +83,17 @@ export async function getStudentById(id: number): Promise<StudentRow | null> {
 }
 
 export async function searchStudents(query?: string, filters?: {
-  program?: string
+  program_id?: number
   class_id?: number
   status?: string
-}): Promise<StudentRow[]> {
+}, pagination?: {
+  limit: number
+  offset: number
+}): Promise<{ data: StudentRow[], total: number }> {
   const q = query ? `%${query}%` : null
+  const limit = pagination?.limit ?? null
+  const offset = pagination?.offset ?? null
+  
   const rows = await sql`
     SELECT
       s.*,
@@ -97,7 +103,8 @@ export async function searchStudents(query?: string, filters?: {
       COALESCE(ROUND(AVG(hr.score)), 80)::int AS last_score,
       COALESCE(ROUND(
         (COUNT(DISTINCT att.id) FILTER (WHERE att.status = 'hadir')::numeric / NULLIF(COUNT(DISTINCT att.id), 0)) * 100
-      ), 90)::int AS attendance_pct
+      ), 90)::int AS attendance_pct,
+      COUNT(*) OVER() AS total_count
     FROM students s
     JOIN classes c ON c.id = s.class_id
     JOIN programs p ON p.id = c.program_id
@@ -107,11 +114,15 @@ export async function searchStudents(query?: string, filters?: {
     WHERE s.deleted_at IS NULL
       AND (${q}::text IS NULL OR s.full_name ILIKE ${q}::text)
       AND (${filters?.class_id ?? null}::bigint IS NULL OR s.class_id = ${filters?.class_id})
+      AND (${filters?.program_id ?? null}::bigint IS NULL OR p.id = ${filters?.program_id})
       AND (${filters?.status ?? null}::text IS NULL OR s.status = ${filters?.status})
     GROUP BY s.id, c.name, p.name, u.full_name
     ORDER BY s.full_name
+    LIMIT ${limit}
+    OFFSET ${offset}
   `
-  return rows as StudentRow[]
+  const total = rows.length > 0 ? Number(rows[0].total_count) : 0
+  return { data: rows as StudentRow[], total }
 }
 
 export async function insertStudent(data: {
