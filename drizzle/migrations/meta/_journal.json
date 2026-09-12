@@ -22,6 +22,13 @@
       "when": 1789250651834,
       "tag": "0002_soft_manta",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789251469296,
+      "tag": "0003_natural_silhouette",
+      "breakpoints": true
     }
   ]
 }
