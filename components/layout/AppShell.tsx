@@ -14,7 +14,7 @@ export type NavItem = {
 }
 
 export type AppShellProps = {
-  variant?: 'admin' | 'portal'
+  variant?: 'admin' | 'portal' | 'mobile'
   navItems: NavItem[]
   brandSubtitle: string
   userInitials: string
@@ -46,10 +46,11 @@ export default function AppShell({
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
 
   const isPortal = variant === 'portal'
+  const isMobile = variant === 'mobile'
 
   useEffect(() => {
     setIsMounted(true)
-    if (!isPortal) {
+    if (!isPortal && !isMobile) {
       const saved = localStorage.getItem('mq_sidebar_collapsed')
       if (saved !== null) {
         setIsDesktopCollapsed(saved === 'true')
@@ -59,10 +60,10 @@ export default function AppShell({
         }
       }
     }
-  }, [isPortal])
+  }, [isPortal, isMobile])
 
   const toggleDesktop = () => {
-    if (isPortal) return
+    if (isPortal || isMobile) return
     const newState = !isDesktopCollapsed
     setIsDesktopCollapsed(newState)
     localStorage.setItem('mq_sidebar_collapsed', String(newState))
@@ -86,13 +87,15 @@ export default function AppShell({
     setIsMoreMenuOpen(false)
   }, [pathname])
 
-  const effectiveCollapsed = isPortal ? true : isDesktopCollapsed
+  const effectiveCollapsed = isPortal || isMobile ? true : isDesktopCollapsed
   const sidebarWidthClass = effectiveCollapsed ? 'md:w-[72px]' : 'md:w-64'
   
-  // For Admin: drawer on mobile. For Portal: hidden on mobile.
-  const sidebarMobileClass = isPortal 
-    ? 'hidden md:flex' 
-    : (isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0')
+  // For Admin: drawer on mobile. For Portal: hidden on mobile. For Mobile: permanently hidden.
+  const sidebarMobileClass = isMobile 
+    ? 'hidden' 
+    : (isPortal 
+        ? 'hidden md:flex' 
+        : (isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'))
     
   const overlayClass = isMobileOpen || isMoreMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
 
@@ -103,7 +106,7 @@ export default function AppShell({
   const moreNavItems = hasMoreItems ? navItems.slice(4) : []
 
   return (
-    <div className="flex h-screen bg-[#F0EDF9] overflow-hidden font-sans relative">
+    <div className={`flex h-screen bg-[#F0EDF9] overflow-hidden font-sans relative ${isMobile ? 'justify-center' : ''}`}>
       
       {/* Shared Overlay */}
       <div 
@@ -117,7 +120,7 @@ export default function AppShell({
 
       {/* Sidebar */}
       <aside 
-        className={`fixed md:static inset-y-0 left-0 z-50 bg-[#18085A] flex-col flex-shrink-0 overflow-y-auto transition-all duration-300 ease-in-out transform w-64 ${sidebarWidthClass} ${sidebarMobileClass} ${isPortal ? '' : 'flex'}`}
+        className={`fixed md:static inset-y-0 left-0 z-50 bg-[#18085A] flex-col flex-shrink-0 overflow-y-auto transition-all duration-300 ease-in-out transform w-64 ${sidebarWidthClass} ${sidebarMobileClass} ${isPortal ? '' : (isMobile ? 'hidden' : 'flex')}`}
         aria-label="Sidebar Navigation"
       >
         {/* Logo Branding */}
@@ -200,12 +203,12 @@ export default function AppShell({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden relative ${isMobile ? 'max-w-md w-full bg-white border-x border-gray-200 shadow-xl' : ''}`}>
         {/* Topbar */}
         <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 flex-shrink-0 w-full transition-all z-30 relative">
           <div className="flex items-center gap-3 min-w-0">
             {/* Mobile Hamburger (Admin only) */}
-            {!isPortal && (
+            {(!isPortal && !isMobile) && (
               <button 
                 onClick={() => setIsMobileOpen(true)}
                 className="md:hidden p-1.5 -ml-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#18085A]"
@@ -217,7 +220,7 @@ export default function AppShell({
             )}
             
             {/* Desktop Collapse Toggle (Admin only) */}
-            {!isPortal && (
+            {(!isPortal && !isMobile) && (
               <button
                 onClick={toggleDesktop}
                 className="hidden md:flex p-1.5 -ml-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#18085A]"
@@ -227,7 +230,7 @@ export default function AppShell({
               </button>
             )}
 
-            <div className="min-w-0 truncate">
+            <div className="min-w-0 flex-1">
               {topbarLeft}
             </div>
           </div>
@@ -238,15 +241,14 @@ export default function AppShell({
         </header>
 
         {/* Dynamic Page Container */}
-        <main className={`flex-1 overflow-y-auto p-4 md:p-6 w-full relative ${isPortal ? 'pb-24 md:pb-6' : ''}`}>
+        <main className={`flex-1 overflow-y-auto p-4 md:p-6 w-full relative ${isPortal ? 'pb-24 md:pb-6' : (isMobile ? 'pb-24' : '')}`}>
           {children}
         </main>
-      </div>
 
-      {/* Mobile Bottom Navigation (Portal only) */}
-      {isPortal && (
-        <>
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center py-2.5 px-2 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-[max(env(safe-area-inset-bottom),10px)]">
+        {/* Mobile Bottom Navigation (Portal & Mobile) */}
+        {(isPortal || isMobile) && (
+          <>
+            <nav className={`${isPortal ? 'md:hidden fixed left-0 right-0' : 'absolute w-full'} bottom-0 bg-white border-t border-gray-200 flex justify-around items-center py-2.5 px-2 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-[max(env(safe-area-inset-bottom),10px)]`}>
             {bottomNavItems.map(({ href, label, icon: Icon, unreadCount }) => {
               const isActive = pathname.startsWith(href)
               return (
@@ -286,7 +288,7 @@ export default function AppShell({
           {hasMoreItems && (
             <div 
               id="more-menu-sheet"
-              className={`md:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-50 transition-transform duration-300 transform shadow-[0_-10px_40px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] ${
+              className={`${isPortal ? 'md:hidden fixed left-0 right-0' : 'absolute w-full'} bottom-0 bg-white rounded-t-2xl z-50 transition-transform duration-300 transform shadow-[0_-10px_40px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] ${
                 isMoreMenuOpen ? 'translate-y-0' : 'translate-y-full'
               }`}
             >
@@ -326,6 +328,8 @@ export default function AppShell({
           )}
         </>
       )}
+      
+      </div>
     </div>
   )
 }

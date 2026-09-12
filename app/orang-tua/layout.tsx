@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Home, FileText, Calendar, Bell } from 'lucide-react'
+import { Home, FileText, Calendar, Bell, LogOut } from 'lucide-react'
 
 const NAV = [
   { href: '/orang-tua/beranda', label: 'Beranda', icon: Home },
@@ -11,6 +11,7 @@ const NAV = [
 ]
 
 import AppShell from '@/components/layout/AppShell'
+import AccountMenu from '@/components/layout/AccountMenu'
 
 export default function ParentLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -26,14 +27,18 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
   )
 
   const topbarRight = (
-    <div className="w-8 h-8 rounded-full bg-[#FBBF24] text-[#18085A] font-bold text-xs flex items-center justify-center">
-      MQ
+    <div className="flex items-center gap-3">
+      <AccountMenu 
+        initials="MQ" 
+        onLogout={handleLogout} 
+        colorClass="bg-[#FBBF24] text-[#18085A]" 
+      />
     </div>
   )
 
   return (
     <AppShell
-      variant="portal"
+      variant="mobile"
       navItems={NAV}
       brandSubtitle="PORTAL ORANG TUA"
       userInitials="MQ"
