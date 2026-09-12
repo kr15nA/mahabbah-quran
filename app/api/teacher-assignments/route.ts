@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, AuthError } from '@/lib/auth/rbac'
 import { getTeacherAssignmentsByYear, upsertTeacherAssignment } from '@/lib/db/queries/teacher-assignments'
+import { createAuditLog } from '@/lib/audit/logger'
+import { AuditAction, AuditEntityType } from '@/lib/audit/types'
 import { z } from 'zod'
 
 const upsertSchema = z.object({
@@ -40,14 +42,32 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { role } = await requireAuth()
+    const { session, role } = await requireAuth()
     if (role !== 'SUPER_ADMIN') throw new AuthError(403, 'Forbidden')
 
     const body = await req.json()
     const parsed = upsertSchema.parse(body)
 
-    // F-005: upsertTeacherAssignment returns 'created' or 'updated'
-    const outcome = await upsertTeacherAssignment(parsed.academicYearId, parsed.classId, parsed.teacherId)
+    // F-005: upsertTeacherAssignment returns { outcome, id, oldTeacherId }
+    const { outcome, id: entityId, oldTeacherId } = await upsertTeacherAssignment(
+      parsed.academicYearId,
+      parsed.classId,
+      parsed.teacherId
+    )
+
+    // Audit log integration
+    const action = outcome === 'created' ? AuditAction.CREATE : AuditAction.UPDATE
+    const oldValues = outcome === 'updated' && oldTeacherId !== null ? { teacherId: oldTeacherId } : null
+    
+    await createAuditLog({
+      actorUserId: session.userId,
+      action,
+      entityType: AuditEntityType.TEACHER_ASSIGNMENT,
+      entityId,
+      oldValues,
+      newValues: { teacherId: parsed.teacherId },
+      metadata: { academicYearId: parsed.academicYearId, classId: parsed.classId }
+    })
 
     // 201 Created on new assignment, 200 OK on update of existing
     const statusCode = outcome === 'created' ? 201 : 200

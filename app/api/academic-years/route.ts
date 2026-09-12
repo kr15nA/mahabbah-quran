@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, AuthError } from '@/lib/auth/rbac'
 import { getAcademicYears, createAcademicYear } from '@/lib/db/queries/academic-years'
+import { createAuditLog } from '@/lib/audit/logger'
+import { AuditAction, AuditEntityType } from '@/lib/audit/types'
 import { z } from 'zod'
 
 const createSchema = z.object({
@@ -28,20 +30,24 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { role } = await requireAuth()
+    const { session, role } = await requireAuth()
     if (role !== 'SUPER_ADMIN') throw new AuthError(403, 'Forbidden')
     const body = await req.json()
     const parsed = createSchema.parse(body)
-
-    // Check duplicate logic is handled by DB unique constraint, but we could catch it
-    // isActive is false by default on creation unless specifically setting up the first one
-    // To keep it simple, we don't allow setting isActive via POST. Only via the /activate endpoint.
     
     const newYear = await createAcademicYear({
       name: parsed.name,
       startDate: parsed.startDate,
       endDate: parsed.endDate,
       isActive: false
+    })
+
+    await createAuditLog({
+      actorUserId: session.userId,
+      action: AuditAction.CREATE,
+      entityType: AuditEntityType.ACADEMIC_YEAR,
+      entityId: newYear.id,
+      newValues: { name: parsed.name, startDate: parsed.startDate, endDate: parsed.endDate, isActive: false },
     })
 
     return NextResponse.json(newYear, { status: 201 })

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth/rbac'
 import { searchGurus, insertUser, getUserByEmail, getUserByPhone } from '@/lib/db/queries/users'
+import { createAuditLog } from '@/lib/audit/logger'
+import { AuditAction, AuditEntityType } from '@/lib/audit/types'
 import bcrypt from 'bcryptjs'
 
 export async function GET(req: NextRequest) {
@@ -52,7 +54,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { role } = await requireAuth()
+    const { session, role } = await requireAuth()
     if (role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -108,6 +110,14 @@ export async function POST(req: NextRequest) {
       phone: phone || null,
       password_hash,
       role: 'guru'
+    })
+
+    await createAuditLog({
+      actorUserId: session.userId,
+      action: AuditAction.CREATE,
+      entityType: AuditEntityType.USER,
+      entityId: id,
+      newValues: { full_name, email: email || null, phone: phone || null, role: 'guru' },
     })
 
     return NextResponse.json({ data: { id } }, { status: 201 })

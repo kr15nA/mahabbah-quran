@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, AuthError } from '@/lib/auth/rbac'
 import { getEnrollmentsByAcademicYear, upsertEnrollment } from '@/lib/db/queries/enrollments'
+import { createAuditLog } from '@/lib/audit/logger'
+import { AuditAction, AuditEntityType } from '@/lib/audit/types'
 import { z } from 'zod'
 
 const upsertSchema = z.object({
@@ -42,15 +44,33 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { role } = await requireAuth()
+    const { session, role } = await requireAuth()
     if (role !== 'SUPER_ADMIN') throw new AuthError(403, 'Forbidden')
 
     const body = await req.json()
     const parsed = upsertSchema.parse(body)
 
-    await upsertEnrollment(parsed.studentId, parsed.academicYearId, parsed.classId)
+    const { outcome, id: entityId, oldClassId } = await upsertEnrollment(
+      parsed.studentId,
+      parsed.academicYearId,
+      parsed.classId
+    )
 
-    return NextResponse.json({ success: true }, { status: 201 })
+    const action = outcome === 'created' ? AuditAction.CREATE : AuditAction.UPDATE
+    const oldValues = outcome === 'updated' && oldClassId !== null ? { classId: oldClassId } : null
+
+    await createAuditLog({
+      actorUserId: session.userId,
+      action,
+      entityType: AuditEntityType.ENROLLMENT,
+      entityId,
+      oldValues,
+      newValues: { classId: parsed.classId },
+      metadata: { studentId: parsed.studentId, academicYearId: parsed.academicYearId }
+    })
+
+    const statusCode = outcome === 'created' ? 201 : 200
+    return NextResponse.json({ success: true, outcome }, { status: statusCode })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation Error', details: error.issues }, { status: 400 })

@@ -87,7 +87,11 @@ export async function getStudentEnrollmentHistory(studentId: number): Promise<En
  * If the academic year is currently active, it will synchronize students.class_id
  * to maintain Phase 1 legacy compatibility.
  */
-export async function upsertEnrollment(studentId: number, yearId: number, classId: number): Promise<void> {
+export async function upsertEnrollment(
+  studentId: number,
+  yearId: number,
+  classId: number
+): Promise<{ outcome: 'created' | 'updated'; id: number; oldClassId: number | null }> {
   // 1. Check if the year exists and its active status
   const [year] = await db.select({ isActive: academicYears.isActive })
     .from(academicYears)
@@ -113,7 +117,7 @@ export async function upsertEnrollment(studentId: number, yearId: number, classI
   if (!cls) throw new Error('Class not found')
 
   // 4. Check for existing enrollment in this year
-  const [existing] = await db.select({ id: enrollments.id })
+  const [existing] = await db.select({ id: enrollments.id, classId: enrollments.classId })
     .from(enrollments)
     .where(and(
       eq(enrollments.studentId, studentId),
@@ -121,19 +125,27 @@ export async function upsertEnrollment(studentId: number, yearId: number, classI
     ))
     .limit(1)
 
+  let outcome: 'created' | 'updated'
+  let enrollmentId: number
+
   if (existing) {
     // Update existing enrollment
-    await db.update(enrollments)
+    const [updated] = await db.update(enrollments)
       .set({ classId, updatedAt: new Date() })
       .where(eq(enrollments.id, existing.id))
+      .returning({ id: enrollments.id })
+    outcome = 'updated'
+    enrollmentId = updated.id
   } else {
     // Insert new enrollment
-    await db.insert(enrollments).values({
+    const [inserted] = await db.insert(enrollments).values({
       studentId,
       academicYearId: yearId,
       classId,
       enrollmentDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
-    })
+    }).returning({ id: enrollments.id })
+    outcome = 'created'
+    enrollmentId = inserted.id
   }
 
   // 5. Synchronize legacy class_id if this is the active year
@@ -141,5 +153,11 @@ export async function upsertEnrollment(studentId: number, yearId: number, classI
     await db.update(students)
       .set({ classId, updatedAt: new Date() })
       .where(eq(students.id, studentId))
+  }
+
+  return {
+    outcome,
+    id: enrollmentId,
+    oldClassId: existing ? existing.classId : null,
   }
 }

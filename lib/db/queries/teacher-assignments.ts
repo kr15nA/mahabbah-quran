@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { db, sql } from '@/lib/db/client'
 import { teacherAssignments, classes, academicYears, users } from '@/drizzle/schema'
 
@@ -95,7 +95,7 @@ export async function upsertTeacherAssignment(
   yearId: number,
   classId: number,
   teacherId: number
-): Promise<'created' | 'updated'> {
+): Promise<{ outcome: 'created' | 'updated'; id: number; oldTeacherId: number | null }> {
   // Step 1: Validate preconditions (read-only checks; aborts before any write on failure).
   const [year] = await db.select({ isActive: academicYears.isActive })
     .from(academicYears)
@@ -119,6 +119,12 @@ export async function upsertTeacherAssignment(
   if (!teacher) throw new Error('Teacher not found')
   if (teacher.role !== 'guru') throw new Error('Assigned user must have the guru role')
   if (!teacher.isActive) throw new Error('Cannot assign an inactive teacher')
+
+  // Pre-fetch existing to return for audit logs
+  const [existing] = await db.select({ teacherId: teacherAssignments.teacherId, id: teacherAssignments.id })
+    .from(teacherAssignments)
+    .where(and(eq(teacherAssignments.classId, classId), eq(teacherAssignments.academicYearId, yearId)))
+    .limit(1)
 
   // Step 2: Atomic upsert + conditional legacy sync in a single SQL CTE round-trip.
   //
@@ -150,9 +156,13 @@ export async function upsertTeacherAssignment(
               AND is_active = TRUE
          )
     )
-    SELECT is_insert FROM upserted
+    SELECT id, is_insert FROM upserted
   `
 
-  const isInsert = (upsertResult[0] as { is_insert: boolean }).is_insert
-  return isInsert ? 'created' : 'updated'
+  const row = upsertResult[0] as { id: number, is_insert: boolean }
+  return {
+    outcome: row.is_insert ? 'created' : 'updated',
+    id: row.id,
+    oldTeacherId: existing?.teacherId ?? null,
+  }
 }

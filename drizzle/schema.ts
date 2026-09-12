@@ -10,6 +10,7 @@ import {
   smallint,
   uniqueIndex,
   index,
+  jsonb,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
@@ -203,3 +204,31 @@ export const teacherAssignments = pgTable('teacher_assignments', {
 }, (table) => ({
   yearClassIdx: uniqueIndex('idx_teacher_assignments_year_class').on(table.academicYearId, table.classId)
 }))
+
+/**
+ * Audit Log — append-only record of administrative mutations.
+ *
+ * - actor_user_id: always sourced from authenticated server session, never from client input.
+ *   FK uses ON DELETE SET NULL so audit records survive actor soft/hard deletion.
+ * - action: one of the typed AuditAction constants (CREATE, UPDATE, DELETE, etc.)
+ * - entity_type: one of the typed AuditEntityType constants (USER, CLASS, etc.)
+ * - old_values / new_values: JSONB diff; sensitive fields (password_hash, etc.) must be stripped before write.
+ * - metadata: arbitrary extra context (e.g. academic_year_id, class_id) in JSONB.
+ * - No updated_at — this table is strictly append-only; rows must never be updated or deleted.
+ */
+export const auditLogs = pgTable('audit_logs', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  actorUserId: bigint('actor_user_id', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  action: varchar('action', { length: 50 }).notNull(),
+  entityType: varchar('entity_type', { length: 50 }).notNull(),
+  entityId: bigint('entity_id', { mode: 'number' }),
+  oldValues: jsonb('old_values'),
+  newValues: jsonb('new_values'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  createdAtIdx: index('idx_audit_logs_created_at').on(table.createdAt),
+  actorIdx:     index('idx_audit_logs_actor').on(table.actorUserId),
+  entityIdx:    index('idx_audit_logs_entity').on(table.entityType, table.entityId),
+}))
+

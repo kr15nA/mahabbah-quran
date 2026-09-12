@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth/rbac'
 import { getUserById, updateGuru, archiveGuru, getUserByEmail, getUserByPhone } from '@/lib/db/queries/users'
+import { createAuditLog } from '@/lib/audit/logger'
+import { AuditAction, AuditEntityType } from '@/lib/audit/types'
 import bcrypt from 'bcryptjs'
 
 export async function GET(
@@ -37,7 +39,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { role } = await requireAuth()
+    const { session, role } = await requireAuth()
     if (role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -105,16 +107,31 @@ export async function PATCH(
     }
 
     const updateData: any = {}
-    if (full_name !== undefined) updateData.full_name = full_name
-    if (email !== undefined) updateData.email = email || null
-    if (phone !== undefined) updateData.phone = phone || null
-    if (is_active !== undefined) updateData.is_active = is_active
+    const oldValues: any = {}
+    if (full_name !== undefined) { updateData.full_name = full_name; oldValues.full_name = existingUser.full_name }
+    if (email !== undefined) { updateData.email = email || null; oldValues.email = existingUser.email }
+    if (phone !== undefined) { updateData.phone = phone || null; oldValues.phone = existingUser.phone }
+    if (is_active !== undefined) { updateData.is_active = is_active; oldValues.is_active = existingUser.is_active }
     if (password) {
       updateData.password_hash = await bcrypt.hash(password, 10)
     }
 
     if (Object.keys(updateData).length > 0) {
       await updateGuru(numericId, updateData)
+      
+      let action: AuditAction = AuditAction.UPDATE
+      if (is_active !== undefined && is_active !== existingUser.is_active) {
+        action = is_active ? AuditAction.ACTIVATE : AuditAction.DEACTIVATE
+      }
+
+      await createAuditLog({
+        actorUserId: session.userId,
+        action,
+        entityType: AuditEntityType.USER,
+        entityId: numericId,
+        oldValues,
+        newValues: updateData,
+      })
     }
 
     return NextResponse.json({ success: true })
@@ -130,7 +147,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { role } = await requireAuth()
+    const { session, role } = await requireAuth()
     if (role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -147,6 +164,14 @@ export async function DELETE(
     }
 
     await archiveGuru(numericId)
+
+    await createAuditLog({
+      actorUserId: session.userId,
+      action: AuditAction.ARCHIVE,
+      entityType: AuditEntityType.USER,
+      entityId: numericId,
+    })
+
     return NextResponse.json({ success: true })
   } catch (error: any) {
     if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
