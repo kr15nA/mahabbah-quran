@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sparkles, Save, CheckCircle2, RefreshCw } from 'lucide-react'
+import { Sparkles, Save, CheckCircle2, RefreshCw, Share2 } from 'lucide-react'
 import type { StudentRow } from '@/lib/db/queries/students'
 import type { ClassRow } from '@/lib/db/queries/classes'
 import type { SurahRow } from '@/lib/db/queries/surahs'
+import ShareReportModal from '@/components/ui/ShareReportModal'
 
 export default function GuruLaporanClient({
   classes,
@@ -21,6 +22,7 @@ export default function GuruLaporanClient({
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [reportId, setReportId] = useState<number | null>(null)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     surah_id: surahs[0]?.id || 1,
@@ -274,8 +276,18 @@ export default function GuruLaporanClient({
           </button>
           
           {saved && (
-            <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2 mt-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Laporan berhasil disimpan! (ID: {reportId})
+            <div className="space-y-2 mt-2">
+              <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Laporan berhasil disimpan! (ID: {reportId})
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="w-full py-2.5 bg-gray-100 text-[#4B21A2] font-bold rounded-xl shadow-sm hover:bg-[#F0EDF9] transition-colors flex justify-center items-center gap-2"
+              >
+                <Share2 className="w-4 h-4" />
+                Bagikan Laporan ke Orang Tua
+              </button>
             </div>
           )}
         </form>
@@ -318,6 +330,12 @@ export default function GuruLaporanClient({
           </div>
         </div>
       </div>
+
+      <ShareReportModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        reportId={reportId || 0} 
+      />
     </div>
   )
 }

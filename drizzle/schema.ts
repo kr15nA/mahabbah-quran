@@ -152,3 +152,16 @@ export const notifications = pgTable('notifications', {
   isRead: boolean('is_read').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
+
+export const reportShares = pgTable('report_shares', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  reportId: bigint('report_id', { mode: 'number' }).notNull().references(() => learningReports.id, { onDelete: 'cascade' }),
+  creatorId: bigint('creator_id', { mode: 'number' }).notNull().references(() => users.id, { onDelete: 'restrict' }),
+  tokenHash: varchar('token_hash', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  lastAccessedAt: timestamp('last_accessed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  tokenHashIdx: index('idx_report_shares_token_hash').on(table.tokenHash)
+}))

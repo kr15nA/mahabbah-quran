@@ -2,8 +2,9 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, useCallback, useTransition } from 'react'
-import { Search, ChevronLeft, ChevronRight, CheckCircle, Clock } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, CheckCircle, Clock, Download, Share2 } from 'lucide-react'
 import type { SearchLaporanRow } from '@/lib/db/queries/learning-reports'
+import ShareReportModal from '@/components/ui/ShareReportModal'
 
 function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -28,6 +29,8 @@ export default function LaporanClient({
   const [isPending, startTransition] = useTransition()
   
   const [searchTerm, setSearchTerm] = useState(initialSearch)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [selectedReportId, setSelectedReportId] = useState<number>(0)
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -97,7 +100,8 @@ export default function LaporanClient({
                 <th className="p-3.5">Tanggal</th>
                 <th className="p-3.5">Hafalan</th>
                 <th className="p-3.5">Nilai Hafalan</th>
-                <th className="p-3.5 px-4">Status</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5 px-4 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-800">
@@ -115,7 +119,7 @@ export default function LaporanClient({
                     <td className="p-3.5 text-gray-600">{formatDate(r.report_date)}</td>
                     <td className="p-3.5 font-medium text-[#4B21A2]">{r.surah_name_latin || '-'}</td>
                     <td className="p-3.5 font-bold text-emerald-600">{r.hafalan_score ?? '-'}/100</td>
-                    <td className="p-3.5 px-4">
+                    <td className="p-3.5">
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                           r.status === 'sent' ? 'bg-purple-100 text-[#4B21A2]' : 'bg-amber-100 text-amber-800'
@@ -124,6 +128,27 @@ export default function LaporanClient({
                         {r.status === 'sent' ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                         {r.status === 'sent' ? 'Terkirim' : 'Draft'}
                       </span>
+                    </td>
+                    <td className="p-3.5 px-4 text-right flex justify-end gap-1">
+                      <button
+                        onClick={() => {
+                          setSelectedReportId(r.id)
+                          setIsShareModalOpen(true)
+                        }}
+                        title="Bagikan Laporan"
+                        className="inline-flex p-1.5 bg-gray-100 hover:bg-[#F0EDF9] hover:text-[#4B21A2] text-gray-700 rounded-lg transition"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                      <a 
+                        href={`/api/learning-reports/${r.id}/pdf`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        title="Download PDF"
+                        className="inline-flex p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
                     </td>
                   </tr>
                 ))
@@ -163,6 +188,12 @@ export default function LaporanClient({
           </div>
         )}
       </div>
+
+      <ShareReportModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        reportId={selectedReportId} 
+      />
     </div>
   )
 }

@@ -127,13 +127,10 @@ export default async function ParentReportDetailPage({ params }: { params: Promi
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-2 gap-2 pt-1">
-        <a href={`/api/learning-reports/${report.id}/pdf`} target="_blank" rel="noopener noreferrer" className="py-2.5 bg-[#4B21A2] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm">
+      <div className="pt-1">
+        <a href={`/api/learning-reports/${report.id}/pdf`} target="_blank" rel="noopener noreferrer" className="w-full py-2.5 bg-[#4B21A2] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm">
           <Download className="w-4 h-4" /> Download PDF
         </a>
-        <button className="py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm">
-          <Share2 className="w-4 h-4" /> Bagikan Laporan
-        </button>
       </div>
     </div>
   )
