@@ -46,9 +46,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const parsed = upsertSchema.parse(body)
 
-    await upsertTeacherAssignment(parsed.academicYearId, parsed.classId, parsed.teacherId)
+    // F-005: upsertTeacherAssignment returns 'created' or 'updated'
+    const outcome = await upsertTeacherAssignment(parsed.academicYearId, parsed.classId, parsed.teacherId)
 
-    return NextResponse.json({ success: true }, { status: 201 })
+    // 201 Created on new assignment, 200 OK on update of existing
+    const statusCode = outcome === 'created' ? 201 : 200
+    return NextResponse.json({ success: true, outcome }, { status: statusCode })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation Error', details: error.issues }, { status: 400 })
@@ -64,10 +67,6 @@ export async function POST(req: NextRequest) {
     }
     if (error instanceof Error && error.message.includes('inactive teacher')) {
       return NextResponse.json({ error: error.message }, { status: 400 })
-    }
-    const err = error as any
-    if (err.code === '23505' || err?.cause?.code === '23505') {
-      return NextResponse.json({ error: 'Assignment already exists for this class and academic year' }, { status: 409 })
     }
     console.error('POST /api/teacher-assignments error:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })

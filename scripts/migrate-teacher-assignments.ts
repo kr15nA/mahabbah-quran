@@ -1,6 +1,6 @@
 import { db } from '../lib/db/client'
 import { classes, teacherAssignments, academicYears, users } from '../drizzle/schema'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, and } from 'drizzle-orm'
 import assert from 'assert'
 
 async function migrate() {
@@ -55,11 +55,16 @@ async function migrate() {
       continue
     }
 
-    // Check if already assigned
+    // Check if already assigned FOR THIS SPECIFIC ACTIVE YEAR (F-003 fix)
+    // Previously this checked any year — now scoped to activeYear.id so a historical
+    // assignment for a different year does not prevent creating the active-year row.
     const [existing] = await db.select({ id: teacherAssignments.id })
       .from(teacherAssignments)
       .where(
-        eq(teacherAssignments.classId, cls.id)
+        and(
+          eq(teacherAssignments.classId, cls.id),
+          eq(teacherAssignments.academicYearId, activeYear.id)
+        )
       )
       .limit(1)
 

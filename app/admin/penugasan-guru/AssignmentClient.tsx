@@ -2,15 +2,17 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ChevronDown, Check, History, User } from 'lucide-react'
+import { Search, ChevronDown, History, User } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import type { AcademicYear } from '@/lib/db/queries/academic-years'
 import type { TeacherAssignmentRow } from '@/lib/db/queries/teacher-assignments'
+import type { ClassRow } from '@/lib/db/queries/classes'
+import type { SafeGuruRow } from '@/lib/db/queries/users'
 
 type Props = {
   academicYears: AcademicYear[]
-  classes: any[] // We can type this properly later, it has id, name, program_name
-  gurus: any[] // UserRow
+  classes: ClassRow[]
+  gurus: SafeGuruRow[]
 }
 
 export default function AssignmentClient({ academicYears, classes, gurus }: Props) {
