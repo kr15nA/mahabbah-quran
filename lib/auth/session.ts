@@ -1,8 +1,13 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 
-const SECRET_KEY = process.env.JWT_SECRET || 'mahabbah-quran-default-jwt-secret-key-2026'
-const SECRET = new TextEncoder().encode(SECRET_KEY)
+export function getJwtSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined in environment variables')
+  }
+  return new TextEncoder().encode(secret)
+}
 
 export type SessionPayload = {
   userId: number
@@ -16,7 +21,7 @@ export async function createSession(payload: SessionPayload): Promise<string> {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d')
-    .sign(SECRET)
+    .sign(getJwtSecretKey())
 
   const cookieStore = await cookies()
   cookieStore.set('mq_session', token, {
@@ -36,7 +41,7 @@ export async function getSession(): Promise<SessionPayload | null> {
     const token = cookieStore.get('mq_session')?.value
     if (!token) return null
 
-    const { payload } = await jwtVerify(token, SECRET)
+    const { payload } = await jwtVerify(token, getJwtSecretKey())
     return payload as unknown as SessionPayload
   } catch {
     return null
