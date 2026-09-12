@@ -71,3 +71,48 @@ export async function getHafalanProgressChart(classId?: number, monthsCount = 8)
   `
   return rows as { month: string; score: number }[]
 }
+
+export type SearchHafalanRow = HafalanRow & {
+  student_name: string
+  class_name: string
+}
+
+export async function searchHafalan(params: {
+  search?: string | null
+  limit: number
+  offset: number
+}): Promise<{ data: SearchHafalanRow[]; total: number }> {
+  const searchPattern = params.search ? `%${params.search}%` : null
+
+  const dataRows = await sql`
+    SELECT 
+      hr.*, 
+      s.name_latin AS surah_name_latin, 
+      s.number AS surah_number, 
+      u.full_name AS teacher_name,
+      st.full_name AS student_name,
+      c.name AS class_name
+    FROM hafalan_records hr
+    JOIN surahs s ON s.id = hr.surah_id
+    JOIN users u ON u.id = hr.teacher_id
+    JOIN students st ON st.id = hr.student_id
+    JOIN classes c ON c.id = st.class_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+    ORDER BY hr.session_date DESC, hr.id DESC
+    LIMIT ${params.limit} OFFSET ${params.offset}
+  `
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int as total
+    FROM hafalan_records hr
+    JOIN students st ON st.id = hr.student_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+  `
+
+  return {
+    data: dataRows as SearchHafalanRow[],
+    total: Number((countRows[0] as any).total)
+  }
+}
