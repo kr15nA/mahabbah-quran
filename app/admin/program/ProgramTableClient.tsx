@@ -166,7 +166,7 @@ export default function ProgramTableClient({ data, total, page, limit }: Props) 
           </div>
 
           <select
-            value={searchParams.get('status') || 'all'}
+            value={searchParams.get('status') || 'active'}
             onChange={(e) => handleFilter('status', e.target.value)}
             className="border border-gray-200 rounded-xl px-3 py-2 text-xs bg-white text-gray-700 outline-none"
             aria-label="Filter Status"

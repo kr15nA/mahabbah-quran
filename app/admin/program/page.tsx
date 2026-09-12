@@ -22,9 +22,11 @@ export default async function DataProgramPage({ searchParams }: { searchParams: 
   // 2. Parse Query Parameters
   const resolvedParams = await searchParams
   const search = resolvedParams.search || undefined
-  const status = resolvedParams.status === 'active' || resolvedParams.status === 'archived' 
-    ? resolvedParams.status 
-    : undefined
+  const status = resolvedParams.status === 'all' 
+    ? undefined 
+    : resolvedParams.status === 'archived' 
+      ? 'archived' 
+      : 'active'
   const page = resolvedParams.page ? Math.max(1, Number(resolvedParams.page)) : 1
   const limit = resolvedParams.limit ? Math.max(1, Number(resolvedParams.limit)) : 10
 
