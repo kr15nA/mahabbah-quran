@@ -5,6 +5,7 @@ import { User, Key, Save, Camera, Upload, CheckCircle2, AlertCircle } from 'luci
 import { updateProfile, changePassword } from './actions'
 
 type UserData = {
+  id: number
   full_name: string
   email: string
   phone: string
@@ -31,6 +32,10 @@ export default function AccountClient({ user }: { user: UserData }) {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('entityType', 'users')
+      formData.append('entityId', user.id.toString())
+      if (user.avatar_url) formData.append('oldUrl', user.avatar_url)
+      
       const res = await fetch('/api/upload', { method: 'POST', body: formData })
       const data = await res.json()
       if (res.ok) {

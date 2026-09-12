@@ -23,6 +23,7 @@ export default async function AdminAccountPage() {
 
       <AccountClient 
         user={{
+          id: user.id,
           full_name: user.full_name,
           email: user.email || '',
           phone: user.phone || '',
