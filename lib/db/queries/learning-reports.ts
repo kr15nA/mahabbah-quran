@@ -197,3 +197,55 @@ export async function getAllReportsAdmin(): Promise<LearningReportRow[]> {
   `
   return rows as LearningReportRow[]
 }
+
+export type SearchPenilaianRow = {
+  id: number
+  student_name: string
+  class_name: string
+  hafalan_score: number | null
+  tahsin_score: number | null
+  adab_score: number | null
+  avg_score: number | null
+}
+
+export async function searchPenilaianAdmin(params: {
+  search?: string | null
+  limit: number
+  offset: number
+}): Promise<{ data: SearchPenilaianRow[]; total: number }> {
+  const searchPattern = params.search ? `%${params.search}%` : null
+
+  const dataRows = await sql`
+    SELECT 
+      lr.id,
+      st.full_name AS student_name,
+      c.name AS class_name,
+      lr.hafalan_score,
+      lr.tahsin_score,
+      lr.adab_score,
+      ROUND((COALESCE(lr.hafalan_score, 0) + COALESCE(lr.tahsin_score, 0) + COALESCE(lr.adab_score, 0)) / 
+            NULLIF((CASE WHEN lr.hafalan_score IS NOT NULL THEN 1 ELSE 0 END + 
+                    CASE WHEN lr.tahsin_score IS NOT NULL THEN 1 ELSE 0 END + 
+                    CASE WHEN lr.adab_score IS NOT NULL THEN 1 ELSE 0 END), 0))::int AS avg_score
+    FROM learning_reports lr
+    JOIN students st ON st.id = lr.student_id
+    JOIN classes c ON c.id = st.class_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+    ORDER BY lr.report_date DESC, lr.id DESC
+    LIMIT ${params.limit} OFFSET ${params.offset}
+  `
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int as total
+    FROM learning_reports lr
+    JOIN students st ON st.id = lr.student_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+  `
+
+  return {
+    data: dataRows as SearchPenilaianRow[],
+    total: Number((countRows[0] as any).total)
+  }
+}
