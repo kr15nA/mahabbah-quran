@@ -249,3 +249,61 @@ export async function searchPenilaianAdmin(params: {
     total: Number((countRows[0] as any).total)
   }
 }
+
+export type SearchLaporanRow = {
+  id: number
+  student_name: string
+  teacher_name: string
+  class_name: string
+  report_date: string
+  surah_name_latin: string | null
+  hafalan_score: number | null
+  tahsin_score: number | null
+  adab_score: number | null
+  status: string
+}
+
+export async function searchLaporanAdmin(params: {
+  search?: string | null
+  limit: number
+  offset: number
+}): Promise<{ data: SearchLaporanRow[]; total: number }> {
+  const searchPattern = params.search ? `%${params.search}%` : null
+
+  const dataRows = await sql`
+    SELECT 
+      lr.id,
+      st.full_name AS student_name,
+      u.full_name AS teacher_name,
+      c.name AS class_name,
+      lr.report_date,
+      sr.name_latin AS surah_name_latin,
+      lr.hafalan_score,
+      lr.tahsin_score,
+      lr.adab_score,
+      lr.status
+    FROM learning_reports lr
+    JOIN students st ON st.id = lr.student_id
+    JOIN users u ON u.id = lr.teacher_id
+    JOIN classes c ON c.id = st.class_id
+    LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
+    LEFT JOIN surahs sr ON sr.id = hr.surah_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+    ORDER BY lr.report_date DESC, lr.id DESC
+    LIMIT ${params.limit} OFFSET ${params.offset}
+  `
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int as total
+    FROM learning_reports lr
+    JOIN students st ON st.id = lr.student_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+  `
+
+  return {
+    data: dataRows as SearchLaporanRow[],
+    total: Number((countRows[0] as any).total)
+  }
+}
