@@ -20,6 +20,7 @@ import {
   Layers,
   Star,
   Shield,
+  FileDown,
 } from 'lucide-react'
 
 const NAV = [
@@ -37,6 +38,7 @@ const NAV = [
   { id: 'ai', href: '/admin/ai', label: 'AI Mahabbah', icon: Brain },
   { id: 'notifikasi', href: '/admin/notifikasi', label: 'Notifikasi', icon: Bell },
   { id: 'pengguna', href: '/admin/pengguna', label: 'Pengguna', icon: Shield },
+  { id: 'import-export', href: '/admin/import-export', label: 'Import/Export', icon: FileDown },
   { id: 'pengaturan', href: '/admin/pengaturan', label: 'Pengaturan', icon: Settings },
 ]
 
