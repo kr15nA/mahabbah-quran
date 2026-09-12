@@ -193,3 +193,26 @@ export async function getAllTeachers(): Promise<SafeGuruRow[]> {
   `
   return rows as SafeGuruRow[]
 }
+
+export async function updateUser(
+  id: number,
+  data: Partial<{
+    full_name: string
+    email: string | null
+    phone: string | null
+    password_hash: string
+    avatar_url: string | null
+  }>
+): Promise<void> {
+  await sql`
+    UPDATE users 
+    SET 
+      full_name = CASE WHEN ${data.full_name !== undefined} THEN ${data.full_name ?? null}::varchar ELSE full_name END,
+      email = CASE WHEN ${data.email !== undefined} THEN ${data.email ?? null}::varchar ELSE email END,
+      phone = CASE WHEN ${data.phone !== undefined} THEN ${data.phone ?? null}::varchar ELSE phone END,
+      password_hash = CASE WHEN ${data.password_hash !== undefined} THEN ${data.password_hash ?? null}::varchar ELSE password_hash END,
+      avatar_url = CASE WHEN ${data.avatar_url !== undefined} THEN ${data.avatar_url ?? null}::varchar ELSE avatar_url END,
+      updated_at = CASE WHEN ${Object.keys(data).length > 0} THEN NOW() ELSE updated_at END
+    WHERE id = ${id}
+  `
+}

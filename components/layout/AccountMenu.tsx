@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { User, Key, LogOut } from 'lucide-react'
+import Link from 'next/link'
 
 type Props = {
   initials: string
@@ -40,21 +41,14 @@ export default function AccountMenu({ initials, onLogout, colorClass }: Props) {
             <p className="text-xs font-bold text-gray-900">Akun Anda</p>
           </div>
           
-          <button 
-            disabled
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:bg-gray-50 transition-colors text-left"
+          <Link 
+            href="/admin/akun"
+            onClick={() => setIsOpen(false)}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
           >
             <User className="w-4 h-4" />
-            <span>Profil (Segera)</span>
-          </button>
-          
-          <button 
-            disabled
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:bg-gray-50 transition-colors text-left"
-          >
-            <Key className="w-4 h-4" />
-            <span>Ganti Password (Segera)</span>
-          </button>
+            <span>Profil & Akun</span>
+          </Link>
           
           <div className="border-t border-gray-50 mt-1 pt-1">
             <button 
