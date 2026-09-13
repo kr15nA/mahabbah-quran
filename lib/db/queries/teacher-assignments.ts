@@ -145,16 +145,6 @@ export async function upsertTeacherAssignment(
         SET teacher_id = EXCLUDED.teacher_id,
             updated_at = NOW()
       RETURNING id, (xmax = 0) AS is_insert
-    ),
-    sync_classes AS (
-      UPDATE classes
-         SET teacher_id = ${teacherId}, updated_at = NOW()
-       WHERE id = ${classId}
-         AND EXISTS (
-           SELECT 1 FROM academic_years
-            WHERE id = ${yearId}
-              AND is_active = TRUE
-         )
     )
     SELECT id, is_insert FROM upserted
   `

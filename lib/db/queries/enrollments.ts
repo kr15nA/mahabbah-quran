@@ -148,12 +148,7 @@ export async function upsertEnrollment(
     enrollmentId = inserted.id
   }
 
-  // 5. Synchronize legacy class_id if this is the active year
-  if (year.isActive) {
-    await db.update(students)
-      .set({ classId, updatedAt: new Date() })
-      .where(eq(students.id, studentId))
-  }
+  // Legacy sync removed
 
   return {
     outcome,

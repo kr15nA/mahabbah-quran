@@ -43,7 +43,6 @@ export const programs = pgTable('programs', {
 export const classes = pgTable('classes', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   programId: bigint('program_id', { mode: 'number' }).notNull().references(() => programs.id),
-  teacherId: bigint('teacher_id', { mode: 'number' }).notNull().references(() => users.id),
   name: varchar('name', { length: 100 }).notNull(),
   level: varchar('level', { length: 50 }),
   isActive: boolean('is_active').notNull().default(true),
@@ -53,8 +52,7 @@ export const classes = pgTable('classes', {
 
 export const students = pgTable('students', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
-  userId: bigint('user_id', { mode: 'number' }).references(() => users.id),
-  classId: bigint('class_id', { mode: 'number' }).notNull().references(() => classes.id),
+  userId: bigint('user_id', { mode: 'number' }).references(() => users.id), // For optional student login
   fullName: varchar('full_name', { length: 255 }).notNull(),
   nickname: varchar('nickname', { length: 100 }),
   photoUrl: text('photo_url'),

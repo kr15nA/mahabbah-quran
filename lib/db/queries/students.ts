@@ -160,8 +160,8 @@ export async function insertStudent(data: {
       SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1
     ),
     new_student AS (
-      INSERT INTO students (class_id, full_name, nickname, gender, date_of_birth, enrollment_date, photo_url)
-      SELECT ${data.class_id}, ${data.full_name}, ${data.nickname ?? null}, ${data.gender ?? null}, ${data.date_of_birth ?? null}, ${data.enrollment_date}, ${data.photo_url ?? null}
+      INSERT INTO students (full_name, nickname, gender, date_of_birth, enrollment_date, photo_url)
+      SELECT ${data.full_name}, ${data.nickname ?? null}, ${data.gender ?? null}, ${data.date_of_birth ?? null}, ${data.enrollment_date}, ${data.photo_url ?? null}
       FROM active_year
       RETURNING id
     ),
@@ -179,7 +179,7 @@ export async function insertStudent(data: {
   return (rows[0] as { id: number }).id
 }
 
-export type UpdateStudentData = Omit<Partial<StudentRow>, 'class_id'>
+export type UpdateStudentData = Partial<StudentRow>
 
 export async function updateStudent(id: number, data: UpdateStudentData): Promise<void> {
   if (data.full_name) {

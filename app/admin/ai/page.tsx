@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/client'
-import { students, classes } from '@/drizzle/schema'
-import { eq, isNull } from 'drizzle-orm'
+import { students, classes, enrollments, academicYears } from '@/drizzle/schema'
+import { eq, isNull, and } from 'drizzle-orm'
 import AdminAIClient from './AdminAIClient'
 import { requireAuth } from '@/lib/auth/rbac'
 import { redirect } from 'next/navigation'
@@ -22,7 +22,9 @@ export default async function AdminAIPage() {
       class_name: classes.name
     })
     .from(students)
-    .innerJoin(classes, eq(classes.id, students.classId))
+    .innerJoin(enrollments, eq(enrollments.studentId, students.id))
+    .innerJoin(academicYears, and(eq(academicYears.id, enrollments.academicYearId), eq(academicYears.isActive, true)))
+    .innerJoin(classes, eq(classes.id, enrollments.classId))
     .where(isNull(students.deletedAt))
     .orderBy(classes.name, students.fullName)
 

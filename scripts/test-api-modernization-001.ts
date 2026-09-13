@@ -30,7 +30,7 @@ async function runTest() {
 
   // Create a class with a STALE teacher_id (1), but active assignment to our new teacher (teacherId)
   const classRows = await sql`
-    INSERT INTO classes (name, program_id, teacher_id) VALUES ('Modern Class', ${programId}, 1) RETURNING id
+    INSERT INTO classes (name, program_id) VALUES ('Modern Class', ${programId}) RETURNING id
   `
   const classId = classRows[0].id
 
@@ -41,8 +41,8 @@ async function runTest() {
 
   // Create a student with a STALE class_id (1), but active enrollment to our new class (classId)
   const studentRows = await sql`
-    INSERT INTO students (full_name, class_id, enrollment_date)
-    VALUES ('Modern Student', 1, CURRENT_DATE) RETURNING id
+    INSERT INTO students (full_name, enrollment_date)
+    VALUES ('Modern Student', CURRENT_DATE) RETURNING id
   `
   const studentId = studentRows[0].id
 

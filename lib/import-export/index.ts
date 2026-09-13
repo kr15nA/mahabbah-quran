@@ -297,15 +297,14 @@ export async function executeImport(type: DatasetType, validData: any[]) {
         gender: d.gender,
         dateOfBirth: d.date_of_birth,
         enrollmentDate: d.enrollment_date,
-        classId: d.class_id,
         status: 'active' as const
       }))
-      const insertedStudents = await tx.insert(students).values(inserts).returning({ id: students.id, classId: students.classId })
+      const insertedStudents = await tx.insert(students).values(inserts).returning({ id: students.id })
 
-      const enrollmentInserts = insertedStudents.map(s => ({
+      const enrollmentInserts = insertedStudents.map((s, index) => ({
         studentId: s.id,
         academicYearId: activeYear.id,
-        classId: s.classId,
+        classId: validData[index].class_id as number,
         enrollmentDate: new Date().toISOString().split('T')[0]
       }))
       if (enrollmentInserts.length > 0) {

@@ -39,10 +39,6 @@ async function runTests() {
     throw new Error('Require both active and inactive academic years in DB')
   }
 
-  // Backup original student data
-  const originalStudentClassId = testStudent.class_id
-  const originalClassTeacherId = testClass.teacher_id
-
   // Backup enrollments and assignments for test context
   const originalEnrollments = await sql`SELECT * FROM enrollments WHERE student_id = ${testStudent.id}`
   const originalAssignments = await sql`SELECT * FROM teacher_assignments WHERE class_id IN (${testClass.id}, ${testClass2.id})`
@@ -52,13 +48,7 @@ async function runTests() {
     // PREPARE TEST STATE
     // ---------------------------------------------------------
     
-    // 1. Set student's legacy class_id to a different class (testClass2)
-    await sql`UPDATE students SET class_id = ${testClass2.id} WHERE id = ${testStudent.id}`
-    
-    // 2. Set testClass's legacy teacher_id to a different teacher
-    await sql`UPDATE classes SET teacher_id = ${testTeacher2.id} WHERE id = ${testClass.id}`
-    
-    // 3. Setup active enrollment in testClass (differing from legacy class_id)
+    // 3. Setup active enrollment in testClass
     await sql`DELETE FROM enrollments WHERE student_id = ${testStudent.id}`
     await sql`INSERT INTO enrollments (student_id, class_id, academic_year_id) VALUES (${testStudent.id}, ${testClass.id}, ${originalActiveYearId})`
     
@@ -147,8 +137,6 @@ async function runTests() {
     // RESTORE STATE
     console.log('--- CLEANING UP ---')
     await sql`UPDATE academic_years SET is_active = TRUE WHERE id = ${originalActiveYearId}`
-    await sql`UPDATE students SET class_id = ${originalStudentClassId} WHERE id = ${testStudent.id}`
-    await sql`UPDATE classes SET teacher_id = ${originalClassTeacherId} WHERE id = ${testClass.id}`
     
     await sql`DELETE FROM enrollments WHERE student_id = ${testStudent.id}`
     for (const e of originalEnrollments) {

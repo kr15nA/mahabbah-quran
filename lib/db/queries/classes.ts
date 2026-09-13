@@ -147,8 +147,8 @@ export async function insertClass(data: {
       SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1
     ),
     new_class AS (
-      INSERT INTO classes (program_id, teacher_id, name, level)
-      SELECT ${data.program_id}, ${data.teacher_id}, ${data.name}, ${data.level ?? null}
+      INSERT INTO classes (program_id, name, level)
+      SELECT ${data.program_id}, ${data.name}, ${data.level ?? null}
       FROM active_year
       RETURNING id
     ),
@@ -166,7 +166,7 @@ export async function insertClass(data: {
   return (rows[0] as { id: number }).id
 }
 
-export type UpdateClassData = Omit<Partial<{ teacher_id: number; name: string; level: string; is_active: boolean }>, 'teacher_id'>
+export type UpdateClassData = Partial<{ name: string; level: string; is_active: boolean }>
 
 export async function updateClass(
   id: number,
