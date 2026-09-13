@@ -3,7 +3,9 @@ import { sql } from '@/lib/db/client'
 export type StudentRow = {
   id: number
   user_id: number | null
-  class_id: number
+  /** @deprecated use current_class_id instead */
+  class_id?: number | null
+  current_class_id?: number | null
   full_name: string
   nickname: string | null
   photo_url: string | null
@@ -35,7 +37,9 @@ export type AtRiskStudent = {
 export async function getStudentsByTeacher(teacherId: number): Promise<StudentRow[]> {
   const rows = await sql`
     SELECT
-      s.*,
+      s.id, s.user_id, s.full_name, s.nickname, s.photo_url, s.date_of_birth, s.gender, s.enrollment_date, s.status, s.created_at, s.updated_at, s.deleted_at,
+      e.class_id AS current_class_id,
+      e.class_id AS class_id,
       c.name AS class_name,
       p.name AS program_name,
       u.full_name AS teacher_name,
@@ -53,7 +57,7 @@ export async function getStudentsByTeacher(teacherId: number): Promise<StudentRo
     LEFT JOIN attendance att ON att.student_id = s.id
     WHERE ta.teacher_id = ${teacherId}
       AND s.deleted_at IS NULL
-    GROUP BY s.id, c.name, p.name, u.full_name
+    GROUP BY s.id, c.name, p.name, u.full_name, e.class_id
     ORDER BY s.full_name
   `
   return rows as StudentRow[]
@@ -61,7 +65,11 @@ export async function getStudentsByTeacher(teacherId: number): Promise<StudentRo
 
 export async function getStudentsByClass(classId: number): Promise<StudentRow[]> {
   const rows = await sql`
-    SELECT s.*, c.name AS class_name, p.name AS program_name
+    SELECT
+      s.id, s.user_id, s.full_name, s.nickname, s.photo_url, s.date_of_birth, s.gender, s.enrollment_date, s.status, s.created_at, s.updated_at, s.deleted_at,
+      e.class_id AS current_class_id,
+      e.class_id AS class_id,
+      c.name AS class_name, p.name AS program_name
     FROM students s
     JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
     JOIN classes c ON c.id = e.class_id
@@ -74,7 +82,11 @@ export async function getStudentsByClass(classId: number): Promise<StudentRow[]>
 
 export async function getStudentById(id: number): Promise<StudentRow | null> {
   const rows = await sql`
-    SELECT s.*, c.name AS class_name, p.name AS program_name, u.full_name AS teacher_name
+    SELECT
+      s.id, s.user_id, s.full_name, s.nickname, s.photo_url, s.date_of_birth, s.gender, s.enrollment_date, s.status, s.created_at, s.updated_at, s.deleted_at,
+      e.class_id AS current_class_id,
+      e.class_id AS class_id,
+      c.name AS class_name, p.name AS program_name, u.full_name AS teacher_name
     FROM students s
     LEFT JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
     LEFT JOIN classes c ON c.id = e.class_id
@@ -101,7 +113,9 @@ export async function searchStudents(query?: string, filters?: {
   
   const rows = await sql`
     SELECT
-      s.*,
+      s.id, s.user_id, s.full_name, s.nickname, s.photo_url, s.date_of_birth, s.gender, s.enrollment_date, s.status, s.created_at, s.updated_at, s.deleted_at,
+      e.class_id AS current_class_id,
+      e.class_id AS class_id,
       c.name AS class_name,
       p.name AS program_name,
       u.full_name AS teacher_name,
@@ -123,7 +137,7 @@ export async function searchStudents(query?: string, filters?: {
       AND (${filters?.class_id ?? null}::bigint IS NULL OR e.class_id = ${filters?.class_id})
       AND (${filters?.program_id ?? null}::bigint IS NULL OR p.id = ${filters?.program_id})
       AND (${filters?.status ?? null}::text IS NULL OR s.status = ${filters?.status})
-    GROUP BY s.id, c.name, p.name, u.full_name
+    GROUP BY s.id, c.name, p.name, u.full_name, e.class_id
     ORDER BY s.full_name
     LIMIT ${limit}
     OFFSET ${offset}

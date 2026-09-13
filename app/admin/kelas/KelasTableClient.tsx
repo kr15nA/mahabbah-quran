@@ -74,7 +74,7 @@ export default function KelasTableClient({ data, total, page, limit, teachers, p
       setFormData({
         name: cls.name,
         program_id: String(cls.program_id),
-        teacher_id: String(cls.teacher_id),
+        teacher_id: String(cls.current_teacher_id),
         level: cls.level || '',
         is_active: cls.is_active
       })

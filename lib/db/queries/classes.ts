@@ -3,7 +3,9 @@ import { sql } from '@/lib/db/client'
 export type ClassRow = {
   id: number
   program_id: number
-  teacher_id: number
+  /** @deprecated use current_teacher_id instead */
+  teacher_id?: number | null
+  current_teacher_id?: number | null
   name: string
   level: string | null
   is_active: boolean
@@ -16,7 +18,10 @@ export type ClassRow = {
 
 export async function getClassesByTeacher(teacherId: number): Promise<ClassRow[]> {
   const rows = await sql`
-    SELECT c.*, p.name AS program_name, u.full_name AS teacher_name,
+    SELECT
+      c.id, c.program_id, c.name, c.level, c.is_active, c.created_at, c.updated_at,
+      ta.teacher_id AS current_teacher_id, ta.teacher_id AS teacher_id,
+      p.name AS program_name, u.full_name AS teacher_name,
       COUNT(s.id)::int AS student_count
     FROM classes c
     JOIN programs p ON p.id = c.program_id
@@ -25,7 +30,7 @@ export async function getClassesByTeacher(teacherId: number): Promise<ClassRow[]
     LEFT JOIN enrollments e ON e.class_id = c.id AND e.academic_year_id = ta.academic_year_id
     LEFT JOIN students s ON s.id = e.student_id AND s.deleted_at IS NULL
     WHERE ta.teacher_id = ${teacherId} AND c.is_active = TRUE
-    GROUP BY c.id, p.name, u.full_name
+    GROUP BY c.id, p.name, u.full_name, ta.teacher_id
     ORDER BY c.name
   `
   return rows as ClassRow[]
@@ -42,7 +47,8 @@ export async function searchClasses(params: {
 
   const dataRows = await sql`
     SELECT 
-      c.*, 
+      c.id, c.program_id, c.name, c.level, c.is_active, c.created_at, c.updated_at,
+      ta.teacher_id AS current_teacher_id, ta.teacher_id AS teacher_id,
       p.name AS program_name, 
       u.full_name AS teacher_name,
       COUNT(DISTINCT s.id)::int AS student_count
@@ -54,7 +60,7 @@ export async function searchClasses(params: {
     LEFT JOIN students s ON s.id = e.student_id AND s.deleted_at IS NULL
     WHERE (${searchPattern}::text IS NULL OR c.name ILIKE ${searchPattern} OR u.full_name ILIKE ${searchPattern})
       AND (${isActiveFilter}::boolean IS NULL OR c.is_active = ${isActiveFilter})
-    GROUP BY c.id, p.name, u.full_name
+    GROUP BY c.id, p.name, u.full_name, ta.teacher_id
     ORDER BY c.created_at DESC, c.id DESC
     LIMIT ${limit} OFFSET ${offset}
   `
@@ -76,7 +82,10 @@ export async function searchClasses(params: {
 
 export async function getClassesByParent(parentId: number): Promise<ClassRow[]> {
   const rows = await sql`
-    SELECT DISTINCT c.*, p.name AS program_name, u.full_name AS teacher_name,
+    SELECT DISTINCT
+      c.id, c.program_id, c.name, c.level, c.is_active, c.created_at, c.updated_at,
+      ta.teacher_id AS current_teacher_id, ta.teacher_id AS teacher_id,
+      p.name AS program_name, u.full_name AS teacher_name,
       0 AS student_count
     FROM classes c
     JOIN programs p ON p.id = c.program_id
@@ -93,7 +102,10 @@ export async function getClassesByParent(parentId: number): Promise<ClassRow[]> 
 
 export async function getClassById(id: number): Promise<ClassRow | null> {
   const rows = await sql`
-    SELECT c.*, p.name AS program_name, u.full_name AS teacher_name
+    SELECT
+      c.id, c.program_id, c.name, c.level, c.is_active, c.created_at, c.updated_at,
+      ta.teacher_id AS current_teacher_id, ta.teacher_id AS teacher_id,
+      p.name AS program_name, u.full_name AS teacher_name
     FROM classes c
     JOIN programs p ON p.id = c.program_id
     LEFT JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
@@ -106,7 +118,10 @@ export async function getClassById(id: number): Promise<ClassRow | null> {
 
 export async function getAllClasses(): Promise<ClassRow[]> {
   const rows = await sql`
-    SELECT c.*, p.name AS program_name, u.full_name AS teacher_name,
+    SELECT
+      c.id, c.program_id, c.name, c.level, c.is_active, c.created_at, c.updated_at,
+      ta.teacher_id AS current_teacher_id, ta.teacher_id AS teacher_id,
+      p.name AS program_name, u.full_name AS teacher_name,
       COUNT(s.id)::int AS student_count
     FROM classes c
     JOIN programs p ON p.id = c.program_id
@@ -115,7 +130,7 @@ export async function getAllClasses(): Promise<ClassRow[]> {
     LEFT JOIN enrollments e ON e.class_id = c.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
     LEFT JOIN students s ON s.id = e.student_id AND s.deleted_at IS NULL
     WHERE c.is_active = TRUE
-    GROUP BY c.id, p.name, u.full_name
+    GROUP BY c.id, p.name, u.full_name, ta.teacher_id
     ORDER BY c.name
   `
   return rows as ClassRow[]

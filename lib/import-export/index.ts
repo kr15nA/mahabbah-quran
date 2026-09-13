@@ -49,6 +49,8 @@ export async function exportDataset(type: DatasetType): Promise<Buffer> {
   let data: any[] = []
 
   if (type === 'santri') {
+    const activeYearIdQuery = db.select({ id: academicYears.id }).from(academicYears).where(eq(academicYears.isActive, true)).limit(1)
+    
     const records = await db.select({
       id: students.id,
       full_name: students.fullName,
@@ -56,9 +58,18 @@ export async function exportDataset(type: DatasetType): Promise<Buffer> {
       gender: students.gender,
       date_of_birth: students.dateOfBirth,
       enrollment_date: students.enrollmentDate,
-      class_id: students.classId,
+      class_id: enrollments.classId,
       status: students.status,
-    }).from(students).where(isNull(students.deletedAt))
+    })
+    .from(students)
+    .leftJoin(
+      enrollments,
+      and(
+        eq(enrollments.studentId, students.id),
+        eq(enrollments.academicYearId, activeYearIdQuery)
+      )
+    )
+    .where(isNull(students.deletedAt))
 
     data = records
   } else if (type === 'guru') {

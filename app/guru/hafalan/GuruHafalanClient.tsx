@@ -34,7 +34,7 @@ export default function GuruHafalanClient({
     score: 80,
   })
 
-  const classStudents = initialStudents.filter(s => s.class_id === selectedClassId && s.status === 'active')
+  const classStudents = initialStudents.filter(s => s.current_class_id === selectedClassId && s.status === 'active')
 
   useEffect(() => {
     // When class changes, reset selected student

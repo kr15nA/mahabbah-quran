@@ -39,7 +39,7 @@ export default function GuruAbsensiClient({
           const { data } = await res.json()
           
           // Determine students for the selected class
-          const classStudents = initialStudents.filter(s => s.class_id === selectedClassId && s.status === 'active')
+          const classStudents = initialStudents.filter(s => s.current_class_id === selectedClassId && s.status === 'active')
           
           // Merge fetched attendance with class students
           const merged: AttendanceState[] = classStudents.map(student => {

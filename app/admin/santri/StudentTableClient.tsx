@@ -84,7 +84,7 @@ export default function StudentTableClient({ data, total, page, limit }: Props) 
     setSelectedStudent(student)
     setFullName(student.full_name)
     setNickname(student.nickname || '')
-    setClassId(String(student.class_id))
+    setClassId(String(student.current_class_id))
     setGender(student.gender || 'male')
     setShowEditModal(true)
   }

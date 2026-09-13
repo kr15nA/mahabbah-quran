@@ -44,7 +44,7 @@ export default function GuruLaporanClient({
   const [aiParentAdvice, setAiParentAdvice] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
 
-  const classStudents = initialStudents.filter(s => s.class_id === selectedClassId && s.status === 'active')
+  const classStudents = initialStudents.filter(s => s.current_class_id === selectedClassId && s.status === 'active')
 
   useEffect(() => {
     setSelectedStudentId(0)

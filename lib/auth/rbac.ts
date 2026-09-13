@@ -1,6 +1,6 @@
 import { getSession, SessionPayload } from '@/lib/auth/session'
 import { db } from '@/lib/db/client'
-import { classes, studentParents, students, learningReports } from '@/drizzle/schema'
+import { classes, studentParents, students, learningReports, enrollments, teacherAssignments, academicYears } from '@/drizzle/schema'
 import { eq, and } from 'drizzle-orm'
 
 export class AuthError extends Error {
@@ -34,10 +34,17 @@ export async function requireStudentAccess(studentId: number): Promise<{ session
   if (role === 'GURU') {
     const isAssigned = await db.select({ id: students.id })
       .from(students)
-      .innerJoin(classes, eq(classes.id, students.classId))
-      .where(and(eq(students.id, studentId), eq(classes.teacherId, session.userId)))
+      .innerJoin(enrollments, eq(enrollments.studentId, students.id))
+      .innerJoin(academicYears, and(eq(academicYears.id, enrollments.academicYearId), eq(academicYears.isActive, true)))
+      .innerJoin(classes, eq(classes.id, enrollments.classId))
+      .innerJoin(teacherAssignments, and(
+        eq(teacherAssignments.classId, classes.id),
+        eq(teacherAssignments.academicYearId, academicYears.id),
+        eq(teacherAssignments.teacherId, session.userId)
+      ))
+      .where(eq(students.id, studentId))
       .limit(1)
-    if (!isAssigned.length) throw new AuthError(403, 'Forbidden: Student not assigned to teacher')
+    if (!isAssigned.length) throw new AuthError(403, 'Forbidden: Student not assigned to teacher in active academic year')
   } else if (role === 'ORANG_TUA') {
     const isLinked = await db.select({ id: studentParents.id })
       .from(studentParents)
@@ -58,17 +65,25 @@ export async function requireClassStudentAccess(classId: number, studentId: numb
   if (role === 'GURU') {
     const isAssigned = await db.select({ id: students.id })
       .from(students)
-      .innerJoin(classes, eq(classes.id, students.classId))
-      .where(and(eq(students.id, studentId), eq(students.classId, classId), eq(classes.teacherId, session.userId)))
+      .innerJoin(enrollments, and(eq(enrollments.studentId, students.id), eq(enrollments.classId, classId)))
+      .innerJoin(academicYears, and(eq(academicYears.id, enrollments.academicYearId), eq(academicYears.isActive, true)))
+      .innerJoin(teacherAssignments, and(
+        eq(teacherAssignments.classId, classId),
+        eq(teacherAssignments.academicYearId, academicYears.id),
+        eq(teacherAssignments.teacherId, session.userId)
+      ))
+      .where(eq(students.id, studentId))
       .limit(1)
-    if (!isAssigned.length) throw new AuthError(403, 'Forbidden: Student/Class not assigned to teacher')
+    if (!isAssigned.length) throw new AuthError(403, 'Forbidden: Student/Class not assigned to teacher in active academic year')
   } else if (role === 'ORANG_TUA') {
     const isLinked = await db.select({ id: students.id })
       .from(students)
+      .innerJoin(enrollments, and(eq(enrollments.studentId, students.id), eq(enrollments.classId, classId)))
+      .innerJoin(academicYears, and(eq(academicYears.id, enrollments.academicYearId), eq(academicYears.isActive, true)))
       .innerJoin(studentParents, eq(studentParents.studentId, students.id))
-      .where(and(eq(students.id, studentId), eq(students.classId, classId), eq(studentParents.parentId, session.userId)))
+      .where(and(eq(students.id, studentId), eq(studentParents.parentId, session.userId)))
       .limit(1)
-    if (!isLinked.length) throw new AuthError(403, 'Forbidden: Student/Class not linked to parent')
+    if (!isLinked.length) throw new AuthError(403, 'Forbidden: Student/Class not linked to parent in active academic year')
   }
 
   return auth
@@ -83,17 +98,24 @@ export async function requireClassAccess(classId: number): Promise<{ session: Se
   if (role === 'GURU') {
     const isAssigned = await db.select({ id: classes.id })
       .from(classes)
-      .where(and(eq(classes.id, classId), eq(classes.teacherId, session.userId)))
+      .innerJoin(teacherAssignments, and(
+        eq(teacherAssignments.classId, classes.id),
+        eq(teacherAssignments.teacherId, session.userId)
+      ))
+      .innerJoin(academicYears, and(eq(academicYears.id, teacherAssignments.academicYearId), eq(academicYears.isActive, true)))
+      .where(eq(classes.id, classId))
       .limit(1)
-    if (!isAssigned.length) throw new AuthError(403, 'Forbidden: Class not assigned to teacher')
+    if (!isAssigned.length) throw new AuthError(403, 'Forbidden: Class not assigned to teacher in active academic year')
   } else if (role === 'ORANG_TUA') {
-    // Parent can only view class if they have a linked child in it
+    // Parent can only view class if they have a linked child currently enrolled in it
     const isLinked = await db.select({ id: students.id })
       .from(students)
+      .innerJoin(enrollments, and(eq(enrollments.studentId, students.id), eq(enrollments.classId, classId)))
+      .innerJoin(academicYears, and(eq(academicYears.id, enrollments.academicYearId), eq(academicYears.isActive, true)))
       .innerJoin(studentParents, eq(studentParents.studentId, students.id))
-      .where(and(eq(students.classId, classId), eq(studentParents.parentId, session.userId)))
+      .where(eq(studentParents.parentId, session.userId))
       .limit(1)
-    if (!isLinked.length) throw new AuthError(403, 'Forbidden: No linked child in this class')
+    if (!isLinked.length) throw new AuthError(403, 'Forbidden: No linked child in this class in active academic year')
   }
 
   return auth

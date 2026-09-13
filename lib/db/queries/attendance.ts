@@ -34,7 +34,7 @@ export type SearchAttendanceRow = {
 
 export async function getAttendanceByClassDate(classId: number, date: string): Promise<AttendanceRow[]> {
   const rows = await sql`
-    SELECT a.*, s.full_name AS student_name
+    SELECT a.id, a.student_id, a.class_id, a.teacher_id, a.attendance_date, a.status, a.notes, s.full_name AS student_name
     FROM enrollments e
     JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.is_active = TRUE
     JOIN students s ON s.id = e.student_id
@@ -62,7 +62,7 @@ export async function getAttendanceSummaryByStudent(studentId: number, month?: s
 
 export async function getAttendanceByStudentMonth(studentId: number, month?: string): Promise<AttendanceRow[]> {
   const rows = await sql`
-    SELECT a.*
+    SELECT a.id, a.student_id, a.class_id, a.teacher_id, a.attendance_date, a.status, a.notes
     FROM attendance a
     WHERE a.student_id = ${studentId}
       AND (${month ?? null}::text IS NULL OR TO_CHAR(a.attendance_date, 'YYYY-MM') = ${month})

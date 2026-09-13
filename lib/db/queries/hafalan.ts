@@ -96,7 +96,8 @@ export async function searchHafalan(params: {
     JOIN surahs s ON s.id = hr.surah_id
     JOIN users u ON u.id = hr.teacher_id
     JOIN students st ON st.id = hr.student_id
-    JOIN classes c ON c.id = st.class_id
+    JOIN enrollments e ON e.student_id = st.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
+    JOIN classes c ON c.id = e.class_id
     WHERE st.deleted_at IS NULL
       AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
     ORDER BY hr.session_date DESC, hr.id DESC
