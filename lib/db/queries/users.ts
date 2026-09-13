@@ -140,11 +140,13 @@ export async function searchGurus(params: {
       u.last_login_at, 
       u.created_at, 
       u.updated_at,
-      COUNT(DISTINCT c.id)::int AS class_count,
+      COUNT(DISTINCT ta.class_id)::int AS class_count,
       COUNT(DISTINCT s.id)::int AS student_count
     FROM users u
-    LEFT JOIN classes c ON c.teacher_id = u.id AND c.is_active = TRUE
-    LEFT JOIN students s ON s.class_id = c.id AND s.deleted_at IS NULL
+    LEFT JOIN academic_years ay ON ay.is_active = TRUE
+    LEFT JOIN teacher_assignments ta ON ta.teacher_id = u.id AND ta.academic_year_id = ay.id
+    LEFT JOIN enrollments e ON e.class_id = ta.class_id AND e.academic_year_id = ay.id
+    LEFT JOIN students s ON s.id = e.student_id AND s.deleted_at IS NULL
     WHERE u.role = 'guru' 
       AND u.deleted_at IS NULL
       AND (${searchPattern}::text IS NULL OR u.full_name ILIKE ${searchPattern} OR COALESCE(u.email, '') ILIKE ${searchPattern})
@@ -182,11 +184,13 @@ export async function getAllTeachers(): Promise<SafeGuruRow[]> {
       u.last_login_at, 
       u.created_at, 
       u.updated_at,
-      COUNT(DISTINCT c.id)::int AS class_count,
+      COUNT(DISTINCT ta.class_id)::int AS class_count,
       COUNT(DISTINCT s.id)::int AS student_count
     FROM users u
-    LEFT JOIN classes c ON c.teacher_id = u.id AND c.is_active = TRUE
-    LEFT JOIN students s ON s.class_id = c.id AND s.deleted_at IS NULL
+    LEFT JOIN academic_years ay ON ay.is_active = TRUE
+    LEFT JOIN teacher_assignments ta ON ta.teacher_id = u.id AND ta.academic_year_id = ay.id
+    LEFT JOIN enrollments e ON e.class_id = ta.class_id AND e.academic_year_id = ay.id
+    LEFT JOIN students s ON s.id = e.student_id AND s.deleted_at IS NULL
     WHERE u.role = 'guru' AND u.deleted_at IS NULL AND u.is_active = TRUE
     GROUP BY u.id
     ORDER BY u.full_name

@@ -39,14 +39,13 @@ export async function getLearningReportsByTeacherDate(teacherId: number, date?: 
       lr.*,
       s.full_name AS student_name,
       s.photo_url AS student_photo,
-      c.name AS class_name,
+      NULL AS class_name,
       sr.name_latin AS surah_name_latin,
       hr.ayah_start,
       hr.ayah_end,
       hr.type AS hafalan_type
     FROM learning_reports lr
     JOIN students s ON s.id = lr.student_id
-    JOIN classes c ON c.id = s.class_id
     LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
     WHERE lr.teacher_id = ${teacherId} AND lr.report_date = ${targetDate}
@@ -61,7 +60,7 @@ export async function getLearningReportsByStudent(studentId: number, limit = 20)
       lr.*,
       s.full_name AS student_name,
       u.full_name AS teacher_name,
-      c.name AS class_name,
+      NULL AS class_name,
       sr.name_latin AS surah_name_latin,
       hr.ayah_start,
       hr.ayah_end,
@@ -69,7 +68,6 @@ export async function getLearningReportsByStudent(studentId: number, limit = 20)
     FROM learning_reports lr
     JOIN students s ON s.id = lr.student_id
     JOIN users u ON u.id = lr.teacher_id
-    JOIN classes c ON c.id = s.class_id
     LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
     WHERE lr.student_id = ${studentId}
@@ -86,7 +84,7 @@ export async function getLearningReportById(id: number): Promise<LearningReportR
       s.full_name AS student_name,
       s.photo_url AS student_photo,
       u.full_name AS teacher_name,
-      c.name AS class_name,
+      NULL AS class_name,
       sr.name_latin AS surah_name_latin,
       hr.ayah_start,
       hr.ayah_end,
@@ -98,7 +96,6 @@ export async function getLearningReportById(id: number): Promise<LearningReportR
     FROM learning_reports lr
     JOIN students s ON s.id = lr.student_id
     JOIN users u ON u.id = lr.teacher_id
-    JOIN classes c ON c.id = s.class_id
     LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
     LEFT JOIN tahsin_records tr ON tr.id = lr.tahsin_record_id
@@ -182,14 +179,13 @@ export async function getAllReportsAdmin(): Promise<LearningReportRow[]> {
       lr.*,
       s.full_name AS student_name,
       u.full_name AS teacher_name,
-      c.name AS class_name,
+      NULL AS class_name,
       sr.name_latin AS surah_name_latin,
       hr.ayah_start,
       hr.ayah_end
     FROM learning_reports lr
     JOIN students s ON s.id = lr.student_id
     JOIN users u ON u.id = lr.teacher_id
-    JOIN classes c ON c.id = s.class_id
     LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
     ORDER BY lr.report_date DESC, lr.id DESC
@@ -219,7 +215,7 @@ export async function searchPenilaianAdmin(params: {
     SELECT 
       lr.id,
       st.full_name AS student_name,
-      c.name AS class_name,
+      NULL AS class_name,
       lr.hafalan_score,
       lr.tahsin_score,
       lr.adab_score,
@@ -229,7 +225,6 @@ export async function searchPenilaianAdmin(params: {
                     CASE WHEN lr.adab_score IS NOT NULL THEN 1 ELSE 0 END), 0))::int AS avg_score
     FROM learning_reports lr
     JOIN students st ON st.id = lr.student_id
-    JOIN classes c ON c.id = st.class_id
     WHERE st.deleted_at IS NULL
       AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
     ORDER BY lr.report_date DESC, lr.id DESC
@@ -275,7 +270,7 @@ export async function searchLaporanAdmin(params: {
       lr.id,
       st.full_name AS student_name,
       u.full_name AS teacher_name,
-      c.name AS class_name,
+      NULL AS class_name,
       lr.report_date,
       sr.name_latin AS surah_name_latin,
       lr.hafalan_score,
@@ -285,7 +280,6 @@ export async function searchLaporanAdmin(params: {
     FROM learning_reports lr
     JOIN students st ON st.id = lr.student_id
     JOIN users u ON u.id = lr.teacher_id
-    JOIN classes c ON c.id = st.class_id
     LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
     WHERE st.deleted_at IS NULL

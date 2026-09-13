@@ -35,9 +35,11 @@ export type SearchAttendanceRow = {
 export async function getAttendanceByClassDate(classId: number, date: string): Promise<AttendanceRow[]> {
   const rows = await sql`
     SELECT a.*, s.full_name AS student_name
-    FROM students s
+    FROM enrollments e
+    JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.is_active = TRUE
+    JOIN students s ON s.id = e.student_id
     LEFT JOIN attendance a ON a.student_id = s.id AND a.attendance_date = ${date}
-    WHERE s.class_id = ${classId} AND s.deleted_at IS NULL
+    WHERE e.class_id = ${classId} AND s.deleted_at IS NULL
     ORDER BY s.full_name
   `
   return rows as AttendanceRow[]
@@ -125,11 +127,14 @@ export async function searchAttendance(params: {
       c.name AS class_name,
       u.full_name AS teacher_name
     FROM students s
-    JOIN classes c ON c.id = s.class_id
-    JOIN users u ON u.id = c.teacher_id
+    JOIN enrollments e ON e.student_id = s.id
+    JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.is_active = TRUE
+    JOIN classes c ON c.id = e.class_id
+    JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.academic_year_id = ay.id
+    JOIN users u ON u.id = ta.teacher_id
     LEFT JOIN attendance a ON a.student_id = s.id AND a.attendance_date = ${params.date}
     WHERE s.deleted_at IS NULL
-      AND (${params.classId ?? null}::bigint IS NULL OR s.class_id = ${params.classId})
+      AND (${params.classId ?? null}::bigint IS NULL OR e.class_id = ${params.classId})
       AND (${searchPattern}::text IS NULL OR s.full_name ILIKE ${searchPattern})
       AND (${params.status ?? null}::text IS NULL OR a.status = ${params.status})
     ORDER BY c.name ASC, s.full_name ASC
@@ -139,9 +144,11 @@ export async function searchAttendance(params: {
   const countRows = await sql`
     SELECT COUNT(*)::int as total
     FROM students s
+    JOIN enrollments e ON e.student_id = s.id
+    JOIN academic_years ay ON ay.id = e.academic_year_id AND ay.is_active = TRUE
     LEFT JOIN attendance a ON a.student_id = s.id AND a.attendance_date = ${params.date}
     WHERE s.deleted_at IS NULL
-      AND (${params.classId ?? null}::bigint IS NULL OR s.class_id = ${params.classId})
+      AND (${params.classId ?? null}::bigint IS NULL OR e.class_id = ${params.classId})
       AND (${searchPattern}::text IS NULL OR s.full_name ILIKE ${searchPattern})
       AND (${params.status ?? null}::text IS NULL OR a.status = ${params.status})
   `
