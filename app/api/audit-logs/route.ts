@@ -24,10 +24,12 @@ export async function GET(req: NextRequest) {
       filters.entityId = parseInt(searchParams.get('entityId')!, 10)
     }
     if (searchParams.has('limit')) {
-      filters.limit = parseInt(searchParams.get('limit')!, 10)
+      const parsedLimit = parseInt(searchParams.get('limit')!, 10)
+      filters.limit = !isNaN(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 100) : 50
     }
     if (searchParams.has('offset')) {
-      filters.offset = parseInt(searchParams.get('offset')!, 10)
+      const parsedOffset = parseInt(searchParams.get('offset')!, 10)
+      filters.offset = !isNaN(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0
     }
 
     const logs = await getAuditLogs(filters)

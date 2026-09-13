@@ -13,33 +13,42 @@ import type { AuditAction, AuditEntityType } from './types'
 
 /**
  * Fields that must never appear in audit log payloads.
- * Extend this list when new sensitive fields are added to the schema.
+ * Matched using normalized keys (lowercase, underscores removed).
  */
-const SENSITIVE_FIELDS = new Set([
-  'password_hash',
-  'passwordHash',
+const SENSITIVE_KEYS_NORMALIZED = new Set([
   'password',
-  'fcm_token',
-  'fcmToken',
+  'passwordhash',
+  'temporarypassword',
+  'accesstoken',
+  'refreshtoken',
+  'fcmtoken',
   'session',
   'jwt',
   'token',
   'secret',
-  'api_key',
-  'apiKey',
+  'apikey',
 ])
 
 /**
- * Recursively strips sensitive fields from a plain object.
- * Returns a new object — does not mutate input.
+ * Recursively strips sensitive fields from an object or array.
+ * Returns a new object/array — does not mutate input.
  */
-function stripSensitive(data: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(data)) {
-    if (SENSITIVE_FIELDS.has(key)) continue
-    result[key] = value
+function stripSensitive(data: unknown): unknown {
+  if (Array.isArray(data)) {
+    return data.map(item => stripSensitive(item))
   }
-  return result
+  
+  if (data !== null && typeof data === 'object') {
+    const result: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      const normalizedKey = key.toLowerCase().replace(/_/g, '')
+      if (SENSITIVE_KEYS_NORMALIZED.has(normalizedKey)) continue
+      result[key] = stripSensitive(value)
+    }
+    return result
+  }
+  
+  return data
 }
 
 export type CreateAuditLogInput = {
@@ -88,9 +97,9 @@ export async function createAuditLog(input: CreateAuditLogInput): Promise<AuditL
     action:       input.action,
     entityType:   input.entityType,
     entityId:     input.entityId ?? null,
-    oldValues:    input.oldValues ? stripSensitive(input.oldValues) : null,
-    newValues:    input.newValues ? stripSensitive(input.newValues) : null,
-    metadata:     input.metadata  ? stripSensitive(input.metadata)  : null,
+    oldValues:    input.oldValues ? (stripSensitive(input.oldValues) as Record<string, unknown>) : null,
+    newValues:    input.newValues ? (stripSensitive(input.newValues) as Record<string, unknown>) : null,
+    metadata:     input.metadata  ? (stripSensitive(input.metadata) as Record<string, unknown>)  : null,
   }).returning()
 
   return row as AuditLogRow

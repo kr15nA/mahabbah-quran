@@ -16,10 +16,20 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 })
     }
 
-    const activated = await activateAcademicYear(id)
+    const result = await activateAcademicYear(id)
 
-    if (!activated) {
+    if (!result) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+
+    if (result.deactivatedYearId) {
+      await createAuditLog({
+        actorUserId: session.userId,
+        action: AuditAction.DEACTIVATE,
+        entityType: AuditEntityType.ACADEMIC_YEAR,
+        entityId: result.deactivatedYearId,
+        newValues: { isActive: false },
+      })
     }
 
     await createAuditLog({
@@ -30,7 +40,7 @@ export async function PATCH(
       newValues: { isActive: true },
     })
 
-    return NextResponse.json(activated)
+    return NextResponse.json(result.activated)
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })

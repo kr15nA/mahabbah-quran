@@ -24,6 +24,14 @@ async function post(url: string, body: object, cookie: string) {
   })
 }
 
+async function patch(url: string, body: object, cookie: string) {
+  return fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', cookie },
+    body: JSON.stringify(body),
+  })
+}
+
 async function get(url: string, cookie: string) {
   return fetch(url, { headers: { cookie } })
 }
@@ -36,11 +44,12 @@ async function runTests() {
   
   let testYearId: number | undefined
   let testGuruId: number | undefined
+  let activeYearId: number | undefined
 
   try {
     const [activeYear] = await db.select().from(academicYears).where(eq(academicYears.isActive, true)).limit(1)
     if (!activeYear) throw new Error('No active academic year — seed DB first')
-    const activeYearId = activeYear.id
+    activeYearId = activeYear.id
 
     // ─── 1 & 2 & 13. UNAUTHENTICATED / UNAUTHORIZED / FAILURES ──────────
     console.log('--- FAILURE MUTATIONS ---')
@@ -57,34 +66,58 @@ async function runTests() {
     assert.strictEqual(auditCountAfter.length, auditCountBefore.length, 'No audit logs created on unauthenticated, unauthorized, or failed mutations')
     console.log('✅ Failed mutations do not create audit records')
 
-    // ─── 3 & 4. AUTHORIZED MUTATION / ACTOR IDENTITY ─────────────────────
+    // ─── 3 & 4. AUTHORIZED MUTATION / ACTOR IDENTITY / SPOOFING ──────────
     console.log('\n--- SUCCESSFUL MUTATION & ACTOR IDENTITY ---')
-    const createYearRes = await post(`${HOST}/api/academic-years`, { name: 'Audit Test Year', startDate: '2029-01-01', endDate: '2029-12-31' }, adminCookie)
+    // Malicious request trying to spoof actorUserId = 999
+    const createYearRes = await post(`${HOST}/api/academic-years`, { name: 'Audit Test Year', startDate: '2029-01-01', endDate: '2029-12-31', actorUserId: 999 }, adminCookie)
     assert.strictEqual(createYearRes.status, 201)
     const newYear = await createYearRes.json()
     testYearId = newYear.id
 
     const [createAudit] = await db.select().from(auditLogs).where(eq(auditLogs.entityId, testYearId!)).orderBy(desc(auditLogs.createdAt)).limit(1)
     assert.ok(createAudit, 'Audit row created')
-    assert.strictEqual(createAudit.actorUserId, 4, 'Actor user ID is correct')
+    // Verify actor is the authenticated server session user (4), not the spoofed client input (999)
+    assert.strictEqual(createAudit.actorUserId, 4, 'Actor user ID is securely sourced from server session, spoofing rejected')
     assert.strictEqual(createAudit.action, 'CREATE')
     assert.strictEqual(createAudit.entityType, 'ACADEMIC_YEAR')
-    console.log('✅ Authorized mutation creates correct audit record')
+    console.log('✅ Authorized mutation creates correct audit record and rejects client spoofing')
 
-    // ─── 6. SENSITIVE FIELDS ─────────────────────────────────────────────
+    // ─── 5. APPEND-ONLY GUARANTEE ─────────────────────────────────────────
+    // Note: Append-only behavior is guaranteed at the application/API layer.
+    // There are no PATCH/DELETE endpoints for audit-logs, nor any application logic to update them.
+    // DB-level triggers are NOT used in this implementation.
+
+    // ─── 6. SENSITIVE FIELDS (RECURSIVE REDACTION) ────────────────────────
     console.log('\n--- SENSITIVE FIELDS ---')
     const stripped = _stripSensitiveForTesting({
       name: 'Safe',
       password: 'mypassword',
       password_hash: 'hashed',
       passwordHash: 'hashed2',
-      fcm_token: 'token',
+      temporaryPassword: 'temp',
+      accessToken: 'token1',
+      refreshToken: 'token2',
+      fcm_token: 'token3',
       apiKey: 'secret',
-    })
+      nested: {
+        fcm_token: 'nestedToken',
+        safeNested: 'ok'
+      },
+      arrayTest: [
+        { secret: 'arraySecret' },
+        { ok: 'fine' }
+      ]
+    }) as any
     assert.ok(stripped.name === 'Safe')
     assert.ok(!('password' in stripped))
     assert.ok(!('password_hash' in stripped))
     assert.ok(!('fcm_token' in stripped))
+    assert.ok(!('temporaryPassword' in stripped))
+    assert.ok(!('accessToken' in stripped))
+    assert.ok(!('nested' in stripped && 'fcm_token' in stripped.nested))
+    assert.ok(stripped.nested.safeNested === 'ok')
+    assert.ok(!('secret' in stripped.arrayTest[0]))
+    assert.ok(stripped.arrayTest[1].ok === 'fine')
     
     // Create Guru to test sensitive strip
     const createGuruRes = await post(`${HOST}/api/guru`, {
@@ -172,10 +205,31 @@ async function runTests() {
     
     console.log('✅ Audit reads are filtered and paginated correctly')
 
+    // ─── 12. ACADEMIC YEAR ACTIVATION (DUAL AUDIT) ──────────────────────
+    console.log('\n--- ACADEMIC YEAR ACTIVATION ---')
+    // Activate the testYearId, which should deactivate activeYearId
+    const activateRes = await patch(`${HOST}/api/academic-years/${testYearId}/activate`, {}, adminCookie)
+    assert.strictEqual(activateRes.status, 200)
+
+    const [deactivateAudit] = await db.select().from(auditLogs).where(and(eq(auditLogs.entityId, activeYearId!), eq(auditLogs.action, 'DEACTIVATE'))).orderBy(desc(auditLogs.createdAt)).limit(1)
+    const [activateAudit] = await db.select().from(auditLogs).where(and(eq(auditLogs.entityId, testYearId!), eq(auditLogs.action, 'ACTIVATE'))).orderBy(desc(auditLogs.createdAt)).limit(1)
+    
+    assert.ok(deactivateAudit, 'DEACTIVATE audit log created for the previously active year')
+    assert.ok(activateAudit, 'ACTIVATE audit log created for the newly active year')
+    assert.strictEqual(deactivateAudit.actorUserId, 4)
+    assert.strictEqual(activateAudit.actorUserId, 4)
+    assert.strictEqual((deactivateAudit.newValues as any).isActive, false)
+    assert.strictEqual((activateAudit.newValues as any).isActive, true)
+    console.log('✅ Academic year activation correctly generates both ACTIVATE and DEACTIVATE audit logs')
+
     console.log('\n🎉 ALL AUDIT LOG TESTS PASSED.')
 
   } finally {
     console.log('\nCleaning up test data...')
+    if (activeYearId) {
+      // restore original active year
+      await patch(`${HOST}/api/academic-years/${activeYearId}/activate`, {}, adminCookie)
+    }
     if (testYearId) {
       await db.delete(teacherAssignments).where(eq(teacherAssignments.academicYearId, testYearId))
       await db.delete(auditLogs).where(eq(auditLogs.entityId, testYearId))

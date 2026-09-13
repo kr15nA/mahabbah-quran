@@ -59,14 +59,14 @@ export async function updateAcademicYear(
 /**
  * Activate a specific academic year (and safely deactivate all others).
  */
-export async function activateAcademicYear(id: number): Promise<AcademicYear | null> {
+export async function activateAcademicYear(id: number): Promise<{ activated: AcademicYear, deactivatedYearId: number | null } | null> {
   // Check if it exists
   const [target] = await db.select().from(academicYears).where(eq(academicYears.id, id)).limit(1)
   if (!target) return null
 
   // Neon HTTP does not support transactions. Execute sequentially.
-  // Deactivate all
-  await db.update(academicYears).set({ isActive: false }).where(eq(academicYears.isActive, true))
+  const deactivated = await db.update(academicYears).set({ isActive: false }).where(eq(academicYears.isActive, true)).returning()
+  const deactivatedYearId = deactivated.length > 0 ? deactivated[0].id : null
 
   // Activate the target
   const [activated] = await db
@@ -75,5 +75,5 @@ export async function activateAcademicYear(id: number): Promise<AcademicYear | n
     .where(eq(academicYears.id, id))
     .returning()
 
-  return activated || null
+  return { activated: activated || target, deactivatedYearId }
 }
