@@ -97,7 +97,7 @@ export default function PenilaianClient({
                 </tr>
               ) : (
                 data.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
+                  <tr key={r.id} className="hover:bg-gray-50 transition-colors even:bg-gray-50/50 odd:bg-white">
                     <td className="p-3.5 px-4 font-bold text-gray-900">{r.student_name}</td>
                     <td className="p-3.5 text-gray-600">{r.class_name}</td>
                     <td className="p-3.5 font-semibold text-[#4B21A2]">{r.hafalan_score ?? '-'}/100</td>

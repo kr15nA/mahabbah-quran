@@ -266,7 +266,7 @@ export default function StudentTableClient({ data, total, page, limit }: Props) 
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-xs text-gray-800">
                   {data.map((s, idx) => (
-                    <tr key={s.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
+                    <tr key={s.id} className="hover:bg-gray-50 transition-colors even:bg-gray-50/50 odd:bg-white">
                       <td className="p-3.5 px-4">
                         <div className="flex items-center gap-3">
                           {renderStudentAvatar(s.full_name)}
@@ -296,31 +296,24 @@ export default function StudentTableClient({ data, total, page, limit }: Props) 
             {/* Mobile Data List (hidden on md and up) */}
             <div className="md:hidden divide-y divide-gray-100">
               {data.map((s) => (
-                <div key={s.id} className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {renderStudentAvatar(s.full_name)}
-                      <div>
-                        <div className="font-semibold text-gray-900 text-sm">{s.full_name}</div>
-                        <div className="text-[10px] text-gray-400">ID: {String(s.id).padStart(4, '0')}</div>
+                <div key={s.id} className="p-3">
+                  <div className="flex items-start gap-3">
+                    {renderStudentAvatar(s.full_name)}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="font-bold text-gray-900 text-sm truncate">{s.full_name}</div>
+                        {renderStatus(s.status)}
+                      </div>
+                      <div className="text-[11px] text-gray-500 mt-0.5 truncate">
+                        ID: {String(s.id).padStart(4, '0')} • {s.class_name || '-'}
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                         <div className="text-[11px] font-bold text-emerald-600">
+                           Hadir: {s.attendance_pct ?? 0}%
+                         </div>
+                         <div className="flex gap-1.5">{renderActions(s)}</div>
                       </div>
                     </div>
-                    {renderStatus(s.status)}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-gray-400 block text-[10px]">Kelas</span>
-                      <span className="font-medium text-gray-700">{s.class_name || '-'}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-400 block text-[10px]">Kehadiran</span>
-                      <span className="font-bold text-emerald-600">{s.attendance_pct ?? 0}%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2 flex justify-end">
-                    {renderActions(s)}
                   </div>
                 </div>
               ))}

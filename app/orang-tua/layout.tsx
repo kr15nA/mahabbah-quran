@@ -23,7 +23,10 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
   }
 
   const topbarLeft = (
-    <div className="text-sm font-bold text-[#18085A] truncate tracking-wider">PORTAL ORANG TUA</div>
+    <div className="flex items-center gap-2">
+      <img src="/icon.png" alt="Mahabbah Qur'an" className="w-7 h-7 object-contain" />
+      <div className="text-sm font-bold text-[#18085A] truncate tracking-wider">PORTAL ORANG TUA</div>
+    </div>
   )
 
   const topbarRight = (

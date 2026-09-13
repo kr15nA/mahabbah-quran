@@ -8,9 +8,10 @@ type Props = {
   initials: string
   onLogout: () => void
   colorClass: string
+  profileHref?: string
 }
 
-export default function AccountMenu({ initials, onLogout, colorClass }: Props) {
+export default function AccountMenu({ initials, onLogout, colorClass, profileHref }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -41,14 +42,16 @@ export default function AccountMenu({ initials, onLogout, colorClass }: Props) {
             <p className="text-xs font-bold text-gray-900">Akun Anda</p>
           </div>
           
-          <Link 
-            href="/admin/akun"
-            onClick={() => setIsOpen(false)}
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
-          >
-            <User className="w-4 h-4" />
-            <span>Profil & Akun</span>
-          </Link>
+          {profileHref && (
+            <Link 
+              href={profileHref}
+              onClick={() => setIsOpen(false)}
+              className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
+            >
+              <User className="w-4 h-4" />
+              <span>Profil & Akun</span>
+            </Link>
+          )}
           
           <div className="border-t border-gray-50 mt-1 pt-1">
             <button 

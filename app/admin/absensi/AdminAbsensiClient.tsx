@@ -142,7 +142,7 @@ export default function AdminAbsensiClient({
                 </tr>
               ) : (
                 data.map((a, i) => (
-                  <tr key={a.student_id + '-' + i} className="hover:bg-gray-50">
+                  <tr key={a.student_id + '-' + i} className="hover:bg-gray-50 transition-colors even:bg-gray-50/50 odd:bg-white">
                     <td className="p-3.5 px-4 font-bold text-gray-900 whitespace-nowrap">{a.student_name}</td>
                     <td className="p-3.5 text-gray-600 whitespace-nowrap">{a.class_name}</td>
                     <td className="p-3.5 text-gray-600 whitespace-nowrap">{a.teacher_name}</td>

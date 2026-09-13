@@ -31,7 +31,10 @@ export default function GuruLayout({ children }: { children: React.ReactNode }) 
   }
 
   const topbarLeft = (
-    <div className="text-sm font-bold text-gray-900 truncate">Portal Guru Tahfizh 👋</div>
+    <div className="flex items-center gap-2">
+      <img src="/icon.png" alt="Mahabbah Qur'an" className="w-7 h-7 object-contain" />
+      <div className="text-sm font-bold text-gray-900 truncate">Portal Guru Tahfizh 👋</div>
+    </div>
   )
 
   const topbarRight = (

@@ -182,7 +182,7 @@ export default function AssignmentClient({ academicYears, classes, gurus }: Prop
                     const isAssigned = !!assignment
 
                     return (
-                      <tr key={cls.id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={cls.id} className="hover:bg-gray-50 transition-colors even:bg-gray-50/50 odd:bg-white">
                         <td className="px-4 py-3">
                           <span className="font-semibold text-gray-900">{cls.name}</span>
                         </td>

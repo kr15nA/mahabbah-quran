@@ -163,7 +163,7 @@ export default function UserListClient({ users, total, page, limit, q, roleFilte
             </thead>
             <tbody className="divide-y divide-gray-100">
               {users.map(user => (
-                <tr key={user.id} className="hover:bg-gray-50/50 transition">
+                <tr key={user.id} className="hover:bg-gray-50 transition-colors even:bg-gray-50/50 odd:bg-white">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">

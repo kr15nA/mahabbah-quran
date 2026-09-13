@@ -208,7 +208,7 @@ export default function EnrollmentClient({ academicYears, classes, students }: P
                     const isEnrolled = !!enrollment
 
                     return (
-                      <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={student.id} className="hover:bg-gray-50 transition-colors even:bg-gray-50/50 odd:bg-white">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">

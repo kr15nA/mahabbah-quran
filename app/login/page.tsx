@@ -55,8 +55,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
         {/* Header Branding */}
         <div className="bg-[#18085A] p-8 text-center text-white relative">
-          <div className="w-14 h-14 bg-[#FBBF24] rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-            <BookOpen className="w-8 h-8 text-[#18085A]" />
+          <div className="flex items-center justify-center mx-auto mb-3">
+            <img src="/icon.png" alt="Mahabbah Qur'an Logo" className="w-16 h-16 object-contain drop-shadow-md" />
           </div>
           <h1 className="text-xl font-extrabold tracking-wider">MAHABBAH QUR'AN</h1>
           <p className="text-xs text-[#FBBF24] font-bold tracking-widest mt-0.5">YAYASAN RUMAH TAHFIZH</p>
