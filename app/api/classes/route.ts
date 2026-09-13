@@ -46,6 +46,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: { id } }, { status: 201 })
   } catch (error: any) {
     if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
+    if (error.message === 'Active academic year required for class creation') {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

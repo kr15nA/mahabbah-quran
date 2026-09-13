@@ -44,12 +44,14 @@ export async function getStudentsByTeacher(teacherId: number): Promise<StudentRo
         (COUNT(DISTINCT att.id) FILTER (WHERE att.status = 'hadir')::numeric / NULLIF(COUNT(DISTINCT att.id), 0)) * 100
       ), 100)::int AS attendance_pct
     FROM students s
-    JOIN classes c ON c.id = s.class_id
+    JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
+    JOIN classes c ON c.id = e.class_id
     JOIN programs p ON p.id = c.program_id
-    JOIN users u ON u.id = c.teacher_id
+    JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.academic_year_id = e.academic_year_id
+    JOIN users u ON u.id = ta.teacher_id
     LEFT JOIN hafalan_records hr ON hr.student_id = s.id
     LEFT JOIN attendance att ON att.student_id = s.id
-    WHERE c.teacher_id = ${teacherId}
+    WHERE ta.teacher_id = ${teacherId}
       AND s.deleted_at IS NULL
     GROUP BY s.id, c.name, p.name, u.full_name
     ORDER BY s.full_name
@@ -61,9 +63,10 @@ export async function getStudentsByClass(classId: number): Promise<StudentRow[]>
   const rows = await sql`
     SELECT s.*, c.name AS class_name, p.name AS program_name
     FROM students s
-    JOIN classes c ON c.id = s.class_id
+    JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
+    JOIN classes c ON c.id = e.class_id
     JOIN programs p ON p.id = c.program_id
-    WHERE s.class_id = ${classId} AND s.deleted_at IS NULL
+    WHERE e.class_id = ${classId} AND s.deleted_at IS NULL
     ORDER BY s.full_name
   `
   return rows as StudentRow[]
@@ -73,9 +76,11 @@ export async function getStudentById(id: number): Promise<StudentRow | null> {
   const rows = await sql`
     SELECT s.*, c.name AS class_name, p.name AS program_name, u.full_name AS teacher_name
     FROM students s
-    JOIN classes c ON c.id = s.class_id
-    JOIN programs p ON p.id = c.program_id
-    JOIN users u ON u.id = c.teacher_id
+    LEFT JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
+    LEFT JOIN classes c ON c.id = e.class_id
+    LEFT JOIN programs p ON p.id = c.program_id
+    LEFT JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.academic_year_id = e.academic_year_id
+    LEFT JOIN users u ON u.id = ta.teacher_id
     WHERE s.id = ${id} AND s.deleted_at IS NULL
     LIMIT 1
   `
@@ -106,14 +111,16 @@ export async function searchStudents(query?: string, filters?: {
       ), 90)::int AS attendance_pct,
       COUNT(*) OVER() AS total_count
     FROM students s
-    JOIN classes c ON c.id = s.class_id
-    JOIN programs p ON p.id = c.program_id
-    JOIN users u ON u.id = c.teacher_id
+    LEFT JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
+    LEFT JOIN classes c ON c.id = e.class_id
+    LEFT JOIN programs p ON p.id = c.program_id
+    LEFT JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.academic_year_id = e.academic_year_id
+    LEFT JOIN users u ON u.id = ta.teacher_id
     LEFT JOIN hafalan_records hr ON hr.student_id = s.id
     LEFT JOIN attendance att ON att.student_id = s.id
     WHERE s.deleted_at IS NULL
       AND (${q}::text IS NULL OR s.full_name ILIKE ${q}::text)
-      AND (${filters?.class_id ?? null}::bigint IS NULL OR s.class_id = ${filters?.class_id})
+      AND (${filters?.class_id ?? null}::bigint IS NULL OR e.class_id = ${filters?.class_id})
       AND (${filters?.program_id ?? null}::bigint IS NULL OR p.id = ${filters?.program_id})
       AND (${filters?.status ?? null}::text IS NULL OR s.status = ${filters?.status})
     GROUP BY s.id, c.name, p.name, u.full_name
@@ -135,19 +142,34 @@ export async function insertStudent(data: {
   photo_url?: string
 }): Promise<number> {
   const rows = await sql`
-    INSERT INTO students (class_id, full_name, nickname, gender, date_of_birth, enrollment_date, photo_url)
-    VALUES (${data.class_id}, ${data.full_name}, ${data.nickname ?? null}, ${data.gender ?? null}, ${data.date_of_birth ?? null}, ${data.enrollment_date}, ${data.photo_url ?? null})
-    RETURNING id
+    WITH active_year AS (
+      SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1
+    ),
+    new_student AS (
+      INSERT INTO students (class_id, full_name, nickname, gender, date_of_birth, enrollment_date, photo_url)
+      SELECT ${data.class_id}, ${data.full_name}, ${data.nickname ?? null}, ${data.gender ?? null}, ${data.date_of_birth ?? null}, ${data.enrollment_date}, ${data.photo_url ?? null}
+      FROM active_year
+      RETURNING id
+    ),
+    new_enrollment AS (
+      INSERT INTO enrollments (student_id, academic_year_id, class_id, enrollment_date)
+      SELECT s.id, ay.id, ${data.class_id}, ${data.enrollment_date}
+      FROM new_student s, active_year ay
+      RETURNING id
+    )
+    SELECT id FROM new_student
   `
+  if (rows.length === 0) {
+    throw new Error('Active academic year required for student creation')
+  }
   return (rows[0] as { id: number }).id
 }
 
-export async function updateStudent(id: number, data: Partial<StudentRow>): Promise<void> {
+export type UpdateStudentData = Omit<Partial<StudentRow>, 'class_id'>
+
+export async function updateStudent(id: number, data: UpdateStudentData): Promise<void> {
   if (data.full_name) {
     await sql`UPDATE students SET full_name = ${data.full_name}, updated_at = NOW() WHERE id = ${id}`
-  }
-  if (data.class_id) {
-    await sql`UPDATE students SET class_id = ${data.class_id}, updated_at = NOW() WHERE id = ${id}`
   }
   if (data.status) {
     await sql`UPDATE students SET status = ${data.status}, updated_at = NOW() WHERE id = ${id}`
@@ -196,7 +218,8 @@ export async function getAtRiskStudents(): Promise<AtRiskStudent[]> {
         ELSE 'warning'
       END AS severity
     FROM students s
-    JOIN classes c ON c.id = s.class_id
+    LEFT JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
+    LEFT JOIN classes c ON c.id = e.class_id
     LEFT JOIN att_stats att ON att.student_id = s.id
     LEFT JOIN hafalan_stats hs ON hs.student_id = s.id
     WHERE s.deleted_at IS NULL

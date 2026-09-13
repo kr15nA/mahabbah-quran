@@ -1,5 +1,5 @@
 import { db } from '@/lib/db/client'
-import { users, students, studentParents, classes } from '@/drizzle/schema'
+import { users, students, studentParents, classes, enrollments, academicYears } from '@/drizzle/schema'
 import { eq, or, inArray, and, isNull } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import * as xlsx from 'xlsx'
@@ -257,7 +257,7 @@ export async function parseAndValidateImport(fileBuffer: Buffer, type: DatasetTy
 export async function executeImport(type: DatasetType, validData: any[]) {
   if (validData.length === 0) return 0
 
-  await db.transaction(async (tx) => {
+  const tx = db
     if (type === 'guru' || type === 'orang_tua') {
       const hashedPw = await bcrypt.hash('Mahabbah123!', 10) // Temporary password
       const inserts = validData.map(d => ({
@@ -271,6 +271,15 @@ export async function executeImport(type: DatasetType, validData: any[]) {
     }
 
     if (type === 'santri') {
+      const [activeYear] = await tx.select({ id: academicYears.id })
+        .from(academicYears)
+        .where(eq(academicYears.isActive, true))
+        .limit(1)
+
+      if (!activeYear) {
+        throw new Error('Active academic year required for student placement')
+      }
+
       const inserts = validData.map(d => ({
         fullName: d.full_name,
         nickname: d.nickname,
@@ -278,9 +287,19 @@ export async function executeImport(type: DatasetType, validData: any[]) {
         dateOfBirth: d.date_of_birth,
         enrollmentDate: d.enrollment_date,
         classId: d.class_id,
-        status: 'active'
+        status: 'active' as const
       }))
-      await tx.insert(students).values(inserts)
+      const insertedStudents = await tx.insert(students).values(inserts).returning({ id: students.id, classId: students.classId })
+
+      const enrollmentInserts = insertedStudents.map(s => ({
+        studentId: s.id,
+        academicYearId: activeYear.id,
+        classId: s.classId,
+        enrollmentDate: new Date().toISOString().split('T')[0]
+      }))
+      if (enrollmentInserts.length > 0) {
+        await tx.insert(enrollments).values(enrollmentInserts)
+      }
     }
 
     if (type === 'parent_santri') {
@@ -304,7 +323,6 @@ export async function executeImport(type: DatasetType, validData: any[]) {
         }
       }
     }
-  })
-
+    
   return validData.length
 }

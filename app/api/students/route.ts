@@ -66,6 +66,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: { id } }, { status: 201 })
   } catch (error: any) {
     if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
+    if (error.message === 'Active academic year required for student creation') {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
     console.error('POST /api/students error:', error)
     return NextResponse.json({ error: 'Failed to create student' }, { status: 500 })
   }
