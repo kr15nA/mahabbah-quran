@@ -10,6 +10,7 @@ import {
   smallint,
   uniqueIndex,
   index,
+  unique,
   jsonb,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
@@ -96,7 +97,9 @@ export const attendance = pgTable('attendance', {
   notes: text('notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, (table) => ({
+  uniqueAttendance: unique('attendance_unique_per_day').on(table.studentId, table.attendanceDate)
+}))
 
 export const hafalanRecords = pgTable('hafalan_records', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -126,6 +129,7 @@ export const tahsinRecords = pgTable('tahsin_records', {
 export const learningReports = pgTable('learning_reports', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),
+  classId: bigint('class_id', { mode: 'number' }).references(() => classes.id, { onDelete: 'set null' }),
   teacherId: bigint('teacher_id', { mode: 'number' }).notNull().references(() => users.id),
   reportDate: date('report_date').notNull(),
   attendanceStatus: varchar('attendance_status', { length: 10 }).notNull(),

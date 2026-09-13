@@ -8,6 +8,7 @@ import {
 } from '@/lib/db/queries/learning-reports'
 import { insertHafalanRecord } from '@/lib/db/queries/hafalan'
 import { insertTahsinRecord } from '@/lib/db/queries/tahsin'
+import { getActiveEnrollment } from '@/lib/db/queries/academic-context'
 
 export async function GET(req: NextRequest) {
   try {
@@ -52,6 +53,11 @@ export async function POST(req: NextRequest) {
 
     await requireStudentAccess(body.student_id)
 
+    const activeEnrollment = await getActiveEnrollment(body.student_id)
+    if (!activeEnrollment) {
+      return NextResponse.json({ error: 'Active enrollment required to create a report' }, { status: 400 })
+    }
+
     const reportDate = body.report_date || new Date().toISOString().split('T')[0]
 
     let hafalanRecordId: number | undefined
@@ -83,6 +89,7 @@ export async function POST(req: NextRequest) {
 
     const reportId = await insertLearningReport({
       student_id: body.student_id,
+      class_id: activeEnrollment.classId,
       teacher_id: session.userId,
       report_date: reportDate,
       attendance_status: body.attendance_status || 'hadir',

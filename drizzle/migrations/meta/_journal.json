@@ -36,6 +36,20 @@
       "when": 1789254183011,
       "tag": "0004_melted_sebastian_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789265656042,
+      "tag": "0005_big_puff_adder",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789267809134,
+      "tag": "0006_colossal_princess_powerful",
+      "breakpoints": true
     }
   ]
 }
