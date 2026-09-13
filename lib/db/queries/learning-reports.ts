@@ -72,6 +72,7 @@ export async function getLearningReportsByStudent(studentId: number, limit = 20)
     JOIN users u ON u.id = lr.teacher_id
     LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
+    LEFT JOIN classes c ON c.id = lr.class_id
     WHERE lr.student_id = ${studentId}
     ORDER BY lr.report_date DESC, lr.id DESC
     LIMIT ${limit}
