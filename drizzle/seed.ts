@@ -12,7 +12,6 @@ async function seed() {
 
   // Ensure unique indexes exist for ON CONFLICT target columns
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS student_parents_unique ON student_parents (student_id, parent_id);`
-  await sql`CREATE UNIQUE INDEX IF NOT EXISTS attendance_unique_per_day ON attendance (student_id, attendance_date);`
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS learning_reports_unique_per_day ON learning_reports (student_id, report_date);`
 
   const passwordHash = await bcrypt.hash('Password123!', 10)

@@ -56,3 +56,47 @@ export async function getTahsinAverageByStudent(studentId: number) {
     avg_ghunnah: number | null
   }
 }
+
+export type SearchTahsinRow = TahsinRow & {
+  student_name: string
+  class_name: string
+  teacher_name: string
+}
+
+export async function searchTahsin(params: {
+  search?: string | null
+  limit: number
+  offset: number
+}): Promise<{ data: SearchTahsinRow[]; total: number }> {
+  const searchPattern = params.search ? `%${params.search}%` : null
+
+  const dataRows = await sql`
+    SELECT 
+      tr.*, 
+      u.full_name AS teacher_name,
+      st.full_name AS student_name,
+      c.name AS class_name
+    FROM tahsin_records tr
+    JOIN users u ON u.id = tr.teacher_id
+    JOIN students st ON st.id = tr.student_id
+    JOIN enrollments e ON e.student_id = st.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
+    JOIN classes c ON c.id = e.class_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+    ORDER BY tr.session_date DESC, tr.id DESC
+    LIMIT ${params.limit} OFFSET ${params.offset}
+  `
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int as total
+    FROM tahsin_records tr
+    JOIN students st ON st.id = tr.student_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+  `
+
+  return {
+    data: dataRows as SearchTahsinRow[],
+    total: Number((countRows[0] as any).total)
+  }
+}

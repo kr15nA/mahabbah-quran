@@ -14,6 +14,7 @@ export type StudentParentRow = {
   student_photo?: string
   class_name?: string
   program_name?: string
+  teacher_name?: string
   created_at: Date
 }
 
@@ -30,11 +31,15 @@ export async function getParentsByStudent(studentId: number): Promise<StudentPar
 export async function getChildrenByParent(parentId: number): Promise<StudentParentRow[]> {
   const rows = await sql`
     SELECT sp.*, s.full_name AS student_name, s.nickname AS student_nickname, s.photo_url AS student_photo,
-      c.name AS class_name, p.name AS program_name
+      c.name AS class_name, p.name AS program_name, u.full_name AS teacher_name
     FROM student_parents sp
     JOIN students s ON s.id = sp.student_id
-    JOIN classes c ON c.id = s.class_id
-    JOIN programs p ON p.id = c.program_id
+    LEFT JOIN academic_years ay ON ay.is_active = TRUE
+    LEFT JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = ay.id
+    LEFT JOIN classes c ON c.id = e.class_id
+    LEFT JOIN programs p ON p.id = c.program_id
+    LEFT JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.academic_year_id = ay.id
+    LEFT JOIN users u ON u.id = ta.teacher_id
     WHERE sp.parent_id = ${parentId} AND s.deleted_at IS NULL
   `
   return rows as StudentParentRow[]

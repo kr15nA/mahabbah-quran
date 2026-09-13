@@ -23,6 +23,15 @@ export async function getNotificationsByUser(userId: number, page = 1, limit = 2
   return rows as NotificationRow[]
 }
 
+export async function getNotificationById(id: number): Promise<NotificationRow | null> {
+  const rows = await sql`
+    SELECT * FROM notifications
+    WHERE id = ${id}
+    LIMIT 1
+  `
+  return (rows[0] as NotificationRow) ?? null
+}
+
 export async function getUnreadCount(userId: number): Promise<number> {
   const rows = await sql`
     SELECT COUNT(*)::int AS count
@@ -58,4 +67,37 @@ export async function markAllRead(userId: number): Promise<void> {
   await sql`
     UPDATE notifications SET is_read = TRUE WHERE user_id = ${userId}
   `
+}
+
+export async function searchNotifications(params: {
+  userId: number
+  search?: string | null
+  isRead?: boolean | null
+  limit: number
+  offset: number
+}): Promise<{ data: NotificationRow[]; total: number }> {
+  const searchPattern = params.search ? `%${params.search}%` : null
+
+  const dataRows = await sql`
+    SELECT *
+    FROM notifications
+    WHERE user_id = ${params.userId}
+      AND (${searchPattern}::text IS NULL OR title ILIKE ${searchPattern} OR body ILIKE ${searchPattern})
+      AND (${params.isRead ?? null}::boolean IS NULL OR is_read = ${params.isRead})
+    ORDER BY created_at DESC
+    LIMIT ${params.limit} OFFSET ${params.offset}
+  `
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int as total
+    FROM notifications
+    WHERE user_id = ${params.userId}
+      AND (${searchPattern}::text IS NULL OR title ILIKE ${searchPattern} OR body ILIKE ${searchPattern})
+      AND (${params.isRead ?? null}::boolean IS NULL OR is_read = ${params.isRead})
+  `
+
+  return {
+    data: dataRows as NotificationRow[],
+    total: Number((countRows[0] as any).total)
+  }
 }

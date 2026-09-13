@@ -1,27 +1,47 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/auth/rbac'
+import { getAdminAnalytics, getLearningProgressChartData } from '@/lib/db/queries/analytics'
+import { getMonthlyAttendanceStats } from '@/lib/db/queries/attendance'
+import AnalitikClient from './AnalitikClient'
 
-import LearningProgressChart from '@/components/charts/LearningProgressChart'
-import AttendanceBarChart from '@/components/charts/AttendanceBarChart'
+export const dynamic = 'force-dynamic'
 
-export default function AdminAnalitikPage() {
+interface SearchParams {
+  period?: string
+}
+
+export default async function AdminAnalitikPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const { role } = await requireAuth()
+  if (role !== 'SUPER_ADMIN') {
+    redirect('/login')
+  }
+
+  const resolvedParams = await searchParams
+  
+  // Default to current month if no period specified
+  const period = resolvedParams.period || new Date().toISOString().substring(0, 7)
+
+  // Fetch real aggregated metrics
+  const analyticsData = await getAdminAnalytics(period)
+  
+  // Fetch chart data (always last 8 months)
+  const progressChartData = await getLearningProgressChartData(8)
+  
+  // Attendance Bar Chart data expects keys: m, hadir, izin, sakit, alfa
+  const attendanceChartDataRaw = await getMonthlyAttendanceStats(undefined, 8)
+  const attendanceChartData = attendanceChartDataRaw.map(r => ({
+    m: r.month,
+    hadir: r.hadir,
+    izin: r.izin,
+    sakit: r.sakit,
+    alfa: r.alfa
+  }))
+
   return (
-    <div className="space-y-5">
-      <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
-        <h3 className="font-bold text-gray-900 text-sm">Analitik & Statistik Lembaga</h3>
-        <p className="text-xs text-gray-500">Visualisasi data perkembangan hafalan & presensi 8 bulan terakhir</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
-          <h4 className="font-bold text-gray-900 text-sm">Tren Perkembangan Hafalan & Tahsin</h4>
-          <LearningProgressChart />
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
-          <h4 className="font-bold text-gray-900 text-sm">Statistik Kehadiran Institusi</h4>
-          <AttendanceBarChart />
-        </div>
-      </div>
-    </div>
+    <AnalitikClient 
+      analyticsData={analyticsData}
+      progressChartData={progressChartData as any}
+      attendanceChartData={attendanceChartData}
+    />
   )
 }

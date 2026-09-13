@@ -10,7 +10,10 @@ import {
   smallint,
   uniqueIndex,
   index,
+  unique,
+  jsonb,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 export const users = pgTable('users', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -40,7 +43,6 @@ export const programs = pgTable('programs', {
 export const classes = pgTable('classes', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   programId: bigint('program_id', { mode: 'number' }).notNull().references(() => programs.id),
-  teacherId: bigint('teacher_id', { mode: 'number' }).notNull().references(() => users.id),
   name: varchar('name', { length: 100 }).notNull(),
   level: varchar('level', { length: 50 }),
   isActive: boolean('is_active').notNull().default(true),
@@ -50,8 +52,7 @@ export const classes = pgTable('classes', {
 
 export const students = pgTable('students', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
-  userId: bigint('user_id', { mode: 'number' }).references(() => users.id),
-  classId: bigint('class_id', { mode: 'number' }).notNull().references(() => classes.id),
+  userId: bigint('user_id', { mode: 'number' }).references(() => users.id), // For optional student login
   fullName: varchar('full_name', { length: 255 }).notNull(),
   nickname: varchar('nickname', { length: 100 }),
   photoUrl: text('photo_url'),
@@ -94,7 +95,9 @@ export const attendance = pgTable('attendance', {
   notes: text('notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, (table) => ({
+  uniqueAttendance: unique('attendance_unique_per_day').on(table.studentId, table.attendanceDate)
+}))
 
 export const hafalanRecords = pgTable('hafalan_records', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -124,6 +127,7 @@ export const tahsinRecords = pgTable('tahsin_records', {
 export const learningReports = pgTable('learning_reports', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),
+  classId: bigint('class_id', { mode: 'number' }).references(() => classes.id, { onDelete: 'set null' }),
   teacherId: bigint('teacher_id', { mode: 'number' }).notNull().references(() => users.id),
   reportDate: date('report_date').notNull(),
   attendanceStatus: varchar('attendance_status', { length: 10 }).notNull(),
@@ -152,3 +156,81 @@ export const notifications = pgTable('notifications', {
   isRead: boolean('is_read').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
+
+export const reportShares = pgTable('report_shares', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  reportId: bigint('report_id', { mode: 'number' }).notNull().references(() => learningReports.id, { onDelete: 'cascade' }),
+  creatorId: bigint('creator_id', { mode: 'number' }).notNull().references(() => users.id, { onDelete: 'restrict' }),
+  tokenHash: varchar('token_hash', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  lastAccessedAt: timestamp('last_accessed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  tokenHashIdx: index('idx_report_shares_token_hash').on(table.tokenHash)
+}))
+
+export const academicYears = pgTable('academic_years', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  name: varchar('name', { length: 50 }).notNull().unique(), // e.g., "2026/2027"
+  startDate: date('start_date').notNull(),
+  endDate: date('end_date').notNull(),
+  isActive: boolean('is_active').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  activeYearIdx: uniqueIndex('idx_active_academic_year').on(table.isActive).where(sql`is_active = true`)
+}))
+
+export const enrollments = pgTable('enrollments', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),
+  academicYearId: bigint('academic_year_id', { mode: 'number' }).notNull().references(() => academicYears.id),
+  classId: bigint('class_id', { mode: 'number' }).notNull().references(() => classes.id),
+  enrollmentDate: date('enrollment_date').notNull().defaultNow(),
+  status: varchar('status', { length: 20 }).notNull().default('active'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  studentYearIdx: uniqueIndex('idx_enrollments_student_year').on(table.studentId, table.academicYearId)
+}))
+
+export const teacherAssignments = pgTable('teacher_assignments', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  academicYearId: bigint('academic_year_id', { mode: 'number' }).notNull().references(() => academicYears.id),
+  classId: bigint('class_id', { mode: 'number' }).notNull().references(() => classes.id),
+  teacherId: bigint('teacher_id', { mode: 'number' }).notNull().references(() => users.id),
+  status: varchar('status', { length: 20 }).notNull().default('active'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  yearClassIdx: uniqueIndex('idx_teacher_assignments_year_class').on(table.academicYearId, table.classId)
+}))
+
+/**
+ * Audit Log — append-only record of administrative mutations.
+ *
+ * - actor_user_id: always sourced from authenticated server session, never from client input.
+ *   FK uses ON DELETE SET NULL so audit records survive actor soft/hard deletion.
+ * - action: one of the typed AuditAction constants (CREATE, UPDATE, DELETE, etc.)
+ * - entity_type: one of the typed AuditEntityType constants (USER, CLASS, etc.)
+ * - old_values / new_values: JSONB diff; sensitive fields (password_hash, etc.) must be stripped before write.
+ * - metadata: arbitrary extra context (e.g. academic_year_id, class_id) in JSONB.
+ * - No updated_at — this table is strictly append-only; rows must never be updated or deleted.
+ */
+export const auditLogs = pgTable('audit_logs', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  actorUserId: bigint('actor_user_id', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  action: varchar('action', { length: 50 }).notNull(),
+  entityType: varchar('entity_type', { length: 50 }).notNull(),
+  entityId: bigint('entity_id', { mode: 'number' }),
+  oldValues: jsonb('old_values'),
+  newValues: jsonb('new_values'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  createdAtIdx: index('idx_audit_logs_created_at').on(table.createdAt),
+  actorIdx:     index('idx_audit_logs_actor').on(table.actorUserId),
+  entityIdx:    index('idx_audit_logs_entity').on(table.entityType, table.entityId),
+}))
+

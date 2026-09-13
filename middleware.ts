@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const SECRET_KEY = process.env.JWT_SECRET || 'mahabbah-quran-default-jwt-secret-key-2026'
-const SECRET = new TextEncoder().encode(SECRET_KEY)
+import { getJwtSecretKey } from '@/lib/auth/session'
 
 const ROLE_PREFIXES: Record<string, string[]> = {
   guru: ['/guru'],
@@ -18,7 +17,7 @@ export async function middleware(req: NextRequest) {
     const token = req.cookies.get('mq_session')?.value
     if (!token) return NextResponse.redirect(new URL('/login', req.url))
     try {
-      const { payload } = await jwtVerify(token, SECRET)
+      const { payload } = await jwtVerify(token, getJwtSecretKey())
       const role = (payload.role as string) || 'admin'
       const target = role === 'orang_tua' ? '/orang-tua/beranda' : `/${role}/dashboard`
       return NextResponse.redirect(new URL(target, req.url))
@@ -28,7 +27,14 @@ export async function middleware(req: NextRequest) {
   }
 
   // Public routes
-  if (pathname.startsWith('/login') || pathname.startsWith('/api/auth') || pathname.startsWith('/_next') || pathname.startsWith('/favicon.ico')) {
+  if (
+    pathname.startsWith('/login') || 
+    pathname.startsWith('/api/auth') || 
+    pathname.startsWith('/api/share') ||
+    pathname.startsWith('/share') ||
+    pathname.startsWith('/_next') || 
+    pathname.startsWith('/favicon.ico')
+  ) {
     return NextResponse.next()
   }
 
@@ -41,7 +47,7 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    const { payload } = await jwtVerify(token, SECRET)
+    const { payload } = await jwtVerify(token, getJwtSecretKey())
     const role = payload.role as string
 
     if (!pathname.startsWith('/api/')) {

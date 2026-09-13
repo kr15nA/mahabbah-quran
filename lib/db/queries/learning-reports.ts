@@ -3,6 +3,7 @@ import { sql } from '@/lib/db/client'
 export type LearningReportRow = {
   id: number
   student_id: number
+  class_id: number | null
   teacher_id: number
   report_date: string
   attendance_status: 'hadir' | 'izin' | 'sakit' | 'alfa'
@@ -46,7 +47,7 @@ export async function getLearningReportsByTeacherDate(teacherId: number, date?: 
       hr.type AS hafalan_type
     FROM learning_reports lr
     JOIN students s ON s.id = lr.student_id
-    JOIN classes c ON c.id = s.class_id
+    LEFT JOIN classes c ON c.id = lr.class_id
     LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
     WHERE lr.teacher_id = ${teacherId} AND lr.report_date = ${targetDate}
@@ -69,9 +70,9 @@ export async function getLearningReportsByStudent(studentId: number, limit = 20)
     FROM learning_reports lr
     JOIN students s ON s.id = lr.student_id
     JOIN users u ON u.id = lr.teacher_id
-    JOIN classes c ON c.id = s.class_id
     LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
+    LEFT JOIN classes c ON c.id = lr.class_id
     WHERE lr.student_id = ${studentId}
     ORDER BY lr.report_date DESC, lr.id DESC
     LIMIT ${limit}
@@ -98,7 +99,7 @@ export async function getLearningReportById(id: number): Promise<LearningReportR
     FROM learning_reports lr
     JOIN students s ON s.id = lr.student_id
     JOIN users u ON u.id = lr.teacher_id
-    JOIN classes c ON c.id = s.class_id
+    LEFT JOIN classes c ON c.id = lr.class_id
     LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
     LEFT JOIN tahsin_records tr ON tr.id = lr.tahsin_record_id
@@ -110,6 +111,7 @@ export async function getLearningReportById(id: number): Promise<LearningReportR
 
 export async function insertLearningReport(data: {
   student_id: number
+  class_id?: number | null
   teacher_id: number
   report_date: string
   attendance_status: string
@@ -123,10 +125,10 @@ export async function insertLearningReport(data: {
 }): Promise<number> {
   const rows = await sql`
     INSERT INTO learning_reports (
-      student_id, teacher_id, report_date, attendance_status,
+      student_id, class_id, teacher_id, report_date, attendance_status,
       hafalan_record_id, tahsin_record_id, hafalan_score, tahsin_score, adab_score, teacher_notes, status
     ) VALUES (
-      ${data.student_id}, ${data.teacher_id}, ${data.report_date}, ${data.attendance_status},
+      ${data.student_id}, ${data.class_id ?? null}, ${data.teacher_id}, ${data.report_date}, ${data.attendance_status},
       ${data.hafalan_record_id ?? null}, ${data.tahsin_record_id ?? null}, ${data.hafalan_score ?? null},
       ${data.tahsin_score ?? null}, ${data.adab_score ?? null}, ${data.teacher_notes ?? null}, ${data.status ?? 'draft'}
     )
@@ -189,11 +191,121 @@ export async function getAllReportsAdmin(): Promise<LearningReportRow[]> {
     FROM learning_reports lr
     JOIN students s ON s.id = lr.student_id
     JOIN users u ON u.id = lr.teacher_id
-    JOIN classes c ON c.id = s.class_id
+    LEFT JOIN classes c ON c.id = lr.class_id
     LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
     ORDER BY lr.report_date DESC, lr.id DESC
     LIMIT 50
   `
   return rows as LearningReportRow[]
+}
+
+export type SearchPenilaianRow = {
+  id: number
+  student_name: string
+  class_name: string
+  hafalan_score: number | null
+  tahsin_score: number | null
+  adab_score: number | null
+  avg_score: number | null
+}
+
+export async function searchPenilaianAdmin(params: {
+  search?: string | null
+  limit: number
+  offset: number
+}): Promise<{ data: SearchPenilaianRow[]; total: number }> {
+  const searchPattern = params.search ? `%${params.search}%` : null
+
+  const dataRows = await sql`
+    SELECT 
+      lr.id,
+      st.full_name AS student_name,
+      c.name AS class_name,
+      lr.hafalan_score,
+      lr.tahsin_score,
+      lr.adab_score,
+      ROUND((COALESCE(lr.hafalan_score, 0) + COALESCE(lr.tahsin_score, 0) + COALESCE(lr.adab_score, 0)) / 
+            NULLIF((CASE WHEN lr.hafalan_score IS NOT NULL THEN 1 ELSE 0 END + 
+                    CASE WHEN lr.tahsin_score IS NOT NULL THEN 1 ELSE 0 END + 
+                    CASE WHEN lr.adab_score IS NOT NULL THEN 1 ELSE 0 END), 0))::int AS avg_score
+    FROM learning_reports lr
+    JOIN students st ON st.id = lr.student_id
+    LEFT JOIN classes c ON c.id = lr.class_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+    ORDER BY lr.report_date DESC, lr.id DESC
+    LIMIT ${params.limit} OFFSET ${params.offset}
+  `
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int as total
+    FROM learning_reports lr
+    JOIN students st ON st.id = lr.student_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+  `
+
+  return {
+    data: dataRows as SearchPenilaianRow[],
+    total: Number((countRows[0] as any).total)
+  }
+}
+
+export type SearchLaporanRow = {
+  id: number
+  student_name: string
+  teacher_name: string
+  class_name: string
+  report_date: string
+  surah_name_latin: string | null
+  hafalan_score: number | null
+  tahsin_score: number | null
+  adab_score: number | null
+  status: string
+}
+
+export async function searchLaporanAdmin(params: {
+  search?: string | null
+  limit: number
+  offset: number
+}): Promise<{ data: SearchLaporanRow[]; total: number }> {
+  const searchPattern = params.search ? `%${params.search}%` : null
+
+  const dataRows = await sql`
+    SELECT 
+      lr.id,
+      st.full_name AS student_name,
+      u.full_name AS teacher_name,
+      c.name AS class_name,
+      lr.report_date,
+      sr.name_latin AS surah_name_latin,
+      lr.hafalan_score,
+      lr.tahsin_score,
+      lr.adab_score,
+      lr.status
+    FROM learning_reports lr
+    JOIN students st ON st.id = lr.student_id
+    JOIN users u ON u.id = lr.teacher_id
+    LEFT JOIN classes c ON c.id = lr.class_id
+    LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
+    LEFT JOIN surahs sr ON sr.id = hr.surah_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+    ORDER BY lr.report_date DESC, lr.id DESC
+    LIMIT ${params.limit} OFFSET ${params.offset}
+  `
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int as total
+    FROM learning_reports lr
+    JOIN students st ON st.id = lr.student_id
+    WHERE st.deleted_at IS NULL
+      AND (${searchPattern}::text IS NULL OR st.full_name ILIKE ${searchPattern})
+  `
+
+  return {
+    data: dataRows as SearchLaporanRow[],
+    total: Number((countRows[0] as any).total)
+  }
 }

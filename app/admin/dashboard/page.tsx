@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-5">
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
         {[
           { icon: Users, label: 'Total Santri', val: 150, sub: 'Terdaftar', col: '#4B21A2' },
           { icon: CheckCircle, label: 'Santri Aktif', val: 143, sub: 'Bulan ini', col: '#16A34A' },
@@ -80,7 +80,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-bold text-gray-900">Perkembangan Hafalan</h3>
@@ -114,9 +114,9 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Report Status + At Risk + AI Panel */}
-      <div className="grid grid-cols-12 gap-3.5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
         {/* Status Laporan & Quick Stats */}
-        <div className="col-span-3 space-y-3.5">
+        <div className="col-span-1 lg:col-span-3 space-y-3.5">
           <div className="bg-white p-4.5 rounded-2xl border border-gray-200 shadow-sm">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-sm font-bold text-gray-900">Status Laporan Guru</h3>
@@ -152,26 +152,26 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-2 gap-2 text-center">
               <div className="bg-[#F0EDF9] p-2.5 rounded-xl">
                 <div className="text-xl font-extrabold text-[#4B21A2]">75%</div>
-                <div className="text-[10px] text-gray-500 font-medium">Hafalan</div>
+                <div className="text-[11px] text-gray-500 font-medium">Hafalan</div>
               </div>
               <div className="bg-[#F0EDF9] p-2.5 rounded-xl">
                 <div className="text-xl font-extrabold text-[#7B4BD6]">78%</div>
-                <div className="text-[10px] text-gray-500 font-medium">Tahsin</div>
+                <div className="text-[11px] text-gray-500 font-medium">Tahsin</div>
               </div>
               <div className="bg-[#F0EDF9] p-2.5 rounded-xl">
                 <div className="text-xl font-extrabold text-[#16A34A]">92%</div>
-                <div className="text-[10px] text-gray-500 font-medium">Kehadiran</div>
+                <div className="text-[11px] text-gray-500 font-medium">Kehadiran</div>
               </div>
               <div className="bg-[#F0EDF9] p-2.5 rounded-xl">
                 <div className="text-xl font-extrabold text-[#FBBF24]">88</div>
-                <div className="text-[10px] text-gray-500 font-medium">Nilai Rata</div>
+                <div className="text-[11px] text-gray-500 font-medium">Nilai Rata</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* At-Risk Table */}
-        <div className="col-span-5 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+        <div className="col-span-1 lg:col-span-5 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-bold text-gray-900">Santri Perlu Perhatian</h3>
             <Link href="/admin/santri" className="text-xs font-semibold text-[#4B21A2]">Lihat Semua →</Link>
@@ -194,7 +194,7 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700 whitespace-nowrap">
+                <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-red-100 text-red-700 whitespace-nowrap">
                   {r.status}
                 </span>
               </div>
@@ -209,7 +209,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* AI Mahabbah Panel */}
-        <div className="col-span-4 bg-gradient-to-br from-[#18085A] to-[#2D1080] p-5 rounded-2xl text-white flex flex-col justify-between shadow-md">
+        <div className="col-span-1 lg:col-span-4 bg-gradient-to-br from-[#18085A] to-[#2D1080] p-5 rounded-2xl text-white flex flex-col justify-between shadow-md">
           <div>
             <div className="flex items-center gap-2.5 mb-3">
               <div className="w-8 h-8 rounded-lg bg-[#FBBF24] flex items-center justify-center text-[#18085A]">
@@ -217,7 +217,7 @@ export default function AdminDashboardPage() {
               </div>
               <div>
                 <div className="text-xs font-bold text-white">Analisis dengan AI</div>
-                <div className="text-[10px] text-white/45">Powered by Claude</div>
+                <div className="text-[11px] text-white/45">Powered by Claude</div>
               </div>
             </div>
 
@@ -249,7 +249,7 @@ export default function AdminDashboardPage() {
 
             {aiAns && (
               <div className="space-y-2">
-                <div className="text-[10px] font-semibold bg-[#FBBF24]/20 text-[#FBBF24] px-2 py-1 rounded-md inline-block">
+                <div className="text-[11px] font-semibold bg-[#FBBF24]/20 text-[#FBBF24] px-2 py-1 rounded-md inline-block">
                   {aiQ}
                 </div>
                 <div className="text-xs text-white/90 leading-relaxed max-h-48 overflow-y-auto space-y-1 pr-1">

@@ -1,33 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth/session'
+import { requireAuth } from '@/lib/auth/rbac'
 import { getStudentsByTeacher, searchStudents, insertStudent } from '@/lib/db/queries/students'
+import { getChildrenByParent } from '@/lib/db/queries/student-parents'
 import { z } from 'zod'
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const { session, role } = await requireAuth()
 
-  const { searchParams } = new URL(req.url)
-  const q = searchParams.get('q') ?? undefined
-  const classId = searchParams.get('class_id') ? Number(searchParams.get('class_id')) : undefined
-  const status = searchParams.get('status') ?? undefined
+    const { searchParams } = new URL(req.url)
+    const search = searchParams.get('search') || searchParams.get('q') || undefined
+    const classId = searchParams.get('class_id') ? Number(searchParams.get('class_id')) : undefined
+    const programId = searchParams.get('program_id') ? Number(searchParams.get('program_id')) : undefined
+    const status = searchParams.get('status') ?? undefined
+    const page = searchParams.get('page') ? Number(searchParams.get('page')) : undefined
+    const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : 10
 
-  if (session.role === 'guru') {
-    const students = await getStudentsByTeacher(session.userId)
-    return NextResponse.json({ data: students })
+    if (role === 'SUPER_ADMIN') {
+      const pagination = page ? { limit, offset: (page - 1) * limit } : undefined
+      const { data, total } = await searchStudents(search, { class_id: classId, program_id: programId, status }, pagination)
+      
+      if (page) {
+        return NextResponse.json({ data, meta: { total, page, limit } })
+      }
+      return NextResponse.json({ data })
+    } else if (role === 'GURU') {
+      const students = await getStudentsByTeacher(session.userId)
+      return NextResponse.json({ data: students })
+    } else if (role === 'ORANG_TUA') {
+      const students = await getChildrenByParent(session.userId)
+      return NextResponse.json({ data: students })
+    }
+
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  } catch (error: any) {
+    if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
-
-  const students = await searchStudents(q, { class_id: classId, status })
-  return NextResponse.json({ data: students })
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session || session.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
   try {
+    const { role } = await requireAuth()
+    if (role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await req.json()
     const schema = z.object({
       class_id: z.number(),
@@ -46,7 +64,11 @@ export async function POST(req: NextRequest) {
 
     const id = await insertStudent(parsed.data)
     return NextResponse.json({ data: { id } }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'AuthError') return NextResponse.json({ error: error.message }, { status: error.status })
+    if (error.message === 'Active academic year required for student creation') {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
     console.error('POST /api/students error:', error)
     return NextResponse.json({ error: 'Failed to create student' }, { status: 500 })
   }
