@@ -18,7 +18,8 @@ export async function GET(request: Request) {
       id: financeAccounts.id,
       code: financeAccounts.code,
       name: financeAccounts.name,
-      accountType: financeAccounts.accountType
+      accountType: financeAccounts.accountType,
+      assetSubtype: financeAccounts.assetSubtype,
     })
     .from(financeAccounts)
     .where(conditions)

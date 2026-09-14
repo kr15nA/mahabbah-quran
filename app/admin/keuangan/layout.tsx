@@ -2,9 +2,10 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Receipt, Settings2, Wallet, HandCoins, Activity } from 'lucide-react'
+import { LayoutDashboard, Receipt, Settings2, Wallet, HandCoins, Activity } from 'lucide-react'
 
 const FINANCE_TABS = [
+  { href: '/admin/keuangan/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/keuangan/tagihan', label: 'Tagihan', icon: Receipt },
   { href: '/admin/keuangan/jenis-tagihan', label: 'Jenis Tagihan', icon: Settings2 },
   { href: '/admin/keuangan/pembayaran', label: 'Pembayaran', icon: Wallet },
@@ -26,7 +27,9 @@ export default function KeuanganLayout({ children }: { children: React.ReactNode
         <div className="border-b border-gray-100 bg-gray-50/50">
           <nav className="flex overflow-x-auto">
             {FINANCE_TABS.map((tab) => {
-              const isActive = pathname.startsWith(tab.href)
+              const isActive = tab.href === '/admin/keuangan/dashboard' 
+                ? pathname === '/admin/keuangan/dashboard'
+                : pathname.startsWith(tab.href)
               return (
                 <Link
                   key={tab.href}

@@ -99,6 +99,13 @@
       "when": 1789392465732,
       "tag": "0013_living_madripoor",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789394833696,
+      "tag": "0014_solid_the_professor",
+      "breakpoints": true
     }
   ]
 }

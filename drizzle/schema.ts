@@ -331,10 +331,13 @@ export const financeAccounts = pgTable('finance_accounts', {
   code: varchar('code', { length: 50 }).notNull().unique(),
   name: varchar('name', { length: 100 }).notNull(),
   accountType: varchar('account_type', { length: 20 }).notNull(), // ASSET, LIABILITY, EQUITY, INCOME, EXPENSE
+  assetSubtype: varchar('asset_subtype', { length: 20 }), // CASH, BANK, RECEIVABLE, OTHER_ASSET (only if accountType=ASSET)
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, (table) => ({
+  assetSubtypeChk: check('finance_accounts_asset_subtype_chk', sql`${table.accountType} = 'ASSET' OR ${table.assetSubtype} IS NULL`)
+}))
 
 // ==========================================
 // LEDGER

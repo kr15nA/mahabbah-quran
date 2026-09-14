@@ -1,0 +1,2 @@
+ALTER TABLE "finance_accounts" ADD COLUMN "asset_subtype" varchar(20);--> statement-breakpoint
+ALTER TABLE "finance_accounts" ADD CONSTRAINT "finance_accounts_asset_subtype_chk" CHECK ("finance_accounts"."account_type" = 'ASSET' OR "finance_accounts"."asset_subtype" IS NULL);
