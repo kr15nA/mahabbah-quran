@@ -164,7 +164,7 @@ async function run() {
   if (!hasAccess1 || hasAccess2) throw new Error('Parent Authorization logic failed')
   
   // Dynamic role permission testing
-  const [financeRole] = await db.insert(roles).values({ code: 'FINANCE_STAFF', name: 'Finance Staff' }).onConflictDoUpdate({ target: roles.code, set: { name: 'Finance Staff' } }).returning({ id: roles.id })
+  const [financeRole] = await db.insert(roles).values({ code: `FINANCE_STAFF_TEST_${Date.now()}`, name: 'Finance Staff Test' }).onConflictDoUpdate({ target: roles.code, set: { name: 'Finance Staff Test' } }).returning({ id: roles.id })
   const [viewPerm] = await db.insert(permissions).values({ code: 'finance.billing.view', name: 'View Billing' }).onConflictDoUpdate({ target: permissions.code, set: { name: 'View Billing' } }).returning({ id: permissions.id })
   const [managePerm] = await db.insert(permissions).values({ code: 'finance.billing.manage', name: 'Manage Billing' }).onConflictDoUpdate({ target: permissions.code, set: { name: 'Manage Billing' } }).returning({ id: permissions.id })
   
