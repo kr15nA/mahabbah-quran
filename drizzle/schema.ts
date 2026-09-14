@@ -520,7 +520,7 @@ export const financeDisbursements = pgTable('finance_disbursements', {
   disbursementNumber: varchar('disbursement_number', { length: 50 }).notNull().unique(),
   fundId: bigint('fund_id', { mode: 'number' }).notNull().references(() => financeFunds.id, { onDelete: 'restrict' }),
   categoryId: bigint('category_id', { mode: 'number' }).notNull().references(() => financeCategories.id, { onDelete: 'restrict' }),
-  accountId: bigint('account_id', { mode: 'number' }).notNull().references(() => financeAccounts.id, { onDelete: 'restrict' }),
+  paymentAccountId: bigint('payment_account_id', { mode: 'number' }).references(() => financeAccounts.id, { onDelete: 'restrict' }),
   amount: bigint('amount', { mode: 'bigint' }).notNull(),
   transactionDate: date('transaction_date').notNull(),
   description: text('description').notNull(),
@@ -535,5 +535,5 @@ export const financeDisbursements = pgTable('finance_disbursements', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   amountCheck: check('finance_disbursements_amount_chk', sql`${table.amount} > 0`),
-  statusCheck: check('finance_disbursements_status_chk', sql`${table.status} IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'PAID', 'CANCELLED')`),
+  statusCheck: check('finance_disbursements_status_chk', sql`${table.status} IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'PAID', 'CANCELLED', 'REVERSED')`),
 }))

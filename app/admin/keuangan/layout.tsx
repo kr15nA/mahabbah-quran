@@ -9,7 +9,7 @@ const FINANCE_TABS = [
   { href: '/admin/keuangan/jenis-tagihan', label: 'Jenis Tagihan', icon: Settings2 },
   { href: '/admin/keuangan/pembayaran', label: 'Pembayaran', icon: Wallet },
   { href: '/admin/keuangan/ziswaf', label: 'ZISWAF', icon: HandCoins },
-  // { href: '/admin/keuangan/pengeluaran', label: 'Pengeluaran', icon: Activity },
+  { href: '/admin/keuangan/pengeluaran', label: 'Pengeluaran', icon: Activity },
 ]
 
 export default function KeuanganLayout({ children }: { children: React.ReactNode }) {

@@ -1,0 +1,2 @@
+ALTER TABLE "finance_disbursements" ADD COLUMN "payment_account_id" bigint;--> statement-breakpoint
+ALTER TABLE "finance_disbursements" ADD CONSTRAINT "finance_disbursements_payment_account_id_finance_accounts_id_fk" FOREIGN KEY ("payment_account_id") REFERENCES "public"."finance_accounts"("id") ON DELETE restrict ON UPDATE no action;

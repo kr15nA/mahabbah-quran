@@ -85,6 +85,20 @@
       "when": 1789372042322,
       "tag": "0011_handy_wolverine",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789392430237,
+      "tag": "0012_young_caretaker",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789392465732,
+      "tag": "0013_living_madripoor",
+      "breakpoints": true
     }
   ]
 }
