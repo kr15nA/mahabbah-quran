@@ -14,6 +14,7 @@ import {
   Bell,
   Search,
   BarChart2,
+  Wallet,
   Brain,
   Award,
   BookMarked,
@@ -41,6 +42,7 @@ const NAV = [
   { id: 'ai', href: '/admin/ai', label: 'AI Mahabbah', icon: Brain },
   { id: 'notifikasi', href: '/admin/notifikasi', label: 'Notifikasi', icon: Bell },
   { id: 'pengguna', href: '/admin/pengguna', label: 'Pengguna', icon: Shield },
+  { id: 'keuangan', href: '/admin/keuangan/tagihan', label: 'Keuangan', icon: Wallet },
   { id: 'import-export', href: '/admin/import-export', label: 'Import/Export', icon: FileDown },
   { id: 'pengaturan', href: '/admin/pengaturan', label: 'Pengaturan', icon: Settings },
 ]

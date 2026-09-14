@@ -379,8 +379,16 @@ export const financeFeeTypes = pgTable('finance_fee_types', {
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
   defaultFundId: bigint('default_fund_id', { mode: 'number' }).references(() => financeFunds.id, { onDelete: 'set null' }),
+  categoryId: bigint('category_id', { mode: 'number' }).notNull().references(() => financeCategories.id, { onDelete: 'restrict' }),
+  receivableAccountId: bigint('receivable_account_id', { mode: 'number' }).notNull().references(() => financeAccounts.id, { onDelete: 'restrict' }),
+  incomeAccountId: bigint('income_account_id', { mode: 'number' }).notNull().references(() => financeAccounts.id, { onDelete: 'restrict' }),
+  defaultAmount: bigint('default_amount', { mode: 'bigint' }),
+  billingFrequency: varchar('billing_frequency', { length: 20 }).notNull().default('ONE_TIME'), // ONE_TIME, MONTHLY, CUSTOM
   isActive: boolean('is_active').notNull().default(true),
-})
+}, (table) => ({
+  freqCheck: check('finance_fee_types_freq_chk', sql`${table.billingFrequency} IN ('ONE_TIME', 'MONTHLY', 'CUSTOM')`),
+  amountCheck: check('finance_fee_types_amount_chk', sql`${table.defaultAmount} > 0 OR ${table.defaultAmount} IS NULL`)
+}))
 
 export const financeInvoices = pgTable('finance_invoices', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -400,6 +408,7 @@ export const financeInvoices = pgTable('finance_invoices', {
 }, (table) => ({
   amountCheck: check('finance_invoices_amount_chk', sql`${table.amount} > 0`),
   statusCheck: check('finance_invoices_status_chk', sql`${table.status} IN ('DRAFT', 'ISSUED', 'PARTIALLY_PAID', 'PAID', 'CANCELLED')`),
+  monthlyDuplicateIdx: uniqueIndex('idx_finance_invoices_monthly_dup').on(table.studentId, table.academicYearId, table.feeTypeId, table.period).where(sql`${table.period} IS NOT NULL`)
 }))
 
 // ==========================================

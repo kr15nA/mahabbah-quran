@@ -71,6 +71,13 @@
       "when": 1789357806972,
       "tag": "0009_peaceful_the_liberteens",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789360363681,
+      "tag": "0010_mysterious_sersi",
+      "breakpoints": true
     }
   ]
 }
