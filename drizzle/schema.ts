@@ -12,6 +12,8 @@ import {
   index,
   unique,
   jsonb,
+  check,
+  AnyPgColumn,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
@@ -234,3 +236,291 @@ export const auditLogs = pgTable('audit_logs', {
   entityIdx:    index('idx_audit_logs_entity').on(table.entityType, table.entityId),
 }))
 
+
+// ==========================================
+// EXTENSIBLE RBAC
+// ==========================================
+
+export const roles = pgTable('roles', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  code: varchar('code', { length: 50 }).notNull().unique(), // e.g. 'FINANCE_ADMIN'
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const permissions = pgTable('permissions', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  code: varchar('code', { length: 100 }).notNull().unique(), // e.g. 'finance.payment.manage'
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const rolePermissions = pgTable('role_permissions', {
+  roleId: bigint('role_id', { mode: 'number' }).notNull().references(() => roles.id, { onDelete: 'cascade' }),
+  permissionId: bigint('permission_id', { mode: 'number' }).notNull().references(() => permissions.id, { onDelete: 'cascade' }),
+}, (table) => ({
+  pk: uniqueIndex('idx_role_permissions_pk').on(table.roleId, table.permissionId)
+}))
+
+export const userRoles = pgTable('user_roles', {
+  userId: bigint('user_id', { mode: 'number' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  roleId: bigint('role_id', { mode: 'number' }).notNull().references(() => roles.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  pk: uniqueIndex('idx_user_roles_pk').on(table.userId, table.roleId)
+}))
+
+// ==========================================
+// NUMBER SEQUENCES
+// ==========================================
+
+export const financeNumberSequences = pgTable('finance_number_sequences', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  documentType: varchar('document_type', { length: 20 }).notNull(), // INV, PAY, ZIS, OUT, JRN
+  year: smallint('year').notNull(),
+  lastNumber: bigint('last_number', { mode: 'number' }).notNull().default(0),
+}, (table) => ({
+  docYearIdx: uniqueIndex('idx_finance_seq_doc_year').on(table.documentType, table.year)
+}))
+
+// ==========================================
+// CORE FINANCE
+// ==========================================
+
+export const financeFunds = pgTable('finance_funds', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  fundType: varchar('fund_type', { length: 50 }).notNull(), // ACADEMIC, ZAKAT, WAKAF, etc.
+  restrictionType: varchar('restriction_type', { length: 20 }).notNull(), // RESTRICTED, UNRESTRICTED
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const financeCategories = pgTable('finance_categories', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  name: varchar('name', { length: 100 }).notNull(),
+  type: varchar('type', { length: 20 }).notNull(), // INCOME, EXPENSE
+  domain: varchar('domain', { length: 50 }).notNull(), // ACADEMIC, ZISWAF, OPERASIONAL
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const financeCategoryFunds = pgTable('finance_category_funds', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  categoryId: bigint('category_id', { mode: 'number' }).notNull().references(() => financeCategories.id, { onDelete: 'cascade' }),
+  fundId: bigint('fund_id', { mode: 'number' }).notNull().references(() => financeFunds.id, { onDelete: 'cascade' }),
+  isDefault: boolean('is_default').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  catFundIdx: uniqueIndex('idx_finance_cat_fund').on(table.categoryId, table.fundId),
+  singleDefaultIdx: uniqueIndex('idx_finance_cat_fund_single_default').on(table.categoryId).where(sql`${table.isDefault} = true`)
+}))
+
+export const financeAccounts = pgTable('finance_accounts', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  name: varchar('name', { length: 100 }).notNull(),
+  accountType: varchar('account_type', { length: 20 }).notNull(), // ASSET, LIABILITY, EQUITY, INCOME, EXPENSE
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ==========================================
+// LEDGER
+// ==========================================
+
+export const financeJournalEntries = pgTable('finance_journal_entries', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  journalNumber: varchar('journal_number', { length: 50 }).notNull().unique(),
+  transactionDate: date('transaction_date').notNull(),
+  description: text('description').notNull(),
+  sourceType: varchar('source_type', { length: 50 }).notNull(), // PAYMENT, DISBURSEMENT, ZISWAF_RECEIPT, REVERSAL
+  sourceId: bigint('source_id', { mode: 'number' }).notNull(),
+  sourceEvent: varchar('source_event', { length: 50 }).notNull(), // e.g. CONFIRM, POST
+  status: varchar('status', { length: 20 }).notNull(), // POSTED, REVERSED
+  createdBy: bigint('created_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  postedBy: bigint('posted_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  postedAt: timestamp('posted_at', { withTimezone: true }).notNull().defaultNow(),
+  reversalOfId: bigint('reversal_of_id', { mode: 'number' }).references((): AnyPgColumn => financeJournalEntries.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  sourceUniqIdx: uniqueIndex('idx_finance_journal_source').on(table.sourceType, table.sourceId, table.sourceEvent),
+  reversalUniqIdx: uniqueIndex('idx_finance_journal_reversal_uniq').on(table.reversalOfId).where(sql`${table.reversalOfId} IS NOT NULL`),
+  statusCheck: check('finance_journal_entries_status_chk', sql`${table.status} IN ('POSTED', 'REVERSED')`),
+}))
+
+export const financeJournalLines = pgTable('finance_journal_lines', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  journalEntryId: bigint('journal_entry_id', { mode: 'number' }).notNull().references(() => financeJournalEntries.id, { onDelete: 'cascade' }),
+  accountId: bigint('account_id', { mode: 'number' }).notNull().references(() => financeAccounts.id, { onDelete: 'restrict' }),
+  fundId: bigint('fund_id', { mode: 'number' }).references(() => financeFunds.id, { onDelete: 'restrict' }),
+  debit: bigint('debit', { mode: 'bigint' }).notNull().default(sql`0`),
+  credit: bigint('credit', { mode: 'bigint' }).notNull().default(sql`0`),
+  description: text('description'),
+}, (table) => ({
+  positiveAmounts: check('finance_journal_lines_positive_amounts_chk', sql`${table.debit} >= 0 AND ${table.credit} >= 0`),
+  exclusiveAmounts: check('finance_journal_lines_exclusive_amounts_chk', sql`(${table.debit} > 0 AND ${table.credit} = 0) OR (${table.credit} > 0 AND ${table.debit} = 0)`),
+}))
+
+// ==========================================
+// ACADEMIC BILLING
+// ==========================================
+
+export const financeFeeTypes = pgTable('finance_fee_types', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  defaultFundId: bigint('default_fund_id', { mode: 'number' }).references(() => financeFunds.id, { onDelete: 'set null' }),
+  isActive: boolean('is_active').notNull().default(true),
+})
+
+export const financeInvoices = pgTable('finance_invoices', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  invoiceNumber: varchar('invoice_number', { length: 50 }).notNull().unique(),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id, { onDelete: 'restrict' }),
+  academicYearId: bigint('academic_year_id', { mode: 'number' }).notNull().references(() => academicYears.id, { onDelete: 'restrict' }),
+  feeTypeId: bigint('fee_type_id', { mode: 'number' }).notNull().references(() => financeFeeTypes.id, { onDelete: 'restrict' }),
+  period: varchar('period', { length: 50 }),
+  description: text('description'),
+  amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  dueDate: date('due_date').notNull(),
+  issuedAt: timestamp('issued_at', { withTimezone: true }),
+  status: varchar('status', { length: 20 }).notNull().default('DRAFT'), // DRAFT, ISSUED, PARTIALLY_PAID, PAID, CANCELLED
+  createdBy: bigint('created_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  amountCheck: check('finance_invoices_amount_chk', sql`${table.amount} > 0`),
+  statusCheck: check('finance_invoices_status_chk', sql`${table.status} IN ('DRAFT', 'ISSUED', 'PARTIALLY_PAID', 'PAID', 'CANCELLED')`),
+}))
+
+// ==========================================
+// ACADEMIC PAYMENTS
+// ==========================================
+
+export const financePayments = pgTable('finance_payments', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  paymentNumber: varchar('payment_number', { length: 50 }).notNull().unique(),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id, { onDelete: 'restrict' }),
+  amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  paymentDate: date('payment_date').notNull(),
+  paymentMethod: varchar('payment_method', { length: 50 }).notNull(), // CASH, BANK_TRANSFER, QRIS, OTHER
+  destinationAccountId: bigint('destination_account_id', { mode: 'number' }).references(() => financeAccounts.id, { onDelete: 'restrict' }),
+  referenceNumber: varchar('reference_number', { length: 100 }),
+  notes: text('notes'),
+  status: varchar('status', { length: 20 }).notNull().default('PENDING'), // PENDING, CONFIRMED, CANCELLED, REFUNDED
+  receivedBy: bigint('received_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  confirmedBy: bigint('confirmed_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  amountCheck: check('finance_payments_amount_chk', sql`${table.amount} > 0`),
+  statusCheck: check('finance_payments_status_chk', sql`${table.status} IN ('PENDING', 'CONFIRMED', 'CANCELLED', 'REFUNDED')`),
+}))
+
+export const financePaymentAllocations = pgTable('finance_payment_allocations', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  paymentId: bigint('payment_id', { mode: 'number' }).notNull().references(() => financePayments.id, { onDelete: 'cascade' }),
+  invoiceId: bigint('invoice_id', { mode: 'number' }).notNull().references(() => financeInvoices.id, { onDelete: 'cascade' }),
+  allocatedAmount: bigint('allocated_amount', { mode: 'bigint' }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  amountCheck: check('finance_payment_allocations_amount_chk', sql`${table.allocatedAmount} > 0`),
+}))
+
+// ==========================================
+// ZISWAF
+// ==========================================
+
+export const financeParties = pgTable('finance_parties', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  phone: varchar('phone', { length: 50 }),
+  email: varchar('email', { length: 255 }),
+  address: text('address'),
+  partyType: varchar('party_type', { length: 50 }).notNull(), // MUZAKKI, MUNFIQ, MUTASHADDIQ, WAKIF, DONOR, INSTITUTION, ANONYMOUS, OTHER
+  userId: bigint('user_id', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const financeCampaigns = pgTable('finance_campaigns', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  name: varchar('name', { length: 200 }).notNull(),
+  description: text('description'),
+  domain: varchar('domain', { length: 50 }).notNull(), // ZISWAF, ACADEMIC, GENERAL
+  defaultFundId: bigint('default_fund_id', { mode: 'number' }).references(() => financeFunds.id, { onDelete: 'set null' }),
+  startDate: date('start_date'),
+  endDate: date('end_date'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const ziswafReceipts = pgTable('ziswaf_receipts', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  receiptNumber: varchar('receipt_number', { length: 50 }).notNull().unique(),
+  partyId: bigint('party_id', { mode: 'number' }).references(() => financeParties.id, { onDelete: 'restrict' }), // null for anonymous
+  ziswafType: varchar('ziswaf_type', { length: 50 }).notNull(), // ZAKAT, INFAQ, SEDEKAH, WAKAF, DONATION, OTHER
+  categoryId: bigint('category_id', { mode: 'number' }).notNull().references(() => financeCategories.id, { onDelete: 'restrict' }),
+  amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  receivedDate: date('received_date').notNull(),
+  paymentMethod: varchar('payment_method', { length: 50 }).notNull(),
+  destinationAccountId: bigint('destination_account_id', { mode: 'number' }).notNull().references(() => financeAccounts.id, { onDelete: 'restrict' }),
+  referenceNumber: varchar('reference_number', { length: 100 }),
+  notes: text('notes'),
+  status: varchar('status', { length: 20 }).notNull().default('DRAFT'), // DRAFT, CONFIRMED, CANCELLED, REFUNDED
+  receivedBy: bigint('received_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  confirmedBy: bigint('confirmed_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  campaignId: bigint('campaign_id', { mode: 'number' }).references(() => financeCampaigns.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  amountCheck: check('ziswaf_receipts_amount_chk', sql`${table.amount} > 0`),
+  statusCheck: check('ziswaf_receipts_status_chk', sql`${table.status} IN ('DRAFT', 'CONFIRMED', 'CANCELLED', 'REFUNDED')`),
+}))
+
+export const ziswafReceiptAllocations = pgTable('ziswaf_receipt_allocations', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  receiptId: bigint('receipt_id', { mode: 'number' }).notNull().references(() => ziswafReceipts.id, { onDelete: 'cascade' }),
+  fundId: bigint('fund_id', { mode: 'number' }).notNull().references(() => financeFunds.id, { onDelete: 'restrict' }),
+  amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  amountCheck: check('ziswaf_receipt_allocations_amount_chk', sql`${table.amount} > 0`),
+}))
+
+// ==========================================
+// DISBURSEMENTS
+// ==========================================
+
+export const financeDisbursements = pgTable('finance_disbursements', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  disbursementNumber: varchar('disbursement_number', { length: 50 }).notNull().unique(),
+  fundId: bigint('fund_id', { mode: 'number' }).notNull().references(() => financeFunds.id, { onDelete: 'restrict' }),
+  categoryId: bigint('category_id', { mode: 'number' }).notNull().references(() => financeCategories.id, { onDelete: 'restrict' }),
+  accountId: bigint('account_id', { mode: 'number' }).notNull().references(() => financeAccounts.id, { onDelete: 'restrict' }),
+  amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  transactionDate: date('transaction_date').notNull(),
+  description: text('description').notNull(),
+  beneficiaryName: varchar('beneficiary_name', { length: 255 }),
+  status: varchar('status', { length: 50 }).notNull().default('DRAFT'), // DRAFT, PENDING_APPROVAL, APPROVED, PAID, CANCELLED
+  requestedBy: bigint('requested_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  approvedBy: bigint('approved_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  paidBy: bigint('paid_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  amountCheck: check('finance_disbursements_amount_chk', sql`${table.amount} > 0`),
+  statusCheck: check('finance_disbursements_status_chk', sql`${table.status} IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'PAID', 'CANCELLED')`),
+}))
