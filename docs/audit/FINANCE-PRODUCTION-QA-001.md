@@ -83,9 +83,17 @@ Ran all 8 Finance test suites:
 - **Build**: `npm run build` -> PASS
 - **Git Status**: Clean. Pushed `qa/finance-production-001`.
 
-## 9. Final Release Recommendation
+## 9. Vercel Preview Gate
+- **Deployed SHA**: 838b3e4
+- **Preview URL**: `https://mahabbah-quran-1xh7k71ns-krisnarefac-9550.vercel.app`
+- **Build Status**: PASS
+- **Environment**: PASS (`DATABASE_URL` and `JWT_SECRET` mapped to Preview)
+- **Smoke Testing**: Unauthenticated and Authenticated smoke tests are NOT AVAILABLE on the live URL due to Vercel Deployment Protection (SSO) actively blocking anonymous HTTP access. Application routing and runtime have been verified locally using the identical build output (`npm run build && npm run start`).
+- **Fix Verification**: Reconciliation and liquid balance segregation fixes successfully passed build and unit validation.
+
+## 10. Final Release Recommendation
 - **Defects Fixed**: 
   - Fixed unsafe mass classification of ASSET accounts to ensure strict Receivables mapping and liquid usage rules.
   - Fixed row-duplication bug in academic reconciliation query logic.
-- **Remaining Risks**: None identified for V1 scope.
+- **Remaining Risks**: None identified for V1 scope. Vercel SSO prevents external automated testing of the Preview URL, but internal build and environments are confirmed.
 - **Recommendation**: **FINANCE PRODUCTION READY**. Safe to merge to `main`.
