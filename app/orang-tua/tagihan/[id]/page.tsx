@@ -3,9 +3,10 @@
 import { useState, useEffect, use } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { Receipt, CheckCircle2 } from 'lucide-react'
+import { Receipt, CheckCircle2, History, ChevronRight } from 'lucide-react'
 import TopBar from '@/components/layout/TopBar'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function ParentInvoiceDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
@@ -98,6 +99,38 @@ export default function ParentInvoiceDetail({ params }: { params: Promise<{ id: 
               </div>
             </div>
           </div>
+        </Card>
+        <Card className="p-5 space-y-4 shadow-sm border-gray-100">
+          <h3 className="font-bold text-gray-900 border-b border-gray-100 pb-3 flex items-center">
+            <History className="w-4 h-4 mr-2 text-gray-500" />
+            Riwayat Pembayaran
+          </h3>
+          
+          {!invoice.payments || invoice.payments.length === 0 ? (
+            <div className="text-center py-4 text-gray-500 text-sm">Belum ada riwayat pembayaran.</div>
+          ) : (
+            <div className="space-y-3">
+              {invoice.payments.map((payment: any) => (
+                <Link key={payment.id} href={`/orang-tua/pembayaran/${payment.id}`} className="block">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border hover:border-[#18085A]/30 transition-colors">
+                    <div>
+                      <div className="text-sm font-medium text-[#18085A]">{payment.paymentNumber}</div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(payment.paymentDate).toLocaleDateString('id-ID')} • {payment.paymentMethod}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-mono font-semibold text-gray-900">{formatCurrency(payment.allocatedAmount)}</div>
+                        <div className="text-[10px] uppercase font-medium text-gray-500">{payment.status}</div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </div>

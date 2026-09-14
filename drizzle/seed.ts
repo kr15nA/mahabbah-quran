@@ -243,6 +243,15 @@ async function seed() {
   `
   await sql`SELECT setval('notifications_id_seq', (SELECT MAX(id) FROM notifications));`
 
+  // 12. Permissions
+  await sql`
+    INSERT INTO permissions (code, name) VALUES
+      ('finance.payment.view', 'View Payments'),
+      ('finance.payment.manage', 'Manage Payments'),
+      ('finance.payment.refund', 'Refund Payments')
+    ON CONFLICT (code) DO NOTHING;
+  `
+
   console.log('✅ Database seeding completed successfully!')
 }
 

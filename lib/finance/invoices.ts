@@ -212,6 +212,20 @@ export async function getInvoiceDetails(invoiceId: number) {
     eq(financePayments.status, 'CONFIRMED')
   ))
 
+  const payments = await db.select({
+    id: financePayments.id,
+    paymentNumber: financePayments.paymentNumber,
+    paymentDate: financePayments.paymentDate,
+    amount: financePayments.amount,
+    status: financePayments.status,
+    paymentMethod: financePayments.paymentMethod,
+    allocatedAmount: financePaymentAllocations.allocatedAmount
+  })
+  .from(financePaymentAllocations)
+  .innerJoin(financePayments, eq(financePayments.id, financePaymentAllocations.paymentId))
+  .where(eq(financePaymentAllocations.invoiceId, invoiceId))
+  .orderBy(financePayments.paymentDate)
+
   let paidAmount = BigInt(0)
   for (const alloc of allocations) {
     if (alloc.allocatedAmount) paidAmount += alloc.allocatedAmount
@@ -222,6 +236,7 @@ export async function getInvoiceDetails(invoiceId: number) {
   return {
     ...invoice,
     paidAmount,
-    outstandingAmount
+    outstandingAmount,
+    payments
   }
 }

@@ -27,7 +27,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     ...invoice,
     amount: serializeAmountForApi(invoice.amount),
     paidAmount: serializeAmountForApi(invoice.paidAmount),
-    outstandingAmount: serializeAmountForApi(invoice.outstandingAmount)
+    outstandingAmount: serializeAmountForApi(invoice.outstandingAmount),
+    payments: invoice.payments.map((p: any) => ({
+      ...p,
+      amount: serializeAmountForApi(p.amount),
+      allocatedAmount: serializeAmountForApi(p.allocatedAmount)
+    }))
   }
 
   return NextResponse.json(serialized)
