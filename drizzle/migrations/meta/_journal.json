@@ -57,6 +57,55 @@
       "when": 1789270938193,
       "tag": "0007_aberrant_colleen_wing",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789354411475,
+      "tag": "0008_young_talisman",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789357806972,
+      "tag": "0009_peaceful_the_liberteens",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789360363681,
+      "tag": "0010_mysterious_sersi",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789372042322,
+      "tag": "0011_handy_wolverine",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789392430237,
+      "tag": "0012_young_caretaker",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789392465732,
+      "tag": "0013_living_madripoor",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789394833696,
+      "tag": "0014_solid_the_professor",
+      "breakpoints": true
     }
   ]
 }

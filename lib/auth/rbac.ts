@@ -1,6 +1,6 @@
 import { getSession, SessionPayload } from '@/lib/auth/session'
 import { db } from '@/lib/db/client'
-import { classes, studentParents, students, learningReports, enrollments, teacherAssignments, academicYears } from '@/drizzle/schema'
+import { classes, studentParents, students, learningReports, enrollments, teacherAssignments, academicYears, permissions, rolePermissions, userRoles } from '@/drizzle/schema'
 import { eq, and } from 'drizzle-orm'
 
 export class AuthError extends Error {
@@ -142,5 +142,32 @@ export async function requireReportAccess(reportId: number): Promise<{ session: 
     if (!isLinked.length) throw new AuthError(403, 'Forbidden: Report not linked to parent')
   }
 
+  return auth
+}
+
+export async function hasPermission(session: SessionPayload, permissionCode: string): Promise<boolean> {
+  const role = normalizeRole(session.role)
+  if (role === 'SUPER_ADMIN') return true
+  
+  if (role === 'ORANG_TUA' && permissionCode === 'finance.billing.read_own_children') {
+    return true
+  }
+
+  const result = await db.select({ id: permissions.id })
+    .from(permissions)
+    .innerJoin(rolePermissions, eq(rolePermissions.permissionId, permissions.id))
+    .innerJoin(userRoles, and(eq(userRoles.roleId, rolePermissions.roleId), eq(userRoles.userId, session.userId)))
+    .where(eq(permissions.code, permissionCode))
+    .limit(1)
+
+  return result.length > 0
+}
+
+export async function requirePermission(permissionCode: string): Promise<{ session: SessionPayload; role: CanonicalRole }> {
+  const auth = await requireAuth()
+  const ok = await hasPermission(auth.session, permissionCode)
+  if (!ok) {
+    throw new AuthError(403, `Forbidden: Missing permission ${permissionCode}`)
+  }
   return auth
 }
