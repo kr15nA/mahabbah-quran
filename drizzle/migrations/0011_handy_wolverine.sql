@@ -1,0 +1,4 @@
+ALTER TABLE "finance_categories" ADD COLUMN "ziswaf_type" varchar(50);--> statement-breakpoint
+ALTER TABLE "finance_categories" ADD COLUMN "default_account_id" bigint;--> statement-breakpoint
+ALTER TABLE "finance_categories" ADD CONSTRAINT "finance_categories_default_account_id_finance_accounts_id_fk" FOREIGN KEY ("default_account_id") REFERENCES "public"."finance_accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "finance_categories" ADD CONSTRAINT "finance_categories_ziswaf_type_chk" CHECK ("finance_categories"."ziswaf_type" IN ('ZAKAT', 'INFAQ', 'SEDEKAH', 'WAKAF', 'DONATION', 'OTHER') OR "finance_categories"."ziswaf_type" IS NULL);

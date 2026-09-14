@@ -248,7 +248,10 @@ async function seed() {
     INSERT INTO permissions (code, name) VALUES
       ('finance.payment.view', 'View Payments'),
       ('finance.payment.manage', 'Manage Payments'),
-      ('finance.payment.refund', 'Refund Payments')
+      ('finance.payment.refund', 'Refund Payments'),
+      ('finance.ziswaf.view', 'View ZISWAF Receipts'),
+      ('finance.ziswaf.manage', 'Manage ZISWAF Receipts'),
+      ('finance.ziswaf.refund', 'Refund ZISWAF Receipts')
     ON CONFLICT (code) DO NOTHING;
   `
 

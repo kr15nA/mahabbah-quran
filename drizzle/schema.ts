@@ -307,9 +307,13 @@ export const financeCategories = pgTable('finance_categories', {
   name: varchar('name', { length: 100 }).notNull(),
   type: varchar('type', { length: 20 }).notNull(), // INCOME, EXPENSE
   domain: varchar('domain', { length: 50 }).notNull(), // ACADEMIC, ZISWAF, OPERASIONAL
+  ziswafType: varchar('ziswaf_type', { length: 50 }), // ZAKAT, INFAQ, SEDEKAH, WAKAF, DONATION, OTHER
+  defaultAccountId: bigint('default_account_id', { mode: 'number' }).references((): AnyPgColumn => financeAccounts.id, { onDelete: 'restrict' }),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, (table) => ({
+  ziswafTypeCheck: check('finance_categories_ziswaf_type_chk', sql`${table.ziswafType} IN ('ZAKAT', 'INFAQ', 'SEDEKAH', 'WAKAF', 'DONATION', 'OTHER') OR ${table.ziswafType} IS NULL`)
+}))
 
 export const financeCategoryFunds = pgTable('finance_category_funds', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
