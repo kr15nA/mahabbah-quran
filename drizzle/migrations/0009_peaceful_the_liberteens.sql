@@ -1,0 +1,16 @@
+ALTER TABLE "finance_journal_entries" ADD CONSTRAINT "finance_journal_entries_reversal_of_id_finance_journal_entries_id_fk" FOREIGN KEY ("reversal_of_id") REFERENCES "public"."finance_journal_entries"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_finance_cat_fund_single_default" ON "finance_category_funds" USING btree ("category_id") WHERE "finance_category_funds"."is_default" = true;--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_finance_journal_reversal_uniq" ON "finance_journal_entries" USING btree ("reversal_of_id") WHERE "finance_journal_entries"."reversal_of_id" IS NOT NULL;--> statement-breakpoint
+ALTER TABLE "finance_disbursements" ADD CONSTRAINT "finance_disbursements_amount_chk" CHECK ("finance_disbursements"."amount" > 0);--> statement-breakpoint
+ALTER TABLE "finance_disbursements" ADD CONSTRAINT "finance_disbursements_status_chk" CHECK ("finance_disbursements"."status" IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'PAID', 'CANCELLED'));--> statement-breakpoint
+ALTER TABLE "finance_invoices" ADD CONSTRAINT "finance_invoices_amount_chk" CHECK ("finance_invoices"."amount" > 0);--> statement-breakpoint
+ALTER TABLE "finance_invoices" ADD CONSTRAINT "finance_invoices_status_chk" CHECK ("finance_invoices"."status" IN ('DRAFT', 'ISSUED', 'PARTIALLY_PAID', 'PAID', 'CANCELLED'));--> statement-breakpoint
+ALTER TABLE "finance_journal_entries" ADD CONSTRAINT "finance_journal_entries_status_chk" CHECK ("finance_journal_entries"."status" IN ('POSTED', 'REVERSED'));--> statement-breakpoint
+ALTER TABLE "finance_journal_lines" ADD CONSTRAINT "finance_journal_lines_positive_amounts_chk" CHECK ("finance_journal_lines"."debit" >= 0 AND "finance_journal_lines"."credit" >= 0);--> statement-breakpoint
+ALTER TABLE "finance_journal_lines" ADD CONSTRAINT "finance_journal_lines_exclusive_amounts_chk" CHECK (("finance_journal_lines"."debit" > 0 AND "finance_journal_lines"."credit" = 0) OR ("finance_journal_lines"."credit" > 0 AND "finance_journal_lines"."debit" = 0));--> statement-breakpoint
+ALTER TABLE "finance_payment_allocations" ADD CONSTRAINT "finance_payment_allocations_amount_chk" CHECK ("finance_payment_allocations"."allocated_amount" > 0);--> statement-breakpoint
+ALTER TABLE "finance_payments" ADD CONSTRAINT "finance_payments_amount_chk" CHECK ("finance_payments"."amount" > 0);--> statement-breakpoint
+ALTER TABLE "finance_payments" ADD CONSTRAINT "finance_payments_status_chk" CHECK ("finance_payments"."status" IN ('PENDING', 'CONFIRMED', 'CANCELLED', 'REFUNDED'));--> statement-breakpoint
+ALTER TABLE "ziswaf_receipt_allocations" ADD CONSTRAINT "ziswaf_receipt_allocations_amount_chk" CHECK ("ziswaf_receipt_allocations"."amount" > 0);--> statement-breakpoint
+ALTER TABLE "ziswaf_receipts" ADD CONSTRAINT "ziswaf_receipts_amount_chk" CHECK ("ziswaf_receipts"."amount" > 0);--> statement-breakpoint
+ALTER TABLE "ziswaf_receipts" ADD CONSTRAINT "ziswaf_receipts_status_chk" CHECK ("ziswaf_receipts"."status" IN ('DRAFT', 'CONFIRMED', 'CANCELLED', 'REFUNDED'));
