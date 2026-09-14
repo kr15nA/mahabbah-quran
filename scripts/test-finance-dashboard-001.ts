@@ -150,7 +150,7 @@ async function run() {
   }).returning()
 
   await db.insert(financeJournalLines).values([
-    { journalEntryId: Number(invJnl.id), accountId: Number(recAcc.id), debit: BigInt(500000), credit: BigInt(0), fundId: Number(fundId) },
+    { journalEntryId: Number(invJnl.id), accountId: Number((await db.execute(sql`SELECT receivable_account_id FROM finance_fee_types WHERE id = ${feeTypeId}`)).rows[0].receivable_account_id), debit: BigInt(500000), credit: BigInt(0), fundId: Number(fundId) },
     { journalEntryId: Number(invJnl.id), accountId: Number(incAcc.id), debit: BigInt(0), credit: BigInt(500000), fundId: Number(fundId) }
   ])
 
