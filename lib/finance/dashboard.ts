@@ -131,10 +131,10 @@ export async function getAcademicReceivableReconciliation() {
     FROM finance_journal_lines l
     JOIN finance_journal_entries e ON l.journal_entry_id = e.id
     JOIN finance_accounts a ON l.account_id = a.id
-    JOIN finance_fee_types ft ON ft.receivable_account_id = a.id
     WHERE e.status IN ('POSTED', 'REVERSED')
       AND a.account_type = 'ASSET'
       AND a.asset_subtype = 'RECEIVABLE'
+      AND a.id IN (SELECT receivable_account_id FROM finance_fee_types)
   `)
   const ledgerReceivable = BigInt(ledgerRes.rows[0].balance as string)
   const difference = businessOutstanding - ledgerReceivable
