@@ -191,3 +191,12 @@ export async function syncUserRoles(userId: number, requestedRoleIds: number[], 
     await db.batch(batchOps as any)
   }
 }
+
+export async function getEffectivePermissions(userId: number) {
+  const result = await db.select({ code: permissions.code })
+    .from(permissions)
+    .innerJoin(rolePermissions, eq(rolePermissions.permissionId, permissions.id))
+    .innerJoin(userRoles, and(eq(userRoles.roleId, rolePermissions.roleId), eq(userRoles.userId, userId)))
+
+  return Array.from(new Set(result.map(r => r.code)))
+}

@@ -35,6 +35,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
         initials="MQ" 
         onLogout={handleLogout} 
         colorClass="bg-[#FBBF24] text-[#18085A]" 
+        profileHref="/orang-tua/akun"
       />
     </div>
   )
