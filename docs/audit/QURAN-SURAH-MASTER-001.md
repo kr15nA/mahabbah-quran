@@ -20,6 +20,7 @@
 
 ## Juz Boundaries
 - Since the canonical source did not strictly provide juz offsets, a deterministic `juzMapping` array was preserved in the seed script to map the standard 30 Juz boundaries.
+- **Provenance**: Verified against standard King Fahd / Madani Mushaf divisions via canonical metadata sources (Tanzil.net / Quran.com). Specific span spot checks (e.g. Al-Baqarah spans 1-3, Ya-Sin spans 22-23) pass exact verification.
 
 ## Tahsin Context
 - Tahsin schema and forms were intentionally left unchanged per instructions, remaining a session-based reading evaluation. No Surah/Ayah columns were added.

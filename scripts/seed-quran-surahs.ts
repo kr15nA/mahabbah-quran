@@ -5,6 +5,8 @@ import fs from 'fs'
 import path from 'path'
 
 // Hardcoded Juz mapping for all 114 Surahs
+// Provenance: Standard King Fahd / Madani Mushaf Juz divisions.
+// Verified against Tanzil.net / Quran.com canonical metadata.
 const juzMapping: Record<number, {start: number, end: number}> = {
   1: {start: 1, end: 1}, 2: {start: 1, end: 3}, 3: {start: 3, end: 4}, 4: {start: 4, end: 6}, 5: {start: 6, end: 7},
   6: {start: 7, end: 8}, 7: {start: 8, end: 9}, 8: {start: 9, end: 10}, 9: {start: 10, end: 11}, 10: {start: 11, end: 11},

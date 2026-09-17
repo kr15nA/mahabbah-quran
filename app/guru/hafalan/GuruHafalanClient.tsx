@@ -6,6 +6,7 @@ import type { StudentRow } from '@/lib/db/queries/students'
 import type { ClassRow } from '@/lib/db/queries/classes'
 import type { SurahRow } from '@/lib/db/queries/surahs'
 import type { HafalanRow } from '@/lib/db/queries/hafalan'
+import SurahSelector from '@/components/quran/SurahSelector'
 
 export default function GuruHafalanClient({
   classes,
@@ -214,11 +215,10 @@ export default function GuruHafalanClient({
               <form id="hafalan-form" onSubmit={handleSave} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Surah</label>
-                  <select
-                    required
+                  <SurahSelector
+                    surahs={surahs}
                     value={formData.surah_id}
-                    onChange={e => {
-                      const newSurahId = Number(e.target.value)
+                    onChange={(newSurahId) => {
                       const newSurah = surahs.find(s => s.id === newSurahId)
                       const newMax = newSurah ? newSurah.total_ayahs : 1
                       setFormData(p => ({ 
@@ -228,12 +228,7 @@ export default function GuruHafalanClient({
                         ayah_end: p.ayah_end > newMax ? newMax : p.ayah_end
                       }))
                     }}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FBBF24] focus:ring-1 focus:ring-[#FBBF24]"
-                  >
-                    {surahs.map(s => (
-                      <option key={s.id} value={s.id}>{s.number}. {s.name_latin} ({s.name_arabic})</option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

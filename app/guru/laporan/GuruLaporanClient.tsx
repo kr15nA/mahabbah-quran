@@ -6,6 +6,7 @@ import type { StudentRow } from '@/lib/db/queries/students'
 import type { ClassRow } from '@/lib/db/queries/classes'
 import type { SurahRow } from '@/lib/db/queries/surahs'
 import ShareReportModal from '@/components/ui/ShareReportModal'
+import SurahSelector from '@/components/quran/SurahSelector'
 
 export default function GuruLaporanClient({
   classes,
@@ -154,15 +155,11 @@ export default function GuruLaporanClient({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div>
               <label className="block font-semibold text-gray-700 mb-1">Surah</label>
-              <select
+              <SurahSelector
+                surahs={surahs}
                 value={formData.surah_id}
-                onChange={(e) => setFormData(p => ({ ...p, surah_id: Number(e.target.value) }))}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-[#FBBF24] focus:ring-1 focus:ring-[#FBBF24]"
-              >
-                {surahs.map((s) => (
-                  <option key={s.id} value={s.id}>QS. {s.name_latin}</option>
-                ))}
-              </select>
+                onChange={(newSurahId) => setFormData(p => ({ ...p, surah_id: newSurahId }))}
+              />
             </div>
 
             <div>

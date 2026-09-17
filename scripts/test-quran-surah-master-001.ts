@@ -19,9 +19,15 @@ async function runTests() {
   }
   console.log('✅ All Surah numbers 1..114 exist and are unique.')
 
-  // 3. Specific Surah ayah counts
+  // 3. Specific Surah ayah counts and Juz spans
   const fatihah = allSurahs.find(s => s.number === 1)
   const baqarah = allSurahs.find(s => s.number === 2)
+  const aliImran = allSurahs.find(s => s.number === 3)
+  const nisa = allSurahs.find(s => s.number === 4)
+  const kahf = allSurahs.find(s => s.number === 18)
+  const yasin = allSurahs.find(s => s.number === 36)
+  const mulk = allSurahs.find(s => s.number === 67)
+  const naba = allSurahs.find(s => s.number === 78)
   const ikhlas = allSurahs.find(s => s.number === 112)
   const nas = allSurahs.find(s => s.number === 114)
 
@@ -29,7 +35,17 @@ async function runTests() {
   if (baqarah?.totalAyahs !== 286) throw new Error(`Al-Baqarah should have 286 ayahs, got ${baqarah?.totalAyahs}`)
   if (ikhlas?.totalAyahs !== 4) throw new Error(`Al-Ikhlas should have 4 ayahs, got ${ikhlas?.totalAyahs}`)
   if (nas?.totalAyahs !== 6) throw new Error(`An-Nas should have 6 ayahs, got ${nas?.totalAyahs}`)
-  console.log('✅ Specific Surah ayah counts validated (Al-Fatihah, Al-Baqarah, Al-Ikhlas, An-Nas).')
+
+  // Juz boundary checks
+  if (baqarah?.juzStart !== 1 || baqarah?.juzEnd !== 3) throw new Error('Al-Baqarah Juz span mismatch')
+  if (aliImran?.juzStart !== 3 || aliImran?.juzEnd !== 4) throw new Error('Ali Imran Juz span mismatch')
+  if (nisa?.juzStart !== 4 || nisa?.juzEnd !== 6) throw new Error('An-Nisa Juz span mismatch')
+  if (kahf?.juzStart !== 15 || kahf?.juzEnd !== 16) throw new Error('Al-Kahf Juz span mismatch')
+  if (yasin?.juzStart !== 22 || yasin?.juzEnd !== 23) throw new Error('Ya-Sin Juz span mismatch')
+  if (mulk?.juzStart !== 29 || mulk?.juzEnd !== 29) throw new Error('Al-Mulk Juz span mismatch')
+  if (naba?.juzStart !== 30 || naba?.juzEnd !== 30) throw new Error('An-Naba Juz span mismatch')
+
+  console.log('✅ Specific Surah ayah counts and Juz spans validated.')
 
   // Validation function tests
   console.log('Testing validateSurahAyahRange function...')
