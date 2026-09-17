@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
       file,
       entityType: entityType as 'users' | 'students',
       entityId,
-      oldUrl
+      oldUrl,
+      cleanupPrevious: false // We use delayed cleanup during profile update flow
     })
 
     return NextResponse.json({ url })

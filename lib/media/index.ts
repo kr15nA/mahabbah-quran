@@ -9,9 +9,10 @@ export type UploadImageOptions = {
   entityType: 'users' | 'students'
   entityId: number
   oldUrl?: string | null
+  cleanupPrevious?: boolean
 }
 
-export async function uploadOptimizedImage({ file, entityType, entityId, oldUrl }: UploadImageOptions) {
+export async function uploadOptimizedImage({ file, entityType, entityId, oldUrl, cleanupPrevious = true }: UploadImageOptions) {
   if (file.size > MAX_FILE_SIZE) {
     throw new Error('Ukuran file maksimal 5MB')
   }
@@ -48,8 +49,13 @@ export async function uploadOptimizedImage({ file, entityType, entityId, oldUrl 
   })
 
   // Cleanup old file safely
-  // DELAYED: We do not delete old avatar during upload to prevent data loss 
-  // if the DB update fails. It can be cleaned up later or left orphaned safely.
+  if (cleanupPrevious && oldUrl && oldUrl.includes('.vercel-blob.com/')) {
+    try {
+      await del(oldUrl)
+    } catch (e) {
+      console.warn('Failed to delete old image blob:', oldUrl, e)
+    }
+  }
 
   return blob.url
 }

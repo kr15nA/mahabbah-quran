@@ -31,8 +31,9 @@ The logic is unified in a reusable React Client component (`UnifiedAccountClient
 
 ## Transaction Mechanism
 - Modified server actions to use the existing Neon `Pool`-based `financeDb` connection (aliased as `txDb` in profile actions) exported from `lib/finance/tx.ts`. 
-- This safely leverages the pre-existing serverless transaction infrastructure, allowing atomic compensation sequencing across `PROFILE_UPDATED`, `AVATAR_UPDATED`, and `PASSWORD_CHANGED` mutations without needing to recreate a custom client. 
-- Using Neon Serverless Pool is Vercel edge-compatible and safe for transactional queries.
+- This leverages the pre-existing serverless transaction infrastructure, enabling a **true PostgreSQL transaction**.
+- **Inside the DB transaction**: Profile table updates (`users`) and audit log inserts (`PROFILE_UPDATED`, `PASSWORD_CHANGED`, `AVATAR_UPDATED`) are grouped together. If any fails, the entire DB transaction rolls back safely.
+- **Outside the DB transaction**: Blob storage deletion (cleaning up the old avatar) occurs strictly outside the DB transaction. Blob deletion is inherently non-transactional in PostgreSQL; thus, it runs only *after* the DB transaction successfully commits.
 
 ## Linked Profile Behavior
 - The context aggregation purely queries actual DB relationships (`teacher_assignments`, `student_parents`, etc.). It avoids inferring relationships based solely on user role, maintaining strict truth.
@@ -42,7 +43,7 @@ The logic is unified in a reusable React Client component (`UnifiedAccountClient
 - Ensures accurate read-only display of granted privileges on the user interface.
 
 ## Regressions
-- **Media Regression**: Disabled inline blob deletion for `uploadOptimizedImage` which may theoretically orphan old assets in non-profile flows until a garbage collector is introduced. This was a deliberate tradeoff to prevent catastrophic data loss if a profile update fails midway.
+- **Media Regression**: No global media lifecycle behavior was changed. Existing media behavior is preserved for all non-profile callers. The profile/avatar flow explicitly opts into deferred cleanup (`cleanupPrevious: false`) to guarantee avatar DB consistency.
 - **RBAC & Finance**: Verified safe, isolated behavior.
 - **Build**: Successfully passed strict typescript `npx tsc --noEmit` checks and testing.
 
