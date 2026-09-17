@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, requireStudentAccess } from '@/lib/auth/rbac'
 import { getHafalanByStudent, insertHafalanRecord } from '@/lib/db/queries/hafalan'
+import { getSurahById } from '@/lib/db/queries/surahs'
+import { validateSurahAyahRange } from '@/lib/quran/validators'
 
 export async function GET(req: NextRequest) {
   try {
@@ -30,8 +32,16 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     if (!body.student_id) return NextResponse.json({ error: 'student_id is required' }, { status: 400 })
+    if (!body.surah_id) return NextResponse.json({ error: 'surah_id is required' }, { status: 400 })
+    if (!body.ayah_start || !body.ayah_end) return NextResponse.json({ error: 'ayah_start and ayah_end are required' }, { status: 400 })
 
     await requireStudentAccess(body.student_id)
+    
+    const surah = await getSurahById(body.surah_id)
+    const validationError = validateSurahAyahRange(surah, body.ayah_start, body.ayah_end)
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 })
+    }
       
     const id = await insertHafalanRecord({
       student_id: body.student_id,
