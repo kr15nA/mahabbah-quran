@@ -48,6 +48,7 @@ const NAV = [
 ]
 
 import AppShell from '@/components/layout/AppShell'
+import AccountMenu from '@/components/layout/AccountMenu'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -84,9 +85,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span className="w-2 h-2 rounded-full bg-red-600 border-2 border-white absolute top-1.5 right-1.5" />
         )}
       </Link>
-      <div className="w-9 h-9 rounded-full bg-[#FBBF24] text-[#18085A] font-bold text-xs flex items-center justify-center">
-        AP
-      </div>
+      <AccountMenu 
+        initials="AP" 
+        onLogout={handleLogout} 
+        colorClass="bg-[#FBBF24] text-[#18085A]" 
+        profileHref="/admin/akun"
+      />
     </div>
   )
 

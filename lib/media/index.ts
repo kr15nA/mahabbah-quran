@@ -48,13 +48,8 @@ export async function uploadOptimizedImage({ file, entityType, entityId, oldUrl 
   })
 
   // Cleanup old file safely
-  if (oldUrl && oldUrl.includes('.vercel-blob.com/')) {
-    try {
-      await del(oldUrl)
-    } catch (e) {
-      console.warn('Failed to delete old image blob:', oldUrl, e)
-    }
-  }
+  // DELAYED: We do not delete old avatar during upload to prevent data loss 
+  // if the DB update fails. It can be cleaned up later or left orphaned safely.
 
   return blob.url
 }

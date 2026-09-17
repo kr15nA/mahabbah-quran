@@ -44,6 +44,7 @@ export default function GuruLayout({ children }: { children: React.ReactNode }) 
           initials="AS" 
           onLogout={handleLogout} 
           colorClass="bg-[#7B4BD6] text-white" 
+          profileHref="/guru/akun"
         />
       </div>
     </div>
