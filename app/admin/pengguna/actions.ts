@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireAuth } from '@/lib/auth/rbac'
 import { getUserByEmail, getUserByPhone, getUserById, insertUser, updateSystemUser } from '@/lib/db/queries/users'
+import { syncUserRoles } from '@/lib/db/queries/rbac'
 import bcrypt from 'bcryptjs'
 
 const ALLOWED_ROLES = ['admin', 'guru', 'orang_tua']
@@ -18,6 +19,7 @@ export async function createUser(formData: FormData) {
     const email = formData.get('email') as string || null
     const phone = formData.get('phone') as string || null
     const role = formData.get('role') as string
+    const dynamicRolesRaw = formData.getAll('dynamicRoles') as string[]
     const password = formData.get('password') as string
 
     if (!full_name?.trim()) return { error: 'Nama lengkap wajib diisi' }
@@ -37,13 +39,18 @@ export async function createUser(formData: FormData) {
 
     const password_hash = await bcrypt.hash(password, 10)
 
-    await insertUser({
+    const userId = await insertUser({
       full_name: full_name.trim(),
       email: email?.trim() || null,
       phone: phone?.trim() || null,
       role: role as any,
       password_hash
     })
+
+    const dynamicRoles = dynamicRolesRaw.map(Number).filter(n => !isNaN(n))
+    if (dynamicRoles.length > 0) {
+      await syncUserRoles(userId, dynamicRoles, session.session.userId)
+    }
 
     revalidatePath('/admin/pengguna')
     return { success: true }
@@ -75,6 +82,7 @@ export async function editUser(id: number, formData: FormData) {
     const email = formData.get('email') as string || null
     const phone = formData.get('phone') as string || null
     const role = formData.get('role') as string
+    const dynamicRolesRaw = formData.getAll('dynamicRoles') as string[]
     const is_active = formData.get('is_active') === 'true'
 
     if (!full_name?.trim()) return { error: 'Nama lengkap wajib diisi' }
@@ -102,6 +110,13 @@ export async function editUser(id: number, formData: FormData) {
     }
 
     await updateSystemUser(id, updatePayload)
+    
+    // User cannot alter their own dynamic roles to prevent self-lockout of admin privileges
+    if (currentData.id !== session.session.userId) {
+      const dynamicRoles = dynamicRolesRaw.map(Number).filter(n => !isNaN(n))
+      await syncUserRoles(id, dynamicRoles, session.session.userId)
+    }
+
     revalidatePath('/admin/pengguna')
     return { success: true }
   } catch (err: any) {

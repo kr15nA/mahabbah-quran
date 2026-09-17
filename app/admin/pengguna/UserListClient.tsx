@@ -6,8 +6,11 @@ import { UserRow } from '@/lib/db/queries/users'
 import { Search, Plus, MoreHorizontal, User, Shield, CheckCircle2, XCircle, Filter, Eye } from 'lucide-react'
 import { createUser, editUser, toggleUserActive } from './actions'
 
+type UserRowWithRoles = UserRow & { dynamicRoleIds: number[], effectivePermissions: string[] }
+
 type Props = {
-  users: UserRow[]
+  users: UserRowWithRoles[]
+  allRoles: { id: number, code: string, name: string }[]
   total: number
   page: number
   limit: number
@@ -16,15 +19,15 @@ type Props = {
   statusFilter: string
 }
 
-export default function UserListClient({ users, total, page, limit, q, roleFilter, statusFilter }: Props) {
+export default function UserListClient({ users, allRoles, total, page, limit, q, roleFilter, statusFilter }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<UserRow | null>(null)
-  const [viewingUser, setViewingUser] = useState<UserRow | null>(null)
+  const [editingUser, setEditingUser] = useState<UserRowWithRoles | null>(null)
+  const [viewingUser, setViewingUser] = useState<UserRowWithRoles | null>(null)
   
   const [actionMsg, setActionMsg] = useState<{type: 'success'|'error', text: string} | null>(null)
 
@@ -186,13 +189,24 @@ export default function UserListClient({ users, total, page, limit, q, roleFilte
                     <div className="text-gray-500 text-xs">{user.phone || '-'}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold ${
-                      user.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                      user.role === 'guru' ? 'bg-blue-100 text-blue-700' :
-                      'bg-orange-100 text-orange-700'
-                    }`}>
-                      {user.role.replace('_', ' ').toUpperCase()}
-                    </span>
+                    <div className="flex flex-col gap-1 items-start">
+                      <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-bold ${
+                        user.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                        user.role === 'guru' ? 'bg-blue-100 text-blue-700' :
+                        'bg-orange-100 text-orange-700'
+                      }`}>
+                        {user.role === 'admin' ? 'SUPER_ADMIN' : user.role.toUpperCase()}
+                      </span>
+                      {user.dynamicRoleIds.map(rid => {
+                        const r = allRoles.find(x => x.id === rid)
+                        if (!r) return null
+                        return (
+                          <span key={r.id} className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-gray-100 text-gray-700">
+                            {r.name}
+                          </span>
+                        )
+                      })}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold ${
@@ -300,6 +314,18 @@ export default function UserListClient({ users, total, page, limit, q, roleFilte
                 <input required type="password" name="password" minLength={8} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:border-[#4B21A2]" />
                 <p className="text-[10px] text-gray-500 mt-1">Minimal 8 karakter.</p>
               </div>
+              <div className="border-t border-gray-100 pt-4">
+                <label className="block text-xs font-bold text-gray-700 mb-2">Role Tambahan (Dynamic)</label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {allRoles.map(r => (
+                    <label key={r.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                      <input type="checkbox" name="dynamicRoles" value={r.id} className="rounded border-gray-300 text-[#4B21A2] focus:ring-[#4B21A2]" />
+                      <span className="font-medium text-gray-700">{r.name}</span>
+                      <span className="text-xs text-gray-400 font-mono">({r.code})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
               <div className="pt-4 flex justify-end gap-2">
                 <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 font-bold text-sm text-gray-500 hover:bg-gray-50 rounded-xl">Batal</button>
                 <button type="submit" disabled={isPending} className="px-5 py-2 font-bold text-sm text-white bg-[#4B21A2] hover:bg-[#3d1a85] rounded-xl disabled:opacity-50">Simpan</button>
@@ -348,6 +374,18 @@ export default function UserListClient({ users, total, page, limit, q, roleFilte
                   </select>
                 </div>
               </div>
+              <div className="border-t border-gray-100 pt-4">
+                <label className="block text-xs font-bold text-gray-700 mb-2">Role Tambahan (Dynamic)</label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {allRoles.map(r => (
+                    <label key={r.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1.5 rounded">
+                      <input type="checkbox" name="dynamicRoles" value={r.id} defaultChecked={editingUser.dynamicRoleIds.includes(r.id)} className="rounded border-gray-300 text-[#4B21A2] focus:ring-[#4B21A2]" />
+                      <span className="font-medium text-gray-700">{r.name}</span>
+                      <span className="text-xs text-gray-400 font-mono">({r.code})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
               <div className="pt-4 flex justify-end gap-2">
                 <button type="button" onClick={() => setEditingUser(null)} className="px-4 py-2 font-bold text-sm text-gray-500 hover:bg-gray-50 rounded-xl">Batal</button>
                 <button type="submit" disabled={isPending} className="px-5 py-2 font-bold text-sm text-white bg-[#4B21A2] hover:bg-[#3d1a85] rounded-xl disabled:opacity-50">Simpan Perubahan</button>
@@ -375,13 +413,24 @@ export default function UserListClient({ users, total, page, limit, q, roleFilte
                 </div>
                 <div>
                   <h4 className="font-bold text-gray-900 text-lg">{viewingUser.full_name}</h4>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
-                      viewingUser.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                      viewingUser.role === 'guru' ? 'bg-blue-100 text-blue-700' :
-                      'bg-orange-100 text-orange-700'
-                    }`}>
-                      {viewingUser.role.toUpperCase()}
-                  </span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                        viewingUser.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                        viewingUser.role === 'guru' ? 'bg-blue-100 text-blue-700' :
+                        'bg-orange-100 text-orange-700'
+                      }`}>
+                        {viewingUser.role === 'admin' ? 'SUPER_ADMIN' : viewingUser.role.toUpperCase()}
+                    </span>
+                    {viewingUser.dynamicRoleIds.map(rid => {
+                      const r = allRoles.find(x => x.id === rid)
+                      if (!r) return null
+                      return (
+                        <span key={r.id} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-700">
+                          {r.name}
+                        </span>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
               <div className="space-y-2 text-sm">
@@ -406,6 +455,18 @@ export default function UserListClient({ users, total, page, limit, q, roleFilte
                   <span className="font-medium">{viewingUser.last_login_at ? new Date(viewingUser.last_login_at).toLocaleString('id-ID') : '-'}</span>
                 </div>
               </div>
+              {viewingUser.effectivePermissions.length > 0 && (
+                <div className="pt-4 border-t border-gray-100">
+                  <h5 className="font-bold text-xs text-gray-500 mb-2 uppercase">Izin Efektif</h5>
+                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                    {viewingUser.effectivePermissions.map(p => (
+                      <span key={p} className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-green-50 text-green-700">
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
