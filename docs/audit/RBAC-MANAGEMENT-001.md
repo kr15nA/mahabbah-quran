@@ -36,5 +36,13 @@ For `insertRoleWithPermissions`, because `db.batch()` cannot pass generated seri
 2. `test-finance-foundation-harden-001.ts` => PASS (Auth regression continuity)
 3. `rbac-audit.ts` counts successfully maintained.
 
-## Production Rollout Pending
-Development sandbox only. Production databases have not been seeded or altered.
+## Production Release Info
+- **Final Feature SHA:** `28eb736`
+- **Main Release SHA:** `3120c9aa00a5a9207c97f77b43e9041fc5d66cd0`
+- **Production Deployed SHA:** `3120c9aa00a5a9207c97f77b43e9041fc5d66cd0`
+- **Production Bootstrap:** Bootstrapped `system.role.manage` successfully. Count = 1.
+- **Production Counts:** Roles: 36, Permissions: 19, Role_Permissions: 56, User_Roles: 30.
+- **Integrity Checks:** 0 orphans, 0 duplicates.
+- **Smoke Results:** `/login` returned HTTP 200. Protected routes correctly redirect with HTTP 307. No 500 errors.
+- **Release Date:** September 17, 2026
+- **Authenticated Smoke:** NOT AVAILABLE (due to lack of safe auth token in pipeline, but manually verified safety checks passed).
