@@ -92,6 +92,56 @@ async function runTest() {
     const rolePerms = await db.select().from(rolePermissions).where(eq(rolePermissions.roleId, role1.id))
     if (rolePerms.length !== 0) throw new Error('Role permissions not updated correctly')
 
+    // --- FAILURE INJECTION TESTS ---
+    console.log('[TEST] --- INJECTING FAILURES ---')
+
+    // ROLE CREATE FAILURE (Force duplicate code to fail batch)
+    console.log('[TEST] Failure Injection: Role Create')
+    const failRoleCode = 'FAIL_ROLE_TEST'
+    await db.delete(roles).where(eq(roles.code, failRoleCode))
+    try {
+      await insertRoleWithPermissions({
+        code: failRoleCode,
+        name: 'Fail Role',
+        // Injecting an invalid permission ID to force the batch to fail
+        permissionIds: [999999]
+      }, ACTOR_ID)
+      passed = false; console.error('FAILED: Invalid permission ID did not fail role creation')
+    } catch (e) {
+      console.log('PASS: Role creation failed on invalid permission ID as expected')
+      const orphanCheck = await db.select().from(roles).where(eq(roles.code, failRoleCode))
+      if (orphanCheck.length > 0) throw new Error('Role create compensation failed, role was not removed')
+    }
+
+    // ROLE PERMISSION UPDATE FAILURE
+    console.log('[TEST] Failure Injection: Role Permission Update')
+    // We already have role1. Let's try to update it with an invalid permission to fail the batch.
+    try {
+      await updateRoleWithPermissions(role1.id, {
+        name: 'Should Not Be This Name',
+        permissionIds: [999999] // invalid
+      }, ACTOR_ID)
+      passed = false; console.error('FAILED: Invalid permission ID did not fail role update')
+    } catch (e) {
+      console.log('PASS: Role update failed as expected')
+      const unmutatedRole = await db.select().from(roles).where(eq(roles.id, role1.id))
+      if (unmutatedRole[0].name === 'Should Not Be This Name') throw new Error('Role update mutated data before failure')
+    }
+
+    // USER ROLE SYNC FAILURE
+    console.log('[TEST] Failure Injection: User Role Sync')
+    // mockUser currently has role2.id (since previous test removed role1.id)
+    try {
+      await syncUserRoles(mockUser.id, [role1.id, 999999], ACTOR_ID)
+      passed = false; console.error('FAILED: Invalid role ID did not fail user role sync')
+    } catch (e) {
+      console.log('PASS: User role sync failed as expected')
+      const userRolesCheck = await db.select().from(userRoles).where(eq(userRoles.userId, mockUser.id))
+      if (userRolesCheck.length !== 1 || userRolesCheck[0].roleId !== role2.id) {
+        throw new Error('User roles were partially mutated during sync failure')
+      }
+    }
+
     // 5. Cleanup
     console.log('[TEST] Cleaning up test data...')
     await db.delete(userRoles).where(eq(userRoles.userId, mockUser.id))

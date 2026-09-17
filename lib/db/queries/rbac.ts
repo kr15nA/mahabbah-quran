@@ -62,49 +62,84 @@ export async function insertRoleWithPermissions(data: { code: string, name: stri
     description: data.description,
   }).returning()
 
-  if (data.permissionIds.length > 0) {
-    await db.insert(rolePermissions).values(
-      data.permissionIds.map(pid => ({ roleId: newRole.id, permissionId: pid }))
+  try {
+    const batchOps: any[] = []
+    
+    if (data.permissionIds.length > 0) {
+      batchOps.push(
+        db.insert(rolePermissions).values(
+          data.permissionIds.map(pid => ({ roleId: newRole.id, permissionId: pid }))
+        )
+      )
+    }
+
+    batchOps.push(
+      db.insert(auditLogs).values({
+        actorUserId: actorId,
+        action: 'ROLE_CREATED',
+        entityType: 'ROLE',
+        entityId: newRole.id,
+        newValues: { code: data.code, name: data.name, permissions: data.permissionIds }
+      })
     )
+
+    if (batchOps.length > 0) {
+      await db.batch(batchOps as any)
+    }
+
+    return newRole
+  } catch (e: any) {
+    // FULL COMPENSATION
+    try {
+      await db.delete(rolePermissions).where(eq(rolePermissions.roleId, newRole.id))
+      await db.delete(roles).where(eq(roles.id, newRole.id))
+    } catch (cleanupError: any) {
+      console.error('CRITICAL: Compensation failed for insertRoleWithPermissions', cleanupError)
+      throw new Error(`CRITICAL INTEGRITY ERROR: Role creation failed and compensation rollback also failed. Orphaned role ID: ${newRole.id}`)
+    }
+    throw e
   }
-
-  await db.insert(auditLogs).values({
-    actorUserId: actorId,
-    action: 'ROLE_CREATED',
-    entityType: 'ROLE',
-    entityId: newRole.id,
-    newValues: { code: data.code, name: data.name, permissions: data.permissionIds }
-  })
-
-  return newRole
 }
 
 
 export async function updateRoleWithPermissions(id: number, data: { name: string, description?: string, permissionIds: number[] }, actorId: number) {
-  const [updatedRole] = await db.update(roles).set({
-    name: data.name,
-    description: data.description,
-  }).where(eq(roles.id, id)).returning()
+  const existingRole = await db.select().from(roles).where(eq(roles.id, id))
+  if (existingRole.length === 0) throw new Error('Role not found')
 
-  if (!updatedRole) throw new Error('Role not found')
-
-  await db.delete(rolePermissions).where(eq(rolePermissions.roleId, id))
+  const batchOps: any[] = []
+  
+  batchOps.push(
+    db.update(roles).set({
+      name: data.name,
+      description: data.description,
+    }).where(eq(roles.id, id))
+  )
+  
+  batchOps.push(
+    db.delete(rolePermissions).where(eq(rolePermissions.roleId, id))
+  )
   
   if (data.permissionIds.length > 0) {
-    await db.insert(rolePermissions).values(
-      data.permissionIds.map(pid => ({ roleId: id, permissionId: pid }))
+    batchOps.push(
+      db.insert(rolePermissions).values(
+        data.permissionIds.map(pid => ({ roleId: id, permissionId: pid }))
+      )
     )
   }
 
-  await db.insert(auditLogs).values({
-    actorUserId: actorId,
-    action: 'ROLE_UPDATED',
-    entityType: 'ROLE',
-    entityId: id,
-    newValues: { name: data.name, permissions: data.permissionIds }
-  })
+  batchOps.push(
+    db.insert(auditLogs).values({
+      actorUserId: actorId,
+      action: 'ROLE_UPDATED',
+      entityType: 'ROLE',
+      entityId: id,
+      newValues: { name: data.name, permissions: data.permissionIds }
+    })
+  )
 
-  return updatedRole
+  await db.batch(batchOps as any)
+
+  return { ...existingRole[0], name: data.name, description: data.description || existingRole[0].description }
 }
 
 
@@ -116,29 +151,43 @@ export async function syncUserRoles(userId: number, requestedRoleIds: number[], 
   const toAdd = requestedRoleIds.filter(id => !currentRoleIds.has(id))
   const toRemove = Array.from(currentRoleIds).filter(id => !requestedSet.has(id))
 
+  const batchOps: any[] = []
+
   if (toRemove.length > 0) {
-    await db.delete(userRoles).where(
-      and(eq(userRoles.userId, userId), inArray(userRoles.roleId, toRemove))
+    batchOps.push(
+      db.delete(userRoles).where(
+        and(eq(userRoles.userId, userId), inArray(userRoles.roleId, toRemove))
+      )
     )
-    await db.insert(auditLogs).values({
-      actorUserId: actorId,
-      action: 'USER_ROLE_REVOKED',
-      entityType: 'USER_ROLE',
-      entityId: userId,
-      newValues: { revokedRoleIds: toRemove }
-    })
+    batchOps.push(
+      db.insert(auditLogs).values({
+        actorUserId: actorId,
+        action: 'USER_ROLE_REVOKED',
+        entityType: 'USER_ROLE',
+        entityId: userId,
+        newValues: { revokedRoleIds: toRemove }
+      })
+    )
   }
 
   if (toAdd.length > 0) {
-    await db.insert(userRoles).values(
-      toAdd.map(roleId => ({ userId, roleId }))
+    batchOps.push(
+      db.insert(userRoles).values(
+        toAdd.map(roleId => ({ userId, roleId }))
+      )
     )
-    await db.insert(auditLogs).values({
-      actorUserId: actorId,
-      action: 'USER_ROLE_ASSIGNED',
-      entityType: 'USER_ROLE',
-      entityId: userId,
-      newValues: { assignedRoleIds: toAdd }
-    })
+    batchOps.push(
+      db.insert(auditLogs).values({
+        actorUserId: actorId,
+        action: 'USER_ROLE_ASSIGNED',
+        entityType: 'USER_ROLE',
+        entityId: userId,
+        newValues: { assignedRoleIds: toAdd }
+      })
+    )
+  }
+
+  if (batchOps.length > 0) {
+    await db.batch(batchOps as any)
   }
 }

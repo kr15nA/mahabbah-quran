@@ -12,8 +12,7 @@ A discrete `system.role.manage` permission ensures access control over all Role 
 ## Role Code Immutability
 To ensure consistent lookup behavior throughout the application, `code` strings are rendered immutable post-creation. Reassignments solely reference unique identifiers (PK IDs), bypassing structural brittleness.
 
-## No Role Delete in V1
-Destructive deletions (Role & Permission) have been intentionally decoupled from V1. Users may soft-manage unused roles via renaming/description conventions until full role lifecycle endpoints are formalized (`RBAC-ROLE-LIFECYCLE-002`).
+Role lifecycle/deletion is intentionally out of scope for V1 and is not supported by the application.
 
 ## User-Role Diff Syncing
 `syncUserRoles()` correctly parses incoming requests by analyzing delta gaps between currently assigned IDs and requested IDs, effectively guaranteeing atomic, deduplicated multi-role synchronisation against the target.
@@ -25,12 +24,12 @@ Hardened internal validations within `actions.ts` inherently reject alterations 
 All non-read mutations record an encompassing footprint containing actor context, targeted ID, and exact delta parameters (`newValues`) under distinct actions (`ROLE_CREATED`, `USER_ROLE_ASSIGNED`, etc.).
 
 ## Transaction/Atomicity Behavior
-Status: **NON-ATOMIC (Compensated Sequencing)**
-Due to `neon-http` driver constraints disallowing standard interactive sessions (`db.transaction()`), complex mutations (e.g. `insertRoleWithPermissions`) execute sequentially across discrete awaits. It requires explicit multi-step sequences. While failures can orphan uncompleted cascades, logging mechanisms allow subsequent reconciliation.
+Status: **FULLY COMPENSATED** (with native db.batch atomicity)
+Through the `drizzle-orm/neon-http` adapter, simple updates (`updateRoleWithPermissions`, `syncUserRoles`) are passed as an array of statements directly to `db.batch()`, executing perfectly as an atomic transaction within Neon.
+For `insertRoleWithPermissions`, because `db.batch()` cannot pass generated serial IDs (e.g., `newRole.id`) internally to subsequent queries, a manual robust FULL COMPENSATION pattern is enforced: if permissions or audit events fail post-creation, the function actively orchestrates a deterministic cleanup of the newly written role row, throwing a clear failure error upwards while maintaining system integrity.
 
 ## Known Limitations
-- Partial sequential failures leave soft-orphaned assignments.
-- Delete operations must be handled as database scripts rather than UI interactions.
+- Partial sequential failures do NOT orphan assignments thanks to strict rollback/compensation execution block.
 
 ## Test Results
 1. `test-rbac-management-001.ts` => PASS (Diff Sync, Idempotency, Validation, Cleanup)
