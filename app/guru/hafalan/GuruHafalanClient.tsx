@@ -6,6 +6,7 @@ import type { StudentRow } from '@/lib/db/queries/students'
 import type { ClassRow } from '@/lib/db/queries/classes'
 import type { SurahRow } from '@/lib/db/queries/surahs'
 import type { HafalanRow } from '@/lib/db/queries/hafalan'
+import SurahSelector from '@/components/quran/SurahSelector'
 
 export default function GuruHafalanClient({
   classes,
@@ -99,6 +100,9 @@ export default function GuruHafalanClient({
   }
 
   const selectedStudent = classStudents.find(s => s.id === selectedStudentId)
+
+  const selectedSurah = surahs.find(s => s.id === formData.surah_id)
+  const maxAyahs = selectedSurah ? selectedSurah.total_ayahs : 1
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto">
@@ -211,16 +215,20 @@ export default function GuruHafalanClient({
               <form id="hafalan-form" onSubmit={handleSave} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Surah</label>
-                  <select
-                    required
+                  <SurahSelector
+                    surahs={surahs}
                     value={formData.surah_id}
-                    onChange={e => setFormData(p => ({ ...p, surah_id: Number(e.target.value) }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FBBF24] focus:ring-1 focus:ring-[#FBBF24]"
-                  >
-                    {surahs.map(s => (
-                      <option key={s.id} value={s.id}>{s.number}. {s.name_latin}</option>
-                    ))}
-                  </select>
+                    onChange={(newSurahId) => {
+                      const newSurah = surahs.find(s => s.id === newSurahId)
+                      const newMax = newSurah ? newSurah.total_ayahs : 1
+                      setFormData(p => ({ 
+                        ...p, 
+                        surah_id: newSurahId,
+                        ayah_start: p.ayah_start > newMax ? newMax : p.ayah_start,
+                        ayah_end: p.ayah_end > newMax ? newMax : p.ayah_end
+                      }))
+                    }}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -230,6 +238,7 @@ export default function GuruHafalanClient({
                       type="number"
                       required
                       min={1}
+                      max={maxAyahs}
                       value={formData.ayah_start}
                       onChange={e => setFormData(p => ({ ...p, ayah_start: Number(e.target.value) }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FBBF24] focus:ring-1 focus:ring-[#FBBF24]"
@@ -241,6 +250,7 @@ export default function GuruHafalanClient({
                       type="number"
                       required
                       min={1}
+                      max={maxAyahs}
                       value={formData.ayah_end}
                       onChange={e => setFormData(p => ({ ...p, ayah_end: Number(e.target.value) }))}
                       className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FBBF24] focus:ring-1 focus:ring-[#FBBF24]"
