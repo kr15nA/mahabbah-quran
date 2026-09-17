@@ -49,3 +49,14 @@ The logic is unified in a reusable React Client component (`UnifiedAccountClient
 
 ## Production Status
 - **Pending Rollout**: No database migrations were executed, no schema pushed. No production data was altered. This update is safe for immediate deployment.
+
+## Release Info
+- **Feature SHA**: 9c2963a
+- **Main Release SHA**: dc301389afd90359d91306c515c3429ccdca56e3
+- **Production Deployed SHA**: dc30138
+- **Deployment Status**: Ready
+- **Smoke Results**: PASS (/login 200, protected routes 307 redirect)
+- **Authenticated Smoke**: NOT AVAILABLE
+- **Migration**: None
+- **Release Date**: 2026-09-17T15:08:55Z
+
