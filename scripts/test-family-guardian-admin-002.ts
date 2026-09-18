@@ -153,48 +153,6 @@ async function runTests() {
 }
 
 runTests().catch(e => {
-  console.error("Test execution failed:", e)
-  process.exit(1)
-})
-
-  try {
-    // 17. Verify Soft-Deleted row allows new active row
-    // First, permanently deactivate (soft delete) a row? Wait, our manage function doesn't set deletedAt.
-    // I will mock it directly in the db.
-    const mockSoftDeleted = await db.insert(studentParents).values({
-      studentId: studentId,
-      parentId: adminUser.id, // we use adminUser as a random parent
-      relationship: 'OTHER',
-      isPrimary: false,
-      canViewAcademic: false,
-      canViewFinance: false,
-      isActive: false,
-      deletedAt: new Date()
-    }).returning()
-    
-    await _createGuardianRelationshipCore(adminUser.id, {
-      studentId: studentId,
-      parentId: adminUser.id,
-      relationship: 'OTHER',
-      isPrimary: false,
-      canViewAcademic: false,
-      canViewFinance: false
-    })
-    console.log('✅ PASS: new active relation after historical soft-delete')
-    
-    const countQuery = await db.select().from(studentParents).where(and(eq(studentParents.studentId, studentId), eq(studentParents.parentId, adminUser.id)))
-    if (countQuery.length === 2 && countQuery.filter(r => r.deletedAt === null).length === 1 && countQuery.filter(r => r.deletedAt !== null).length === 1) {
-       console.log('✅ PASS: historical deleted row preserved')
-       passCount += 2
-    } else {
-       console.log('❌ FAIL: historical deleted row not preserved correctly', countQuery)
-       failCount += 2
-    }
-
-  } catch (e) {
-    console.error('❌ FAIL: soft-delete behavior tests failed', e)
-    failCount += 2
-  }
-}
-
-runTests().then(() => process.exit(0)).catch(console.error)
+    console.error("Test execution failed:", e)
+    process.exit(1)
+  })
