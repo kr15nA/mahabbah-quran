@@ -11,19 +11,16 @@ import {
 } from '@/drizzle/schema'
 import { DateRange } from './dashboard'
 
-function dateFilter(alias: string, range?: DateRange) {
+function dateFilter(alias: string, range?: DateRange, col: string = 'transaction_date') {
   if (!range) return sql``
   if (range.from && range.to) {
-    if (alias === 'r') return sql` ${sql.raw(alias)}.created_at >= ${range.from} AND ${sql.raw(alias)}.created_at <= ${range.to}`
-    return sql` ${sql.raw(alias)}.transaction_date >= ${range.from} AND ${sql.raw(alias)}.transaction_date <= ${range.to}`
+    return sql` ${sql.raw(alias)}.${sql.raw(col)} >= ${range.from} AND ${sql.raw(alias)}.${sql.raw(col)} <= ${range.to}`
   }
   if (range.from) {
-    if (alias === 'r') return sql` ${sql.raw(alias)}.created_at >= ${range.from}`
-    return sql` ${sql.raw(alias)}.transaction_date >= ${range.from}`
+    return sql` ${sql.raw(alias)}.${sql.raw(col)} >= ${range.from}`
   }
   if (range.to) {
-    if (alias === 'r') return sql` ${sql.raw(alias)}.created_at <= ${range.to}`
-    return sql` ${sql.raw(alias)}.transaction_date <= ${range.to}`
+    return sql` ${sql.raw(alias)}.${sql.raw(col)} <= ${range.to}`
   }
   return sql``
 }
@@ -48,7 +45,7 @@ export async function getZiswafFunds() {
 }
 
 export async function getZiswafSummaryMetrics(range?: DateRange) {
-  const dFilter = range && (range.from || range.to) ? sql` AND ${dateFilter('ziswaf_receipts', range)}` : sql``
+  const dFilter = range && (range.from || range.to) ? sql` AND ${dateFilter('ziswaf_receipts', range, 'received_date')}` : sql``
   
   // Gross Received (CONFIRMED receipts, not counting REFUNDED) -> Wait! 
   // User instruction: "Gross Received: confirmed receipts originally received in the selected period"
@@ -112,7 +109,7 @@ export async function getZiswafSummaryMetrics(range?: DateRange) {
 export async function getCampaignPerformance(range?: DateRange) {
   // Campaign receipt count, gross, refunded, net.
   // This can be complex. We'll do it with CTEs or subqueries.
-  const dFilter = range && (range.from || range.to) ? sql` AND ${dateFilter('r', range)}` : sql``
+  const dFilter = range && (range.from || range.to) ? sql` AND ${dateFilter('r', range, 'received_date')}` : sql``
   const dFilterJournal = range && (range.from || range.to) ? sql` AND ${dateFilter('e', range)}` : sql``
 
   const res = await db.execute(sql`

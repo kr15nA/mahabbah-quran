@@ -50,9 +50,18 @@ export async function GET(request: Request) {
     getPeriodIncomeExpense(range),
     getAcademicReceivableReconciliation(),
     getInvoiceStatusSummary(range),
-    getIncomeExpenseTrend(range),
-    getReceivableAgingReport(), // As of today by default
-    getZiswafSummaryMetrics(range)
+    getIncomeExpenseTrend(range).catch(e => {
+      console.error('Trend metric failed:', e);
+      return [];
+    }),
+    getReceivableAgingReport().catch(e => {
+      console.error('Aging metric failed:', e);
+      return { items: [], summary: { TOTAL: '0', NOT_DUE: '0', _1_30: '0', _31_60: '0', _61_90: '0', OVER_90: '0' } };
+    }),
+    getZiswafSummaryMetrics(range).catch(e => {
+      console.error('ZISWAF metric failed:', e);
+      return { grossReceived: '0', refunds: '0', netReceived: '0', distributed: '0' };
+    })
   ])
 
   // Process Aging report for tunggakan (overdue)
