@@ -91,8 +91,9 @@ export type AuditLogRow = {
  *   A failed business mutation must not call createAuditLog at all.
  *   See AUDIT-LOG-001.md §Transaction Behavior for details.
  */
-export async function createAuditLog(input: CreateAuditLogInput): Promise<AuditLogRow> {
-  const [row] = await db.insert(auditLogs).values({
+export async function createAuditLog(input: CreateAuditLogInput, tx?: any): Promise<AuditLogRow> {
+  const dbClient = tx ?? db
+  const [row] = await dbClient.insert(auditLogs).values({
     actorUserId:  input.actorUserId ?? null,
     action:       input.action,
     entityType:   input.entityType,
