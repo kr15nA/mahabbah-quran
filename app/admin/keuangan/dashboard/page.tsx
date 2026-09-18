@@ -119,7 +119,7 @@ function FinanceDashboardContent() {
   )
 
   return (
-    <div className="space-y-6 pb-20 md:pb-8">
+    <div className="space-y-6 pb-20 md:pb-8 p-0 md:p-2 lg:p-4">
       <FinanceHeader 
         userName={summary?.userName}
         period={period}
@@ -132,29 +132,33 @@ function FinanceDashboardContent() {
 
       <FinanceKpiGrid summary={summary} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Left Column: Trend */}
-        <div className="xl:col-span-2">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* Left Column: Trend (Span 6) */}
+        <div className="xl:col-span-6 flex h-full">
           <FinanceTrendChart data={summary?.trend} />
         </div>
 
-        {/* Right Column: Funds & ZISWAF */}
-        <div className="flex flex-col gap-6 h-full">
-          <div className="flex-1">
-            <FundSummary funds={funds} />
-          </div>
-          <div className="flex-1">
-            <ZiswafSummary ziswaf={summary?.ziswaf} />
-          </div>
+        {/* Middle Column: Funds (Span 3) */}
+        <div className="xl:col-span-3 flex h-full">
+          <FundSummary funds={funds} />
+        </div>
+        
+        {/* Right Column: ZISWAF (Span 3) */}
+        <div className="xl:col-span-3 flex h-full">
+          <ZiswafSummary ziswaf={summary?.ziswaf} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Bottom Left: Recent Transactions */}
-        <RecentTransactions activity={activity} />
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* Bottom Left: Recent Transactions (Span 7) */}
+        <div className="xl:col-span-7">
+          <RecentTransactions activity={activity} />
+        </div>
         
-        {/* Bottom Right: Receivable Follow Up */}
-        <ReceivableFollowUp tunggakan={summary?.tunggakan} />
+        {/* Bottom Right: Receivable Follow Up (Span 5) */}
+        <div className="xl:col-span-5">
+          <ReceivableFollowUp tunggakan={summary?.tunggakan} />
+        </div>
       </div>
     </div>
   )

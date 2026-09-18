@@ -18,7 +18,7 @@ export function FinanceKpiGrid({ summary }: FinanceKpiGridProps) {
   const invoicePaidCount = summary?.invoiceStatus?.PAID?.count || 0
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 xl:gap-5">
       {/* 1. Saldo Kas & Bank */}
       <FinanceKpiCard
         title="Saldo Kas & Bank"
