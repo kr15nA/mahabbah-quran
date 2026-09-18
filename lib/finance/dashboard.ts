@@ -17,13 +17,13 @@ export interface DateRange {
   to?: string
 }
 
-function dateFilter(alias: string, range?: DateRange) {
+function dateFilter(alias: string, range?: DateRange, col: string = 'transaction_date') {
   if (!range) return sql``
   if (range.from && range.to) {
-    return sql` ${sql.raw(alias)}.transaction_date >= ${range.from} AND ${sql.raw(alias)}.transaction_date <= ${range.to}`
+    return sql` ${sql.raw(alias)}.${sql.raw(col)} >= ${range.from} AND ${sql.raw(alias)}.${sql.raw(col)} <= ${range.to}`
   }
-  if (range.from) return sql` ${sql.raw(alias)}.transaction_date >= ${range.from}`
-  if (range.to) return sql` ${sql.raw(alias)}.transaction_date <= ${range.to}`
+  if (range.from) return sql` ${sql.raw(alias)}.${sql.raw(col)} >= ${range.from}`
+  if (range.to) return sql` ${sql.raw(alias)}.${sql.raw(col)} <= ${range.to}`
   return sql``
 }
 
@@ -164,5 +164,62 @@ export async function getRecentActivity(limit = 10) {
     description: r.description,
     status: r.status,
     amount: r.amount as string
+  }))
+}
+
+export async function getInvoiceStatusSummary(range?: DateRange) {
+  const dFilter = range && (range.from || range.to) ? sql` AND ${dateFilter('i', range, 'created_at')}` : sql``
+  const res = await db.execute(sql`
+    SELECT 
+      i.status, 
+      count(i.id) as count, 
+      COALESCE(SUM(
+        i.amount - COALESCE(
+          (SELECT SUM(a.allocated_amount) 
+           FROM finance_payment_allocations a 
+           JOIN finance_payments p ON a.payment_id = p.id 
+           WHERE a.invoice_id = i.id AND p.status = 'CONFIRMED'), 0
+        )
+      ), 0) as total_amount
+    FROM finance_invoices i
+    WHERE i.status IN ('ISSUED', 'PARTIALLY_PAID', 'PAID')
+      ${dFilter}
+    GROUP BY i.status
+  `)
+  const summary = {
+    PAID: { count: 0, amount: '0' },
+    PARTIALLY_PAID: { count: 0, amount: '0' },
+    ISSUED: { count: 0, amount: '0' }
+  }
+  for (const row of res.rows) {
+    const st = row.status as keyof typeof summary
+    if (summary[st]) {
+      summary[st] = { count: parseInt(row.count as string, 10), amount: row.total_amount as string }
+    }
+  }
+  return summary
+}
+
+export async function getIncomeExpenseTrend(range?: DateRange) {
+  const dFilter = range && (range.from || range.to) ? sql` AND ${dateFilter('e', range)}` : sql``
+  const res = await db.execute(sql`
+    SELECT 
+      TO_CHAR(e.transaction_date, 'YYYY-MM-DD') as date,
+      COALESCE(SUM(CASE WHEN a.account_type = 'INCOME' THEN l.credit - l.debit ELSE 0 END), 0) as income,
+      COALESCE(SUM(CASE WHEN a.account_type = 'EXPENSE' THEN l.debit - l.credit ELSE 0 END), 0) as expense
+    FROM finance_journal_lines l
+    JOIN finance_journal_entries e ON l.journal_entry_id = e.id
+    JOIN finance_accounts a ON l.account_id = a.id
+    WHERE e.status IN ('POSTED', 'REVERSED')
+      AND a.account_type IN ('INCOME', 'EXPENSE')
+      ${dFilter}
+    GROUP BY TO_CHAR(e.transaction_date, 'YYYY-MM-DD')
+    ORDER BY date ASC
+  `)
+  
+  return res.rows.map((r: any) => ({
+    date: r.date,
+    income: r.income as string,
+    expense: r.expense as string
   }))
 }

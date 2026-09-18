@@ -8,8 +8,12 @@ import {
   getDashboardConfigurationState, 
   getLiquidAssetBalance, 
   getPeriodIncomeExpense,
-  getAcademicReceivableReconciliation
+  getAcademicReceivableReconciliation,
+  getInvoiceStatusSummary,
+  getIncomeExpenseTrend
 } from '@/lib/finance/dashboard'
+import { getReceivableAgingReport } from '@/lib/finance/reports/academic'
+import { getZiswafSummaryMetrics } from '@/lib/finance/ziswaf-dashboard'
 
 export async function GET(request: Request) {
   const session = await getSession()
@@ -31,23 +35,46 @@ export async function GET(request: Request) {
 
   const range = { from, to }
 
-  const configState = await getDashboardConfigurationState()
-  const liquidBalance = await getLiquidAssetBalance(range) // Liquid balance can take range if requested, but normally it's current. Wait, liquid balance is CURRENT.
-  
-  // The user said: "Changing dashboard date range must NOT alter current balance cards"
-  // So we pass range to getPeriodIncomeExpense but not getLiquidAssetBalance.
-  const currentLiquidBalance = await getLiquidAssetBalance()
-  const { income, expense } = await getPeriodIncomeExpense(range)
-  
-  // Receivables
-  const reconciliation = await getAcademicReceivableReconciliation()
+  const [
+    configState,
+    currentLiquidBalance,
+    periodIncomeExpense,
+    reconciliation,
+    invoiceStatus,
+    trend,
+    aging,
+    ziswaf
+  ] = await Promise.all([
+    getDashboardConfigurationState(),
+    getLiquidAssetBalance(),
+    getPeriodIncomeExpense(range),
+    getAcademicReceivableReconciliation(),
+    getInvoiceStatusSummary(range),
+    getIncomeExpenseTrend(range),
+    getReceivableAgingReport(), // As of today by default
+    getZiswafSummaryMetrics(range)
+  ])
+
+  // Process Aging report for tunggakan (overdue)
+  const tunggakanItems = aging.items.filter((i: any) => i.daysOverdue > 0)
+  const tunggakanAmount = tunggakanItems.reduce((acc: bigint, i: any) => acc + BigInt(i.outstanding), BigInt(0)).toString()
+  const tunggakanCount = tunggakanItems.length
 
   return NextResponse.json({
     configState,
     currentLiquidBalance,
-    periodIncome: income,
-    periodExpense: expense,
-    netActivity: (BigInt(income) - BigInt(expense)).toString(),
-    academicReceivables: reconciliation.ledgerReceivable
+    periodIncome: periodIncomeExpense.income,
+    periodExpense: periodIncomeExpense.expense,
+    netActivity: (BigInt(periodIncomeExpense.income) - BigInt(periodIncomeExpense.expense)).toString(),
+    academicReceivables: reconciliation.ledgerReceivable,
+    reconciliationDifference: reconciliation.difference,
+    invoiceStatus,
+    trend,
+    tunggakan: {
+      amount: tunggakanAmount,
+      count: tunggakanCount,
+      items: tunggakanItems.slice(0, 10) // top 10 for follow-up list
+    },
+    ziswaf
   })
 }
