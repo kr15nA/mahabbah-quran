@@ -28,15 +28,18 @@ export default function StudentTableClient({ data, total, page, limit }: Props) 
   // Debounce search
   useEffect(() => {
     const handler = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString())
-      if (search) {
-        params.set('search', search)
-      } else {
-        params.delete('search')
+      const currentSearch = searchParams.get('search') || searchParams.get('q') || ''
+      if (search !== currentSearch) {
+        const params = new URLSearchParams(searchParams.toString())
+        if (search) {
+          params.set('search', search)
+        } else {
+          params.delete('search')
+        }
         params.delete('q') // remove legacy q
+        params.set('page', '1') // reset page on search
+        router.push(`${pathname}?${params.toString()}`)
       }
-      params.set('page', '1') // reset page on search
-      router.push(`${pathname}?${params.toString()}`)
     }, 500)
     return () => clearTimeout(handler)
   }, [search, router, pathname, searchParams])
@@ -316,6 +319,28 @@ export default function StudentTableClient({ data, total, page, limit }: Props) 
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="px-4 py-3 border-t border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-600">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Data per halaman:</span>
+                <select
+                  value={limit.toString()}
+                  onChange={(e) => {
+                    const params = new URLSearchParams(searchParams.toString())
+                    params.set('page_size', e.target.value)
+                    params.set('page', '1')
+                    router.push(`${pathname}?${params.toString()}`)
+                  }}
+                  className="bg-white border border-gray-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-[#4B21A2]"
+                  aria-label="Data per halaman"
+                >
+                  <option value="10">10</option>
+                  <option value="30">30</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
             </div>
 
             <Pagination

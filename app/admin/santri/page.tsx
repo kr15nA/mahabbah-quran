@@ -12,7 +12,7 @@ interface SearchParams {
   class_id?: string
   status?: string
   page?: string
-  limit?: string
+  page_size?: string
 }
 
 export default async function DataSantriPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -30,8 +30,15 @@ export default async function DataSantriPage({ searchParams }: { searchParams: P
   const status = resolvedParams.status === 'active' || resolvedParams.status === 'inactive' 
     ? resolvedParams.status 
     : undefined
-  const page = resolvedParams.page ? Math.max(1, Number(resolvedParams.page)) : 1
-  const limit = resolvedParams.limit ? Math.max(1, Number(resolvedParams.limit)) : 10
+
+  // Parse page
+  const parsedPage = Number(resolvedParams.page)
+  const page = (!isNaN(parsedPage) && parsedPage >= 1) ? Math.floor(parsedPage) : 1
+
+  // Parse page_size
+  const allowedPageSizes = [10, 30, 50, 100]
+  const parsedPageSize = Number(resolvedParams.page_size)
+  const limit = allowedPageSizes.includes(parsedPageSize) ? parsedPageSize : 10
 
   // 3. Fetch Real Data securely from DB
   const { data, total } = await searchStudents(
@@ -39,6 +46,21 @@ export default async function DataSantriPage({ searchParams }: { searchParams: P
     { program_id: programId, class_id: classId, status }, 
     { limit, offset: (page - 1) * limit }
   )
+
+  // Out of range handling
+  const totalPages = Math.max(1, Math.ceil(total / limit))
+  if (page > totalPages && total > 0) {
+    // Redirect to last valid page preserving all other query parameters
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    if (resolvedParams.program_id) params.set('program_id', resolvedParams.program_id)
+    if (resolvedParams.class_id) params.set('class_id', resolvedParams.class_id)
+    if (resolvedParams.status) params.set('status', resolvedParams.status)
+    params.set('page_size', limit.toString())
+    params.set('page', totalPages.toString())
+    
+    redirect(`/admin/santri?${params.toString()}`)
+  }
 
   // 4. Pass Data to Client Component for Interactivity
   return (
@@ -50,3 +72,4 @@ export default async function DataSantriPage({ searchParams }: { searchParams: P
     />
   )
 }
+
