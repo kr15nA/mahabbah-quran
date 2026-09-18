@@ -1,9 +1,10 @@
 import { Calendar, CheckCircle2, Clock, AlertCircle, ChevronLeft, ChevronRight, User } from 'lucide-react'
 import Link from 'next/link'
 import { getSession } from '@/lib/auth/session'
-import { getChildrenByParent } from '@/lib/db/queries/student-parents'
+import { resolveParentChildContext, studentIdToDbNumber } from '@/lib/guardians/parent-context'
 import { getAttendanceSummaryByStudent, getAttendanceByStudentMonth } from '@/lib/db/queries/attendance'
 import { redirect } from 'next/navigation'
+import ChildSwitcher from '@/components/orang-tua/ChildSwitcher'
 
 function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -21,9 +22,12 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
   }
 
   const resolvedParams = await searchParams
-  const children = await getChildrenByParent(session.userId)
+  const context = await resolveParentChildContext({
+    userId: session.userId,
+    requestedChildId: resolvedParams.child_id
+  })
 
-  if (children.length === 0) {
+  if (context.status === 'NO_CHILDREN') {
     return (
       <div className="space-y-4 pb-20">
         <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm text-center">
@@ -37,14 +41,35 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
     )
   }
 
-  // Determine active child
-  // Fix: Neon SQL returns bigint as string at runtime despite TS types.
-  // Parse everything to Number for strict equality and subsequent usage.
-  const requestedChildId = resolvedParams.child_id ? Number(resolvedParams.child_id) : Number(children[0].student_id)
-  const activeChild = children.find(c => Number(c.student_id) === requestedChildId)
+  if (context.status === 'CHILD_REQUIRED') {
+    return (
+      <div className="space-y-4 pb-20">
+        <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="font-bold text-gray-900 mb-1">Pilih Santri</h3>
+          <p className="text-sm text-gray-500 mb-4">Pilih santri untuk melihat riwayat absensi.</p>
+          <div className="flex justify-center">
+            <ChildSwitcher childrenData={context.children} activeChildId="" />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-  // Security: If parent tries to access a child not in their list, fallback to first child or 403
-  if (!activeChild && resolvedParams.child_id) {
+  if (context.status === 'INVALID_CHILD') {
+    return (
+      <div className="space-y-4 pb-20">
+        <div className="bg-red-50 p-4 rounded-2xl border border-red-200 text-center">
+          <h3 className="font-bold text-red-900 mb-1">Data Tidak Valid</h3>
+          <p className="text-sm text-red-700">Identitas santri tidak valid.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (context.status === 'FORBIDDEN_CHILD') {
     return (
       <div className="space-y-4 pb-20">
         <div className="bg-red-50 p-4 rounded-2xl border border-red-200 text-center">
@@ -55,8 +80,8 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
     )
   }
 
-  const childId = activeChild ? Number(activeChild.student_id) : Number(children[0].student_id)
-  const currentChildName = activeChild ? activeChild.student_name : children[0].student_name
+  // context.status === 'AUTHORIZED'
+  const { child, children, childId } = context
 
   // Determine active month
   const today = new Date()
@@ -70,33 +95,16 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
   const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
   const nextMonthStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`
 
-  // Fetch real attendance
+  // Fetch real attendance using DB numeric ID
+  const dbStudentId = studentIdToDbNumber(childId)
   const [summary, history] = await Promise.all([
-    getAttendanceSummaryByStudent(childId, month),
-    getAttendanceByStudentMonth(childId, month)
+    getAttendanceSummaryByStudent(dbStudentId, month),
+    getAttendanceByStudentMonth(dbStudentId, month)
   ])
 
   return (
     <div className="space-y-4 pb-20">
-      {/* Child Tabs (Only show if multiple children) */}
-      {children.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {children.map(c => {
-            const isActive = c.student_id === childId
-            return (
-              <Link
-                key={c.student_id}
-                href={`?child_id=${c.student_id}&month=${month}`}
-                className={`whitespace-nowrap px-4 py-2 text-xs font-bold rounded-full border transition-colors ${
-                  isActive ? 'bg-[#4B21A2] text-white border-[#4B21A2]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {c.student_nickname || c.student_name}
-              </Link>
-            )
-          })}
-        </div>
-      )}
+      <ChildSwitcher childrenData={children} activeChildId={childId} />
 
       {/* Month Filter */}
       <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
@@ -105,7 +113,7 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
         </Link>
         <div className="text-center">
           <h3 className="font-bold text-gray-900 text-xs">{getMonthName(month)}</h3>
-          <p className="text-[10px] text-gray-500">{currentChildName}</p>
+          <p className="text-[10px] text-gray-500">{child.student_name}</p>
         </div>
         <Link href={`?child_id=${childId}&month=${nextMonthStr}`} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600">
           <ChevronRight className="w-5 h-5" />
