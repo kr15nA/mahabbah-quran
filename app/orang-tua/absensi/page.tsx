@@ -38,8 +38,10 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
   }
 
   // Determine active child
-  const requestedChildId = resolvedParams.child_id ? Number(resolvedParams.child_id) : children[0].student_id
-  const activeChild = children.find(c => c.student_id === requestedChildId)
+  // Fix: Neon SQL returns bigint as string at runtime despite TS types.
+  // Parse everything to Number for strict equality and subsequent usage.
+  const requestedChildId = resolvedParams.child_id ? Number(resolvedParams.child_id) : Number(children[0].student_id)
+  const activeChild = children.find(c => Number(c.student_id) === requestedChildId)
 
   // Security: If parent tries to access a child not in their list, fallback to first child or 403
   if (!activeChild && resolvedParams.child_id) {
@@ -53,7 +55,7 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
     )
   }
 
-  const childId = activeChild ? activeChild.student_id : children[0].student_id
+  const childId = activeChild ? Number(activeChild.student_id) : Number(children[0].student_id)
   const currentChildName = activeChild ? activeChild.student_name : children[0].student_name
 
   // Determine active month
