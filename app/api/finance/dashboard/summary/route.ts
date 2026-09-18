@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/auth/rbac'
@@ -20,10 +22,8 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Check permission
-  
-    const hasPerm = await hasPermission(session as any, 'finance.dashboard.view')
-    if (!hasPerm) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  
+  const hasPerm = await hasPermission(session as any, 'finance.dashboard.view')
+  if (!hasPerm) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
   const from = searchParams.get('from') || undefined
@@ -52,24 +52,33 @@ export async function GET(request: Request) {
     getInvoiceStatusSummary(range),
     getIncomeExpenseTrend(range).catch(e => {
       console.error('Trend metric failed:', e);
-      return [];
+      return null;
     }),
     getReceivableAgingReport().catch(e => {
       console.error('Aging metric failed:', e);
-      return { items: [], summary: { TOTAL: '0', NOT_DUE: '0', _1_30: '0', _31_60: '0', _61_90: '0', OVER_90: '0' } };
+      return null;
     }),
     getZiswafSummaryMetrics(range).catch(e => {
       console.error('ZISWAF metric failed:', e);
-      return { grossReceived: '0', refunds: '0', netReceived: '0', distributed: '0' };
+      return null;
     })
   ])
 
   // Process Aging report for tunggakan (overdue)
-  const tunggakanItems = aging.items.filter((i: any) => i.daysOverdue > 0)
-  const tunggakanAmount = tunggakanItems.reduce((acc: bigint, i: any) => acc + BigInt(i.outstanding), BigInt(0)).toString()
-  const tunggakanCount = tunggakanItems.length
+  let tunggakan: any = null
+  if (aging) {
+    const tunggakanItems = aging.items.filter((i: any) => i.daysOverdue > 0)
+    const tunggakanAmount = tunggakanItems.reduce((acc: bigint, i: any) => acc + BigInt(i.outstanding), BigInt(0)).toString()
+    const tunggakanCount = tunggakanItems.length
+    tunggakan = {
+      amount: tunggakanAmount,
+      count: tunggakanCount,
+      items: tunggakanItems.slice(0, 10) // top 10 for follow-up list
+    }
+  }
 
   return NextResponse.json({
+    userName: session.fullName || session.email || 'Admin',
     configState,
     currentLiquidBalance,
     periodIncome: periodIncomeExpense.income,
@@ -79,11 +88,7 @@ export async function GET(request: Request) {
     reconciliationDifference: reconciliation.difference,
     invoiceStatus,
     trend,
-    tunggakan: {
-      amount: tunggakanAmount,
-      count: tunggakanCount,
-      items: tunggakanItems.slice(0, 10) // top 10 for follow-up list
-    },
+    tunggakan,
     ziswaf
   })
 }
