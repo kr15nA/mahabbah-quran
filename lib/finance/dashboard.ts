@@ -166,3 +166,50 @@ export async function getRecentActivity(limit = 10) {
     amount: r.amount as string
   }))
 }
+
+export async function getInvoiceStatusSummary(range?: DateRange) {
+  const dFilter = range && (range.from || range.to) ? sql` AND ${dateFilter('i', range)}` : sql``
+  const res = await db.execute(sql`
+    SELECT status, count(id) as count, COALESCE(SUM(amount), 0) as total_amount
+    FROM finance_invoices i
+    WHERE status IN ('ISSUED', 'PARTIALLY_PAID', 'PAID')
+      ${dFilter}
+    GROUP BY status
+  `)
+  const summary = {
+    PAID: { count: 0, amount: '0' },
+    PARTIALLY_PAID: { count: 0, amount: '0' },
+    ISSUED: { count: 0, amount: '0' }
+  }
+  for (const row of res.rows) {
+    const st = row.status as keyof typeof summary
+    if (summary[st]) {
+      summary[st] = { count: parseInt(row.count as string, 10), amount: row.total_amount as string }
+    }
+  }
+  return summary
+}
+
+export async function getIncomeExpenseTrend(range?: DateRange) {
+  const dFilter = range && (range.from || range.to) ? sql` AND ${dateFilter('e', range)}` : sql``
+  const res = await db.execute(sql`
+    SELECT 
+      TO_CHAR(e.transaction_date, 'YYYY-MM-DD') as date,
+      COALESCE(SUM(CASE WHEN a.account_type = 'INCOME' THEN l.credit - l.debit ELSE 0 END), 0) as income,
+      COALESCE(SUM(CASE WHEN a.account_type = 'EXPENSE' THEN l.debit - l.credit ELSE 0 END), 0) as expense
+    FROM finance_journal_lines l
+    JOIN finance_journal_entries e ON l.journal_entry_id = e.id
+    JOIN finance_accounts a ON l.account_id = a.id
+    WHERE e.status IN ('POSTED', 'REVERSED')
+      AND a.account_type IN ('INCOME', 'EXPENSE')
+      ${dFilter}
+    GROUP BY TO_CHAR(e.transaction_date, 'YYYY-MM-DD')
+    ORDER BY date ASC
+  `)
+  
+  return res.rows.map((r: any) => ({
+    date: r.date,
+    income: r.income as string,
+    expense: r.expense as string
+  }))
+}
