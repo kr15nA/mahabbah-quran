@@ -122,25 +122,17 @@ export async function requireClassAccess(classId: number): Promise<{ session: Se
       .innerJoin(academicYears, and(eq(academicYears.id, teacherAssignments.academicYearId), eq(academicYears.isActive, true)))
       .where(eq(classes.id, classId))
       .limit(1)
-    if (isAssigned.length) hasAccess = true
-  }
-  
-  if (!hasAccess) {
-    const studentsInClass = await db.select({ id: students.id })
+    if (!isAssigned.length) throw new AuthError(403, 'Forbidden: Class not assigned to teacher in active academic year')
+  } else if (role === 'ORANG_TUA') {
+    // Parent can only view class if they have a linked child currently enrolled in it
+    const isLinked = await db.select({ id: students.id })
       .from(students)
       .innerJoin(enrollments, and(eq(enrollments.studentId, students.id), eq(enrollments.classId, classId)))
       .innerJoin(academicYears, and(eq(academicYears.id, enrollments.academicYearId), eq(academicYears.isActive, true)))
-
-    for (const s of studentsInClass) {
-      if (await canAccessStudentAcademic(session.userId, s.id)) {
-        hasAccess = true
-        break
-      }
-    }
-  }
-
-  if (!hasAccess) {
-    throw new AuthError(403, 'Forbidden: Class not accessible')
+      .innerJoin(studentParents, eq(studentParents.studentId, students.id))
+      .where(eq(studentParents.parentId, session.userId))
+      .limit(1)
+    if (!isLinked.length) throw new AuthError(403, 'Forbidden: No linked child in this class in active academic year')
   }
 
   return auth
