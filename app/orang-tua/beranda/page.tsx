@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Sparkles, Calendar, BookOpen, Award, CheckCircle2, ChevronRight, User } from 'lucide-react'
 import ProgressRing from '@/components/ui/ProgressRing'
 import { getSession } from '@/lib/auth/session'
-import { getChildrenByParent } from '@/lib/db/queries/student-parents'
+import { getAuthorizedAcademicChildren, studentIdToDbNumber } from '@/lib/guardians/parent-context'
 import { getAttendanceSummaryByStudent } from '@/lib/db/queries/attendance'
 import { getLastHafalanByStudent } from '@/lib/db/queries/hafalan'
 import { getLearningReportsByStudent } from '@/lib/db/queries/learning-reports'
@@ -23,7 +23,7 @@ export default async function ParentBerandaPage() {
     redirect('/login')
   }
 
-  const children = await getChildrenByParent(session.userId)
+  const children = await getAuthorizedAcademicChildren(session.userId)
 
   return (
     <div className="space-y-6 pb-20">
@@ -44,10 +44,11 @@ export default async function ParentBerandaPage() {
         </div>
       ) : (
         await Promise.all(children.map(async (child) => {
+          const dbStudentId = studentIdToDbNumber(child.student_id)
           const [attendance, lastHafalan, reports] = await Promise.all([
-            getAttendanceSummaryByStudent(child.student_id),
-            getLastHafalanByStudent(child.student_id),
-            getLearningReportsByStudent(child.student_id, 1)
+            getAttendanceSummaryByStudent(dbStudentId),
+            getLastHafalanByStudent(dbStudentId),
+            getLearningReportsByStudent(dbStudentId, 1)
           ])
 
           const presensiPct = attendance.total > 0 ? Math.round((attendance.hadir / attendance.total) * 100) : 0
