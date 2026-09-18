@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useTransition, useState, useCallback } from 'react'
 import { Users, GraduationCap, Building2, Calendar, FileText, Activity } from 'lucide-react'
-import LearningProgressChart from '@/components/charts/LearningProgressChart'
+import LearningActivityChart from '@/components/charts/LearningActivityChart'
 import AttendanceBarChart from '@/components/charts/AttendanceBarChart'
 import type { AdminAnalytics } from '@/lib/db/queries/analytics'
 
@@ -139,7 +139,7 @@ export default function AnalitikClient({
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
           <h4 className="font-bold text-gray-900 text-sm">Tren Perkembangan Akademik</h4>
           <p className="text-[10px] text-gray-500 -mt-2">Rata-rata Nilai 8 Bulan Terakhir</p>
-          <LearningProgressChart data={progressChartData} />
+          <LearningActivityChart data={progressChartData} />
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
