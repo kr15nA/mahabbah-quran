@@ -1,0 +1,4 @@
+export const VALID_RELATIONSHIPS = [
+  'FATHER', 'MOTHER', 'GRANDFATHER', 'GRANDMOTHER', 
+  'BROTHER', 'SISTER', 'GUARDIAN', 'OTHER'
+] as const

@@ -76,8 +76,7 @@ export default function StudentTableClient({ data, total, page, limit }: Props) 
   }
 
   const openView = (student: StudentRow) => {
-    setSelectedStudent(student)
-    setShowViewModal(true)
+    router.push(`/admin/santri/${student.id}`)
   }
 
   const openEdit = (student: StudentRow) => {
@@ -329,65 +328,6 @@ export default function StudentTableClient({ data, total, page, limit }: Props) 
         )}
       </div>
 
-      {/* View Modal */}
-      {showViewModal && selectedStudent && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="font-bold text-gray-900 text-base">Detail Santri</h3>
-              <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="flex items-center gap-4 mb-4">
-              {renderStudentAvatar(selectedStudent.full_name)}
-              <div>
-                <h4 className="font-bold text-gray-900">{selectedStudent.full_name}</h4>
-                <p className="text-xs text-gray-500">Panggilan: {selectedStudent.nickname || '-'}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
-              <div>
-                <p className="text-gray-400 text-[10px]">ID Santri</p>
-                <p className="font-medium text-gray-900">{String(selectedStudent.id).padStart(4, '0')}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-[10px]">Status</p>
-                <div>{renderStatus(selectedStudent.status)}</div>
-              </div>
-              <div>
-                <p className="text-gray-400 text-[10px]">Program</p>
-                <p className="font-medium text-gray-900">{selectedStudent.program_name || '-'}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-[10px]">Kelas</p>
-                <p className="font-medium text-gray-900">{selectedStudent.class_name || '-'}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-[10px]">Guru Pengampu</p>
-                <p className="font-medium text-gray-900">{selectedStudent.teacher_name || '-'}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-[10px]">Tanggal Bergabung</p>
-                <p className="font-medium text-gray-900">
-                  {selectedStudent.enrollment_date 
-                    ? new Date(selectedStudent.enrollment_date).toLocaleDateString('id-ID') 
-                    : '-'}
-                </p>
-              </div>
-            </div>
-            
-            <button
-              onClick={() => setShowViewModal(false)}
-              className="w-full mt-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-200 transition-colors"
-            >
-              Tutup
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Edit / Add Modal */}
       {(showAddModal || showEditModal) && (

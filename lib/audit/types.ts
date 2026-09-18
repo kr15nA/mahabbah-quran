@@ -14,6 +14,10 @@ export const AuditAction = {
   DEACTIVATE:  'DEACTIVATE',
   ASSIGN:      'ASSIGN',
   UNASSIGN:    'UNASSIGN',
+  GUARDIAN_RELATIONSHIP_CREATED: 'GUARDIAN_RELATIONSHIP_CREATED',
+  GUARDIAN_RELATIONSHIP_UPDATED: 'GUARDIAN_RELATIONSHIP_UPDATED',
+  GUARDIAN_DEACTIVATED: 'GUARDIAN_DEACTIVATED',
+  GUARDIAN_REACTIVATED: 'GUARDIAN_REACTIVATED',
 } as const
 
 export type AuditAction = typeof AuditAction[keyof typeof AuditAction]
@@ -27,6 +31,7 @@ export const AuditEntityType = {
   ACADEMIC_YEAR:      'ACADEMIC_YEAR',
   ENROLLMENT:         'ENROLLMENT',
   TEACHER_ASSIGNMENT: 'TEACHER_ASSIGNMENT',
+  student_parents:    'student_parents',
 } as const
 
 export type AuditEntityType = typeof AuditEntityType[keyof typeof AuditEntityType]
