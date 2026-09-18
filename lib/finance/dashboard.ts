@@ -17,13 +17,13 @@ export interface DateRange {
   to?: string
 }
 
-function dateFilter(alias: string, range?: DateRange) {
+function dateFilter(alias: string, range?: DateRange, col: string = 'transaction_date') {
   if (!range) return sql``
   if (range.from && range.to) {
-    return sql` ${sql.raw(alias)}.transaction_date >= ${range.from} AND ${sql.raw(alias)}.transaction_date <= ${range.to}`
+    return sql` ${sql.raw(alias)}.${sql.raw(col)} >= ${range.from} AND ${sql.raw(alias)}.${sql.raw(col)} <= ${range.to}`
   }
-  if (range.from) return sql` ${sql.raw(alias)}.transaction_date >= ${range.from}`
-  if (range.to) return sql` ${sql.raw(alias)}.transaction_date <= ${range.to}`
+  if (range.from) return sql` ${sql.raw(alias)}.${sql.raw(col)} >= ${range.from}`
+  if (range.to) return sql` ${sql.raw(alias)}.${sql.raw(col)} <= ${range.to}`
   return sql``
 }
 
@@ -168,13 +168,23 @@ export async function getRecentActivity(limit = 10) {
 }
 
 export async function getInvoiceStatusSummary(range?: DateRange) {
-  const dFilter = range && (range.from || range.to) ? sql` AND ${dateFilter('i', range)}` : sql``
+  const dFilter = range && (range.from || range.to) ? sql` AND ${dateFilter('i', range, 'created_at')}` : sql``
   const res = await db.execute(sql`
-    SELECT status, count(id) as count, COALESCE(SUM(amount), 0) as total_amount
+    SELECT 
+      i.status, 
+      count(i.id) as count, 
+      COALESCE(SUM(
+        i.amount - COALESCE(
+          (SELECT SUM(a.allocated_amount) 
+           FROM finance_payment_allocations a 
+           JOIN finance_payments p ON a.payment_id = p.id 
+           WHERE a.invoice_id = i.id AND p.status = 'CONFIRMED'), 0
+        )
+      ), 0) as total_amount
     FROM finance_invoices i
-    WHERE status IN ('ISSUED', 'PARTIALLY_PAID', 'PAID')
+    WHERE i.status IN ('ISSUED', 'PARTIALLY_PAID', 'PAID')
       ${dFilter}
-    GROUP BY status
+    GROUP BY i.status
   `)
   const summary = {
     PAID: { count: 0, amount: '0' },
