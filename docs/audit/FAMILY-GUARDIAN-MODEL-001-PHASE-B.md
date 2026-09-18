@@ -37,3 +37,10 @@ Phase B2 (which will likely include advanced Guardian batch management or cross-
 
 ### Migration 
 No schema or migration changes were made in this phase.
+
+### Production Release (2026-09-18)
+- **Deployment:** Vercel Production Environment
+- **URL:** `https://mahabbah-quran-dge4zdzyb-krisnarefac-9550.vercel.app` (Aliased to `https://app.mahabbahquran.com`)
+- **Git Tag:** `family-guardian-admin-v1.0.0`
+- **Release SHA:** `233ae64eb551b9c48b88453d7cf28508e3cab4e0`
+- **Smoke Tests:** Passed `scripts/test-production-postflight.ts` via endpoint verification.
