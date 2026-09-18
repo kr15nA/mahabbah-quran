@@ -1,8 +1,10 @@
 # Audit Report: FINANCE-DASHBOARD-VISUAL-003
 
 ## Baseline Information
-- **Baseline SHA**: 48f5816
-- **Final Feature SHA**: a7f0c96
+- **Baseline SHA**: 48f5816 (finance-dashboard-hotfix-v2.0.1)
+- **Initial Visual Feature SHA**: a7f0c96
+- **Admin Shell Baseline / Final Feature SHA**: a1799fd
+- **Main Release Merge SHA**: 00f7568
 
 ## Implementation Details
 - **Visual Reference Used**: Followed the reference dashboard image provided by the PM, translating the layout into React components with premium visual styling (gradients, correct spacing, typography).
@@ -28,4 +30,6 @@
 - **375px Mobile**: PASS. Fully responsive single-column layout, no horizontal overflow.
 
 ## Rollout Status
-- Production rollout pending approval.
+- STATUS: RELEASED AS VISUAL BASELINE
+- NOT: FINAL PIXEL-POLISH
+- future polish task: ADMIN-UI-POLISH-002
