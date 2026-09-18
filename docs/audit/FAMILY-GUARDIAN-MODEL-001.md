@@ -29,7 +29,7 @@ Added to `student_parents`:
 
 Constraints Added:
 - `student_parents_active_pair_unq`: `UNIQUE(student_id, parent_id) WHERE is_active = TRUE AND deleted_at IS NULL`
-- `student_parents_active_primary_unq`: `UNIQUE(student_id) WHERE is_primary = TRUE AND is_active = TRUE AND deleted_at IS NULL`
+- `student_parents_active_primary_unq`: `UNIQUE(student_id) WHERE is_primary = TRUE AND is_active = TRUE AND deleted_at IS NULL` (guarantees at most one active primary guardian per student; zero primary guardians is also valid)
 
 ## 4. Test Verification Summary
 - **Total relationships:** 29 (Expected 29)
