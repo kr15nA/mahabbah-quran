@@ -21,7 +21,10 @@ function DashboardSkeleton() {
 }
 
 function TrendChart({ data }: { data: any[] }) {
-  if (!data || data.length === 0) {
+  if (!data) {
+    return <div className="h-64 flex items-center justify-center text-gray-500 bg-gray-50 rounded-xl border border-gray-100">Data Tren belum dapat dimuat</div>
+  }
+  if (data.length === 0) {
     return <div className="h-64 flex items-center justify-center text-gray-500 bg-gray-50 rounded-xl border border-gray-100">Belum ada data tren</div>
   }
 
@@ -274,8 +277,14 @@ function FinanceDashboardContent() {
           <div className="flex justify-between items-start">
             <div>
               <h3 className="font-semibold text-rose-900 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-rose-500" /> Tunggakan Jatuh Tempo</h3>
-              <p className="text-3xl font-bold text-rose-700 mt-3 tracking-tight">{formatRupiah(BigInt(summary?.tunggakan?.amount || 0))}</p>
-              <p className="text-sm text-rose-600/80 mt-1">{summary?.tunggakan?.count || 0} tagihan telah melewati batas waktu (as of today)</p>
+              {summary?.tunggakan ? (
+                <>
+                  <p className="text-3xl font-bold text-rose-700 mt-3 tracking-tight">{formatRupiah(BigInt(summary.tunggakan.amount || 0))}</p>
+                  <p className="text-sm text-rose-600/80 mt-1">{summary.tunggakan.count || 0} tagihan telah melewati batas waktu (as of today)</p>
+                </>
+              ) : (
+                <div className="mt-4 p-3 bg-rose-50 text-rose-600 text-sm rounded border border-rose-100 inline-block">Data Tunggakan belum dapat dimuat</div>
+              )}
             </div>
           </div>
         </Card>
@@ -296,25 +305,31 @@ function FinanceDashboardContent() {
               <p className="text-sm text-gray-500 mt-1">Daftar tagihan yang telah jatuh tempo.</p>
             </div>
             <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-              {summary?.tunggakan?.items?.map((item: any, i: number) => (
-                <div key={i} className="p-4 hover:bg-gray-50 flex justify-between items-center group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-sm shrink-0">
-                      {item.studentName.charAt(0)}
+              {!summary?.tunggakan ? (
+                <div className="p-8 text-center text-rose-500 text-sm">Data Tindak Lanjut belum dapat dimuat.</div>
+              ) : (
+                <>
+                  {summary.tunggakan.items?.map((item: any, i: number) => (
+                    <div key={i} className="p-4 hover:bg-gray-50 flex justify-between items-center group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-sm shrink-0">
+                          {item.studentName.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{item.studentName}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{item.feeType} • {item.invoiceNumber}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-rose-600">{formatRupiah(BigInt(item.outstanding))}</p>
+                        <p className="text-xs text-rose-400 mt-0.5">Telat {item.daysOverdue} hari</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{item.studentName}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{item.feeType} • {item.invoiceNumber}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-rose-600">{formatRupiah(BigInt(item.outstanding))}</p>
-                    <p className="text-xs text-rose-400 mt-0.5">Telat {item.daysOverdue} hari</p>
-                  </div>
-                </div>
-              ))}
-              {(!summary?.tunggakan?.items || summary.tunggakan.items.length === 0) && (
-                <div className="p-8 text-center text-gray-500 text-sm">Tidak ada tunggakan jatuh tempo.</div>
+                  ))}
+                  {(!summary.tunggakan.items || summary.tunggakan.items.length === 0) && (
+                    <div className="p-8 text-center text-gray-500 text-sm">Tidak ada tunggakan jatuh tempo.</div>
+                  )}
+                </>
               )}
             </div>
           </Card>
@@ -324,9 +339,11 @@ function FinanceDashboardContent() {
         <div className="space-y-6">
           
           {/* ZISWAF Widget */}
-          {summary?.ziswaf && (
-            <Card className="p-5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-none shadow-md">
-              <h3 className="font-semibold flex items-center gap-2"><Activity className="w-4 h-4 opacity-80" /> Ringkasan ZISWAF</h3>
+          <Card className="p-5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-none shadow-md">
+            <h3 className="font-semibold flex items-center gap-2"><Activity className="w-4 h-4 opacity-80" /> Ringkasan ZISWAF</h3>
+            {!summary?.ziswaf ? (
+              <div className="mt-4 p-3 bg-emerald-700/50 text-emerald-100 text-sm rounded border border-emerald-600">Data ZISWAF belum dapat dimuat</div>
+            ) : (
               <div className="mt-4 space-y-3">
                 <div className="flex justify-between items-end border-b border-emerald-400/30 pb-2">
                   <span className="text-sm text-emerald-100">Penerimaan Bersih</span>
@@ -337,8 +354,8 @@ function FinanceDashboardContent() {
                   <span className="font-bold">{formatRupiah(BigInt(summary.ziswaf.distributed))}</span>
                 </div>
               </div>
-            </Card>
-          )}
+            )}
+          </Card>
 
           {/* FUND BALANCES */}
           <Card className="p-5">
