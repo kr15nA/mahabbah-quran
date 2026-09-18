@@ -1,7 +1,5 @@
 import { hasPermission } from '@/lib/auth/rbac'
-import { db } from '@/lib/db/client'
-import { studentParents } from '@/drizzle/schema'
-import { eq, and } from 'drizzle-orm'
+import { canAccessStudentFinance as canGuardianAccessStudentFinance } from '@/lib/guardians/access'
 
 export async function canAccessStudentFinance(
   session: { userId: number; role: string },
@@ -12,27 +10,15 @@ export async function canAccessStudentFinance(
     return true
   }
 
-  // PARENT logic
-  if (session.role === 'orang_tua') {
-    // 1. Permission check
-    const hasPerm = await hasPermission(session as any, 'finance.billing.read_own_children')
-    if (!hasPerm) return false
-
-    // 2. Server-side ownership check
-    const [relationship] = await db
-      .select()
-      .from(studentParents)
-      .where(
-        and(
-          eq(studentParents.studentId, studentId),
-          eq(studentParents.parentId, session.userId)
-        )
-      )
-
-    return !!relationship
+  // 1. System Permission check
+  const hasPerm = await hasPermission(session as any, 'finance.billing.read_own_children')
+  if (hasPerm) {
+    // 2. Row-level guardian capability check
+    const isGuardian = await canGuardianAccessStudentFinance(session.userId, studentId)
+    if (isGuardian) {
+      return true
+    }
   }
 
-  // GURU or others: deny by default unless explicitly granted a future finance permission
-  // (Currently GURU is denied)
   return false
 }

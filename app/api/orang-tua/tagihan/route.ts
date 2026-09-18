@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { db } from '@/lib/db/client'
 import { financeInvoices, studentParents } from '@/drizzle/schema'
-import { eq, inArray, and } from 'drizzle-orm'
+import { eq, inArray, and, isNull } from 'drizzle-orm'
 import { serializeAmountForApi } from '@/lib/finance/utils'
 import { hasPermission } from '@/lib/auth/rbac'
 
@@ -18,7 +18,14 @@ export async function GET(req: NextRequest) {
   // Find linked students
   const linkedStudents = await db.select({ studentId: studentParents.studentId })
     .from(studentParents)
-    .where(eq(studentParents.parentId, session.userId))
+    .where(
+      and(
+        eq(studentParents.parentId, session.userId),
+        eq(studentParents.isActive, true),
+        isNull(studentParents.deletedAt),
+        eq(studentParents.canViewFinance, true)
+      )
+    )
 
   if (linkedStudents.length === 0) {
     return NextResponse.json([])

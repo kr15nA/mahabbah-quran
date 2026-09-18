@@ -73,8 +73,22 @@ export const studentParents = pgTable('student_parents', {
   parentId: bigint('parent_id', { mode: 'number' }).notNull().references(() => users.id),
   relationship: varchar('relationship', { length: 30 }).notNull().default('wali'),
   isPrimary: boolean('is_primary').notNull().default(false),
+  
+  // Capabilities
+  canViewAcademic: boolean('can_view_academic').notNull().default(false),
+  canViewFinance: boolean('can_view_finance').notNull().default(false),
+  canReceiveNotification: boolean('can_receive_notification').notNull().default(false),
+  canManageLearning: boolean('can_manage_learning').notNull().default(false),
+  
+  // Lifecycle
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+}, (table) => ({
+  activePairUnq: uniqueIndex('student_parents_active_pair_unq').on(table.studentId, table.parentId).where(sql`${table.isActive} = TRUE AND ${table.deletedAt} IS NULL`),
+  activePrimaryUnq: uniqueIndex('student_parents_active_primary_unq').on(table.studentId).where(sql`${table.isPrimary} = TRUE AND ${table.isActive} = TRUE AND ${table.deletedAt} IS NULL`),
+}))
 
 export const surahs = pgTable('surahs', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),

@@ -4,8 +4,13 @@ export type StudentParentRow = {
   id: number
   student_id: number
   parent_id: number
-  relationship: 'ayah' | 'bunda' | 'wali'
+  relationship: string
   is_primary: boolean
+  can_view_academic: boolean
+  can_view_finance: boolean
+  can_receive_notification: boolean
+  can_manage_learning: boolean
+  is_active: boolean
   parent_name?: string
   parent_email?: string
   parent_phone?: string
@@ -23,7 +28,9 @@ export async function getParentsByStudent(studentId: number): Promise<StudentPar
     SELECT sp.*, u.full_name AS parent_name, u.email AS parent_email, u.phone AS parent_phone
     FROM student_parents sp
     JOIN users u ON u.id = sp.parent_id
-    WHERE sp.student_id = ${studentId}
+    WHERE sp.student_id = ${studentId} 
+      AND sp.is_active = TRUE 
+      AND sp.deleted_at IS NULL
   `
   return rows as StudentParentRow[]
 }
@@ -40,7 +47,10 @@ export async function getChildrenByParent(parentId: number): Promise<StudentPare
     LEFT JOIN programs p ON p.id = c.program_id
     LEFT JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.academic_year_id = ay.id
     LEFT JOIN users u ON u.id = ta.teacher_id
-    WHERE sp.parent_id = ${parentId} AND s.deleted_at IS NULL
+    WHERE sp.parent_id = ${parentId} 
+      AND sp.is_active = TRUE 
+      AND sp.deleted_at IS NULL
+      AND s.deleted_at IS NULL
   `
   return rows as StudentParentRow[]
 }
@@ -48,13 +58,13 @@ export async function getChildrenByParent(parentId: number): Promise<StudentPare
 export async function linkParentToStudent(data: {
   student_id: number
   parent_id: number
-  relationship?: 'ayah' | 'bunda' | 'wali'
+  relationship?: string
   is_primary?: boolean
 }): Promise<number> {
   const rows = await sql`
     INSERT INTO student_parents (student_id, parent_id, relationship, is_primary)
-    VALUES (${data.student_id}, ${data.parent_id}, ${data.relationship ?? 'wali'}, ${data.is_primary ?? false})
-    ON CONFLICT (student_id, parent_id) DO NOTHING
+    VALUES (${data.student_id}, ${data.parent_id}, ${data.relationship ?? 'GUARDIAN'}, ${data.is_primary ?? false})
+    ON CONFLICT (student_id, parent_id) WHERE is_active = TRUE AND deleted_at IS NULL DO NOTHING
     RETURNING id
   `
   return (rows[0] as { id: number })?.id ?? 0
