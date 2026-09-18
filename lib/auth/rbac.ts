@@ -1,7 +1,7 @@
 import { getSession, SessionPayload } from '@/lib/auth/session'
 import { db } from '@/lib/db/client'
 import { classes, studentParents, students, learningReports, enrollments, teacherAssignments, academicYears, permissions, rolePermissions, userRoles } from '@/drizzle/schema'
-import { eq, and, inArray } from 'drizzle-orm'
+import { eq, and, inArray, isNull } from 'drizzle-orm'
 import { canAccessStudentAcademic } from '@/lib/guardians/access'
 
 export class AuthError extends Error {
@@ -130,7 +130,14 @@ export async function requireClassAccess(classId: number): Promise<{ session: Se
       .innerJoin(enrollments, and(eq(enrollments.studentId, students.id), eq(enrollments.classId, classId)))
       .innerJoin(academicYears, and(eq(academicYears.id, enrollments.academicYearId), eq(academicYears.isActive, true)))
       .innerJoin(studentParents, eq(studentParents.studentId, students.id))
-      .where(eq(studentParents.parentId, session.userId))
+      .where(
+        and(
+          eq(studentParents.parentId, session.userId),
+          eq(studentParents.isActive, true),
+          isNull(studentParents.deletedAt),
+          eq(studentParents.canViewAcademic, true)
+        )
+      )
       .limit(1)
     if (!isLinked.length) throw new AuthError(403, 'Forbidden: No linked child in this class in active academic year')
   }
