@@ -44,3 +44,47 @@ Constraints Added:
 - **IDOR Finance denied:** PASS
 - **Inactive relationship denied:** PASS
 - **Soft-deleted relationship denied:** PASS
+
+## 5. Production Release (Phase A)
+- **Phase A Status:** RELEASED
+- **Release Date:** 2026-09-18
+- **Tag:** `family-guardian-model-v1.0.0`
+- **Main Release SHA:** `67fe711`
+- **Production Deployed SHA:** `67fe711`
+
+### Preflight Results (Before Migration)
+- **Relationship rows:** 29
+- **Distribution:** GUARDIAN (23), MOTHER (3), FATHER (3)
+- **Duplicates:** 0
+- **Orphans:** 0
+- **Primary conflicts:** 0
+- **Backup readiness:** READY (Neon PITR)
+
+### Migration Results
+- **Migration 0015 applied:** YES (via `npm run db:migrate`)
+- **Production DB mutation:** Migration only. No business data deleted.
+
+### Post-Migration Validation
+- **Relationship rows:** 29
+- **Distribution:** GUARDIAN (23), MOTHER (3), FATHER (3)
+- **Active:** 29
+- **canViewAcademic:** 29
+- **canViewFinance:** 29
+- **canReceiveNotification:** 0
+- **canManageLearning:** 0
+- **Active pair duplicates:** 0
+- **Active primary conflicts:** 0
+- **Orphans:** 0
+
+### Runtime Smoke & Authorization
+- **Parent beranda:** PASS
+- **Parent absensi:** PASS
+- **Parent laporan:** PASS
+- **Parent Finance backend authorization:** PASS
+- **Admin dashboard:** PASS
+- **Finance dashboard:** PASS
+- **HTTP 500 errors:** NONE
+- **Family guardian regression suite:** PASS
+- **Typecheck & Build:** PASS
+
+**Note:** Parent Finance UI redesign (including the Tagihan UI updates) is OUT OF SCOPE for Phase A and remains in the future `PARENT-FINANCE-001` epic.
