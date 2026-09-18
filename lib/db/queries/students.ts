@@ -110,6 +110,14 @@ export async function searchStudents(query?: string, filters?: {
   const q = query ? `%${query}%` : null
   const limit = pagination?.limit ?? null
   const offset = pagination?.offset ?? null
+
+  const conditions = sql`
+    s.deleted_at IS NULL
+    AND (${q}::text IS NULL OR s.full_name ILIKE ${q}::text)
+    AND (${filters?.class_id ?? null}::bigint IS NULL OR e.class_id = ${filters?.class_id})
+    AND (${filters?.program_id ?? null}::bigint IS NULL OR p.id = ${filters?.program_id})
+    AND (${filters?.status ?? null}::text IS NULL OR s.status = ${filters?.status})
+  `
   
   const countQuery = sql`
     SELECT COUNT(DISTINCT s.id) AS total_count
@@ -117,11 +125,7 @@ export async function searchStudents(query?: string, filters?: {
     LEFT JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
     LEFT JOIN classes c ON c.id = e.class_id
     LEFT JOIN programs p ON p.id = c.program_id
-    WHERE s.deleted_at IS NULL
-      AND (${q}::text IS NULL OR s.full_name ILIKE ${q}::text)
-      AND (${filters?.class_id ?? null}::bigint IS NULL OR e.class_id = ${filters?.class_id})
-      AND (${filters?.program_id ?? null}::bigint IS NULL OR p.id = ${filters?.program_id})
-      AND (${filters?.status ?? null}::text IS NULL OR s.status = ${filters?.status})
+    WHERE ${conditions}
   `
 
   const dataQuery = sql`
@@ -144,11 +148,7 @@ export async function searchStudents(query?: string, filters?: {
     LEFT JOIN users u ON u.id = ta.teacher_id
     LEFT JOIN hafalan_records hr ON hr.student_id = s.id
     LEFT JOIN attendance att ON att.student_id = s.id
-    WHERE s.deleted_at IS NULL
-      AND (${q}::text IS NULL OR s.full_name ILIKE ${q}::text)
-      AND (${filters?.class_id ?? null}::bigint IS NULL OR e.class_id = ${filters?.class_id})
-      AND (${filters?.program_id ?? null}::bigint IS NULL OR p.id = ${filters?.program_id})
-      AND (${filters?.status ?? null}::text IS NULL OR s.status = ${filters?.status})
+    WHERE ${conditions}
     GROUP BY s.id, c.name, p.name, u.full_name, e.class_id
     ORDER BY s.full_name ASC, s.id ASC
     LIMIT ${limit}
