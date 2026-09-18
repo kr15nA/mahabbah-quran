@@ -3,13 +3,19 @@
 ## Git Metadata
 - **Baseline SHA**: `b4605ee`
 - **Feature Branch**: `feature/academic-dashboard-realdata-001`
-- **Feature SHA**: `028d5da`
+- **Code Implementation SHA**: `028d5da`
+- **Docs SHA**: `aebaa37`
+- **Final Main Release SHA**: `9d68d98`
+- **Release Tag**: `academic-dashboard-realdata-v1.0.0`
+- **Release Date**: `2026-09-18`
 
 ## Deployment & Database
 - **Migration**: NONE
 - **Production DB Mutated**: NO
 - **Preview URL**: `https://mahabbah-quran-ol9mncfi6-krisnarefac-9550.vercel.app`
 - **Preview Deployed SHA**: `028d5da`
+- **Production URL**: `https://mahabbah-quran.vercel.app` (Deployment ID: `mahabbah-quran-yr0r8hci0-krisnarefac-9550.vercel.app`)
+- **Production Deployed SHA**: `9d68d98`
 
 ## Academic Context & Definitions
 - **Canonical Academic Context**: Scoped securely via `(SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)`
@@ -34,3 +40,6 @@
 - **Responsive QA (1440/1280, 768, 375)**: PASS (Verified locally; Preview URL requires Vercel auth bypass for external viewing).
 - **Horizontal Overflow**: NO.
 - **Finance Smoke Test**: PASS (Unaffected).
+
+## Production Smoke Status
+- **Production smoke**: PASS (Dashboard loads securely, real data verified, no 500 errors).
