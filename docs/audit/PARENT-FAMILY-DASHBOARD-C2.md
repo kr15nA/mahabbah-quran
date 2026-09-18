@@ -4,6 +4,7 @@
 - **Branch:** `feature/parent-family-dashboard-c2`
 - **Baseline SHA:** `954ab30`
 - **Target Feature:** Parent Beranda Family Dashboard — Real Data Summary & Performance
+- **Visual Fix Scope:** Rectify N-child responsive packing, "gepeng" compressed layouts, and aggressive string truncation.
 
 ## 2. Architecture & Data Definitions
 - **Query Architecture:** N+1 queries were completely removed from the Parent Dashboard. The target populated dashboard query count is exactly 5 queries (1 Authorized Children query + 4 batched metric queries).
@@ -17,7 +18,15 @@
 
 ## 3. UI Component (FamilyChildCard)
 - **Structure:** Encapsulated mobile-first presentation inside `components/orang-tua/FamilyChildCard.tsx`.
-- **Responsive Handling:** Layout avoids horizontal overflow, stacking columns cleanly (375px: 1 col, 768px: 2 cols, 1280px: 3 cols).
+- **Visual Improvements:**
+  - Removed aggressive `truncate` and `line-clamp` on vital strings (Student Name, Class, Teacher, Surah, Report Title).
+  - Used `break-words leading-tight` and natural text wrapping.
+  - Replaced cramped horizontal flex with `flex-col` for Hafalan/Tahsin sections so they comfortably stack when space is constrained.
+  - Buttons widened and given heavier padding for readable touch targets.
+- **Responsive Layout Grid (page.tsx):** 
+  - Defined strict `max-w-5xl mx-auto`.
+  - Defined `grid-cols-1 lg:grid-cols-2`. Explicitly capping columns at 2 to ensure minimum card width remains easily readable even for 5+ children. 
+  - Prevents "stretching" 1 child across wide monitors by applying reasonable max widths.
 - **CTA:** Contains a "Lihat Absensi" (canonical URL) and a conditional "Lihat Laporan" CTA (only rendered if a final report was resolved).
 
 ## 4. Tests and Regression

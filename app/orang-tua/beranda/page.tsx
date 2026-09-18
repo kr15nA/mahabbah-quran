@@ -13,8 +13,8 @@ export default async function ParentBerandaPage() {
   const childrenData = await getFamilyDashboardData(session.userId)
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-center">
+    <div className="space-y-6 pb-20 max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-center">
         <h1 className="font-extrabold text-lg text-[#18085A]">Assalamu'alaikum, {session.fullName}</h1>
         <p className="text-sm font-medium text-gray-600 mt-1">
           {childrenData.length > 0 
@@ -32,7 +32,7 @@ export default async function ParentBerandaPage() {
           <p className="text-sm text-gray-500">Belum ada santri yang terhubung ke akun Anda. Silakan hubungi admin.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {childrenData.map(child => (
             <FamilyChildCard key={child.student_id} child={child} />
           ))}
