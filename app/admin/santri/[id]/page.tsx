@@ -25,9 +25,12 @@ export default async function StudentDetailPage({
   // (In reality, we rely on the component or this page to enforce manage rights)
   let guardians: any[] = []
   let linkedUser: any = null
+  let scholarships: any[] = []
   try {
     guardians = await listStudentGuardians(studentId)
     linkedUser = await getLinkedUserForStudent(studentId)
+    const { getStudentScholarships } = await import('@/lib/finance/scholarships/queries')
+    scholarships = await getStudentScholarships(studentId)
   } catch (e) {
     // If they lack system.user.manage, they just see empty or get a 403 on that tab, 
     // but the page load might fail. Let's assume admins have it.
@@ -63,7 +66,12 @@ export default async function StudentDetailPage({
         </div>
       </div>
 
-      <StudentDetailClient student={student} initialGuardians={guardians} initialLinkedUser={linkedUser} />
+      <StudentDetailClient 
+        student={student} 
+        initialGuardians={guardians} 
+        initialLinkedUser={linkedUser} 
+        initialScholarships={scholarships}
+      />
     </div>
   )
 }

@@ -162,6 +162,50 @@ export async function updateStudentScholarship(id: number, input: UpdateStudentS
       throw new Error('endDate must be on or after startDate')
     }
 
+    // Overlap check
+    const { scholarshipProgramFeeTypes } = await import('@/drizzle/schema')
+    
+    // Get fee types for THIS program
+    const thisProgramFees = await tx.select({ feeTypeId: scholarshipProgramFeeTypes.feeTypeId })
+      .from(scholarshipProgramFeeTypes)
+      .where(eq(scholarshipProgramFeeTypes.programId, award.scholarshipProgramId))
+    const feeTypeIds = thisProgramFees.map(f => f.feeTypeId)
+
+    if (feeTypeIds.length > 0) {
+      // Find active awards for the same student, same academic year, that are NOT this award
+      // and which share any of the same fee types
+      const { and, inArray, or, isNull, lt, gt, ne, sql } = await import('drizzle-orm')
+      
+      const overlapping = await tx.select({ id: studentScholarships.id })
+        .from(studentScholarships)
+        .innerJoin(scholarshipProgramFeeTypes, eq(scholarshipProgramFeeTypes.programId, studentScholarships.scholarshipProgramId))
+        .where(
+          and(
+            ne(studentScholarships.id, id),
+            eq(studentScholarships.studentId, award.studentId),
+            eq(studentScholarships.academicYearId, award.academicYearId),
+            eq(studentScholarships.status, 'ACTIVE'),
+            inArray(scholarshipProgramFeeTypes.feeTypeId, feeTypeIds),
+            or(
+              // Target award has no end date (open-ended)
+              isNull(studentScholarships.endDate),
+              // Target award ends AFTER new start
+              gt(studentScholarships.endDate, newStart)
+            ),
+            or(
+              // New award has no end date
+              newEnd ? sql`true` : sql`true`,
+              newEnd ? lt(studentScholarships.startDate, newEnd) : sql`true`
+            )
+          )
+        )
+        .limit(1)
+
+      if (overlapping.length > 0) {
+        throw new Error(`Overlapping scholarship award denied: An existing award (id=${overlapping[0].id}) covers the same fee type during an overlapping date range`)
+      }
+    }
+
     await tx.update(studentScholarships).set({
       startDate: newStart,
       endDate: newEnd,

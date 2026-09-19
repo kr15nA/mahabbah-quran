@@ -403,3 +403,33 @@ A rogue `npx drizzle-kit push` was executed during the Phase A hardening workflo
 - Fund guard: PASS
 - Reversal: PASS
 - Dashboard/report: PASS
+
+## M. PHASE C IMPLEMENTATION
+
+### Architecture & Routing
+- **Routes**: Implemented under `app/admin/keuangan/beasiswa/*`.
+- **Permissions**:
+  - `finance.billing.view` required for read endpoints and UI rendering.
+  - `finance.billing.manage` strictly enforced at the Server Action level for all mutations.
+- **Server Actions**: Mutations (create/update/activate/deactivate Program, assign/update/revoke Award) are executed via Server Actions referencing canonical domain functions, preventing duplicate audit logs and redundant logic.
+
+### Program Management
+- **Program UI**: Full CRUD implementation with robust client and server validation.
+- **Program Lifecycle**: `DRAFT` is fully editable. `ACTIVE` and `INACTIVE` states are read-only (immutable properties), with only deactivation permitted from the `ACTIVE` state.
+- **Fund Compatibility Guard**: Server-authoritative validation during activation ensures that all selected fee types map to the exact same `defaultFundId`, and that fund is `UNRESTRICTED` (preventing Phase B cross-fund deductions).
+
+### Parsers
+- **Percentage Parser**: Implemented strictly (e.g., `50` -> `5000`, `33.33` -> `3333`). Blocks invalid floats (`33.333`), negative numbers, or out of bounds values (`100.01`). Does NOT rely on naive `Number(value) * 100` float arithmetic.
+- **Rupiah Parser**: Cleanses standard IDR formatting (`500.000` -> `BigInt(500000)`). Rejects fractions, negatives, and malformed strings safely without falling back to JS floating points.
+
+### Award Management
+- **Recipient UI**: Paginated list of scholarship recipients with dynamic, bounded search.
+- **Award Lifecycle**: Updates to an Award are limited to `startDate`, `endDate`, and `notes`. Immutable fields (identity changes) require a Revoke + Re-assign flow. Overlap logic (`updateStudentScholarship`) explicitly guards against time conflicts within the same fee scopes.
+- **Month Semantics**: Admin UI inputs period boundaries by month (e.g., September 2026 -> December 2026), persisting canonically as `YYYY-MM-01` values (e.g., `2026-09-01` and `2026-12-01`), strictly avoiding `YYYY-MM-31` edge cases.
+- **Student Detail Integration**: A dedicated Beasiswa tab resides in `app/admin/santri/[id]`, displaying Active and Historical awards without duplicating core domain logic.
+
+### Security & Data Fetching
+- **RBAC & IDOR**: Server actions explicitly perform `requirePermission('finance.billing.manage')` and inherently scope inputs against the authenticated session. Forged IDs result in `notFound()` or generic validation errors rather than side-effects.
+- **Read Model**: `lib/finance/scholarships/queries.ts` provides server-side pagination, bounded search, and aggregated program counts (recipients, fee types, funds) securely without triggering N+1 load queries.
+- **BigInt Serialization**: Strict compatibility guarantees enforced (e.g., `BigInt(0)` over `0n`) eliminating down-level transpilation crashes.
+- **Tests**: Permanent integration tests (`scripts/test-scholarship-billing-phase-c.ts`) comprehensively validate Program lifecycle, activation guards, and Award overlap conditions locally. All Phase A, B, and C tests run concurrently with 0 failures.

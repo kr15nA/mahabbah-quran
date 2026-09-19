@@ -1,5 +1,5 @@
 import { financeDb } from '../tx'
-import { scholarshipPrograms, scholarshipProgramFeeTypes, financeAccounts, financeFunds, auditLogs } from '@/drizzle/schema'
+import { scholarshipPrograms, scholarshipProgramFeeTypes, financeAccounts, financeFunds, auditLogs, financeFeeTypes } from '@/drizzle/schema'
 import { serializeForAudit } from '../audit'
 import { eq } from 'drizzle-orm'
 
@@ -109,25 +109,53 @@ export async function activateScholarshipProgram(id: number, actorId: number) {
     if (!program) throw new Error('Scholarship program not found')
     if (program.status === 'ACTIVE') return
 
-    // Activation requires complete accounting configuration
+    // 1. Validate accounting configuration exists
     if (!program.scholarshipAccountId || !program.fundingFundId) {
       throw new Error('Cannot activate program without complete accounting configuration (scholarshipAccountId, fundingFundId)')
     }
+    
+    // 2. Validate calculation config
+    if (program.calculationType === 'PERCENTAGE' && !program.percentageBasisPoints) {
+      throw new Error('Percentage programs must have percentageBasisPoints')
+    }
+    if (program.calculationType === 'FIXED_AMOUNT' && !program.fixedAmount) {
+      throw new Error('Fixed amount programs must have fixedAmount')
+    }
 
-    // Activation requires at least one eligible fee type
-    const feeTypes = await tx.select().from(scholarshipProgramFeeTypes).where(eq(scholarshipProgramFeeTypes.programId, id))
+    // 3. Validate fee types
+    const feeTypes = await tx.select({
+      id: financeFeeTypes.id,
+      defaultFundId: financeFeeTypes.defaultFundId
+    }).from(scholarshipProgramFeeTypes)
+      .innerJoin(financeFeeTypes, eq(financeFeeTypes.id, scholarshipProgramFeeTypes.feeTypeId))
+      .where(eq(scholarshipProgramFeeTypes.programId, id))
+
     if (feeTypes.length === 0) {
       throw new Error('Cannot activate program with no eligible fee types configured')
     }
 
-    // Validate referenced fund exists and is active
-    const [fund] = await tx.select({ id: financeFunds.id, isActive: financeFunds.isActive }).from(financeFunds).where(eq(financeFunds.id, program.fundingFundId))
-    if (!fund || !fund.isActive) throw new Error('Configured funding fund is missing or inactive')
+    let commonFundId: number | null = null
+    for (const ft of feeTypes) {
+      if (!ft.defaultFundId) throw new Error(`Fee type ${ft.id} has no defaultFundId`)
+      if (commonFundId === null) {
+        commonFundId = ft.defaultFundId
+      } else if (commonFundId !== ft.defaultFundId) {
+        throw new Error('All selected fee types must share the same defaultFundId')
+      }
+    }
+    
+    if (commonFundId !== program.fundingFundId) {
+      throw new Error('Program fundingFundId must match the defaultFundId of the selected fee types')
+    }
 
-    // Validate referenced account exists and is active
+    // 4. Validate Fund
+    const [fund] = await tx.select({ id: financeFunds.id, isActive: financeFunds.isActive, restrictionType: financeFunds.restrictionType }).from(financeFunds).where(eq(financeFunds.id, program.fundingFundId))
+    if (!fund || !fund.isActive) throw new Error('Configured funding fund is missing or inactive')
+    if (fund.restrictionType !== 'UNRESTRICTED') throw new Error('Scholarship fund must be UNRESTRICTED for Phase B billing compatibility')
+
+    // 5. Validate Account
     const [account] = await tx.select({ id: financeAccounts.id, isActive: financeAccounts.isActive, accountType: financeAccounts.accountType }).from(financeAccounts).where(eq(financeAccounts.id, program.scholarshipAccountId))
     if (!account || !account.isActive) throw new Error('Configured scholarship account is missing or inactive')
-    // Account must be EXPENSE type (scholarship is an expense, not a payment method)
     if (account.accountType !== 'EXPENSE') throw new Error('Scholarship account must be of type EXPENSE')
 
     await tx.update(scholarshipPrograms).set({
