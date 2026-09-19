@@ -54,7 +54,7 @@ export const classes = pgTable('classes', {
 
 export const students = pgTable('students', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
-  userId: bigint('user_id', { mode: 'number' }).references(() => users.id), // For optional student login
+  userId: bigint('user_id', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }).unique('students_user_id_unique'), // For optional student login — self-learner identity. Unique so one user maps to at most one student (PostgreSQL UNIQUE permits multiple NULLs).
   fullName: varchar('full_name', { length: 255 }).notNull(),
   nickname: varchar('nickname', { length: 100 }),
   photoUrl: text('photo_url'),
@@ -66,6 +66,7 @@ export const students = pgTable('students', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 })
+
 
 export const studentParents = pgTable('student_parents', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),

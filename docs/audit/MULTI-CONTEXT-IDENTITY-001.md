@@ -486,3 +486,21 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 **Tasmi Phase C order:** Tasmi Phase C → MULTI-CONTEXT Phase A → B → C → D
 
 **FINAL STATUS: MULTI CONTEXT IDENTITY 001 PLAN READY FOR IMPLEMENTATION**
+
+---
+
+## 9. Phase A Implementation
+
+- **Migration**: `0018_typical_scalphunter.sql` applied.
+- **students.user_id**: Existing column reused.
+- **Unique strategy**: REGULAR UNIQUE (PostgreSQL permits multiple NULLs automatically).
+- **FK**: `ON DELETE SET NULL`.
+- **Existing data**: Pre-check confirmed 0 duplicates and 0 pre-existing linked students.
+- **Helpers created**: `lib/identity/learner.ts`, `lib/identity/contexts.ts`.
+- **Admin context**: Uses transitional legacy role (`session.role === 'admin'`).
+- **Teacher context**: Discovered via active assignment relationship (`O(1)` exists check).
+- **Guardian context**: Discovered via active relationship (`O(1)` exists check).
+- **Learner context**: Nondeleted self-linked student. Active enrollment is NOT required.
+- **Self-assessment**: NOT IMPLEMENTED — explicitly deferred to Phase B.
+- **Production**: NOT MIGRATED yet.
+- **Tests**: `scripts/test-multi-context-identity-001.ts` created and fully passes 63/63 assertions, verifying all contexts and invariants.
