@@ -44,5 +44,10 @@ Implemented Admin & Guru Tasmi management UI based on the Phase A backend domain
 **Migrations**
 - NONE. Reusing existing `tasmi_sessions` Phase A schema.
 
-## Final Note
-Proceed with Preview deployment and manual UAT for both Admin and Guru (ensure Guru is assigned necessary permissions for UAT).
+## Final Release Gate
+- **Hardening Complete**: Fixed type layering between components and domain logic (`TasmiHistoryRow`).
+- **Tests**: Replaced `teacherId = 1` mock test with deterministic DB fixtures (`test-tasmi-ui-phase-b.ts`). Verified correct IDOR boundaries for Guru vs Unrelated students.
+- **Build**: `npx tsc --noEmit` and `npm run build` pass cleanly.
+- **Preview**: Deployment URL is https://mahabbah-quran-mjquheekt-krisnarefac-9550.vercel.app
+
+Proceed with Preview manual UAT. Phase B is ready for release.
