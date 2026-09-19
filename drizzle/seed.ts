@@ -252,8 +252,8 @@ async function seed() {
       ('finance.ziswaf.view', 'View ZISWAF Receipts'),
       ('finance.ziswaf.manage', 'Manage ZISWAF Receipts'),
       ('finance.ziswaf.refund', 'Refund ZISWAF Receipts'),
-      ('academic.tasmi.read', 'Read Tasmi Records'),
-      ('academic.tasmi.manage', 'Manage Tasmi Records')
+      ('academic.tasmi.read', 'Read Tasmi'),
+      ('academic.tasmi.manage', 'Manage Tasmi')
     ON CONFLICT (code) DO NOTHING;
   `
 

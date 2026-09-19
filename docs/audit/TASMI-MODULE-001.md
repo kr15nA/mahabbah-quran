@@ -81,9 +81,16 @@ export const tasmiSessions = pgTable('tasmi_sessions', {
 
 ## Phase A Final Verification
 - **Historical Academic Context Strategy**: `academic_year_id` and `class_id` are deliberately not stored directly on `tasmi_sessions`. Historical context is inferred dynamically at query time using active `enrollments` mapped against `session_date` bounded by `academic_years.start_date` and `end_date`.
-- **Permission Provisioning**: Roles mapping in codebase (`lib/auth/rbac.ts`) + DB seed. Future prod deployments require explicit admin/DB provisioning for `academic.tasmi.read` and `academic.tasmi.manage`.
+- **Permission Provisioning**: Deterministically provisioned by formal migration `0017_tasmi_rbac.sql` which adds `academic.tasmi.read` and `academic.tasmi.manage` to the DB catalog securely. 
+- **Default Grants**: 
+  - `SUPER_ADMIN` receives automatic effective permission via dynamic codebase lookup. 
+  - `GURU` receives NO automatic global grants (granted individually or dynamically scoped in Phase B).
+  - `PARENT` receives NO broad global Tasmi permission (future reads are strictly scoped to relationship via `canViewAcademic = true`).
 - **Transaction Semantics**: Mutations (CREATE/UPDATE/DELETE) and their corresponding `auditLogs` inserts are wrapped in strict DB transactions. Audit failures roll back the entire mutation.
 - **`updated_at` Behavior**: Re-evaluated correctly upon `UPDATE` operation explicitly setting `updatedAt: new Date()` within the service layer transaction.
 - **Index Rationale**: `idx_tasmi_student_date` accelerates history queries perfectly. `idx_tasmi_mode` is technically low selectivity but left intact in Phase A migration to preserve deterministic migration history; can be omitted or removed in a future DB optimization phase.
 - **Test Safety**: `scripts/test-tasmi-domain-001.ts` creates and cleans up its own mocked examiner and student via isolated deterministic cleanup, guarding against polluting dev DB.
-- **Migration Status**: Generated as `0016_lame_cyclops.sql`, successfully applied to dev. Not applied to production.
+- **Migration Status**: 
+  - `0016_lame_cyclops.sql`: Tasmi table/schema (Applied to Dev)
+  - `0017_tasmi_rbac.sql`: Tasmi permission catalog provisioning (Applied to Dev)
+  - Production: neither migration applied yet.
