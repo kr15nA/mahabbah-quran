@@ -1,58 +1,20 @@
-'use client'
+import { getSession } from '@/lib/auth/session'
+import { verifyUserContext, getAvailableUserContexts } from '@/lib/identity/contexts'
+import { redirect } from 'next/navigation'
+import ParentLayoutClient from './ParentLayoutClient'
 
-import { useRouter } from 'next/navigation'
-import { Home, FileText, Calendar, Bell, LogOut } from 'lucide-react'
+export default async function ParentLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSession()
+  if (!session) redirect('/login')
 
-const NAV = [
-  { href: '/orang-tua/beranda', label: 'Beranda', icon: Home },
-  { href: '/orang-tua/laporan', label: 'Laporan', icon: FileText },
-  { href: '/orang-tua/absensi', label: 'Absensi', icon: Calendar },
-  { href: '/orang-tua/notifikasi', label: 'Notifikasi', icon: Bell },
-]
+  const isAuthorized = await verifyUserContext(session, 'guardian')
+  if (!isAuthorized) redirect('/auth/forbidden')
 
-import AppShell from '@/components/layout/AppShell'
-import AccountMenu from '@/components/layout/AccountMenu'
-
-export default function ParentLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/login')
-    router.refresh()
-  }
-
-  const topbarLeft = (
-    <div className="flex items-center gap-2">
-      <img src="/icon.png" alt="Mahabbah Qur'an" className="w-7 h-7 object-contain" />
-      <div className="text-sm font-bold text-[#18085A] truncate tracking-wider">PORTAL ORANG TUA</div>
-    </div>
-  )
-
-  const topbarRight = (
-    <div className="flex items-center gap-3">
-      <AccountMenu 
-        initials="MQ" 
-        onLogout={handleLogout} 
-        colorClass="bg-[#FBBF24] text-[#18085A]" 
-        profileHref="/orang-tua/akun"
-      />
-    </div>
-  )
+  const availableContexts = await getAvailableUserContexts(session)
 
   return (
-    <AppShell
-      variant="mobile"
-      navItems={NAV}
-      brandSubtitle="PORTAL ORANG TUA"
-      userInitials="MQ"
-      userName="Mahabbah Qur'an"
-      userRoleLabel="Orang Tua Santri"
-      onLogout={handleLogout}
-      topbarLeft={topbarLeft}
-      topbarRight={topbarRight}
-    >
+    <ParentLayoutClient availableContexts={availableContexts}>
       {children}
-    </AppShell>
+    </ParentLayoutClient>
   )
 }

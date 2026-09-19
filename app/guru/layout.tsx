@@ -1,69 +1,20 @@
-'use client'
+import { getSession } from '@/lib/auth/session'
+import { verifyUserContext, getAvailableUserContexts } from '@/lib/identity/contexts'
+import { redirect } from 'next/navigation'
+import GuruLayoutClient from './GuruLayoutClient'
 
-import { useRouter } from 'next/navigation'
-import {
-  Home,
-  Users,
-  Calendar,
-  FileText,
-  BookMarked,
-  LogOut,
-} from 'lucide-react'
+export default async function GuruLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSession()
+  if (!session) redirect('/login')
 
-const NAV = [
-  { href: '/guru/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/guru/santri', label: 'Santri Saya', icon: Users },
-  { href: '/guru/absensi', label: 'Absensi', icon: Calendar },
-  { href: '/guru/hafalan', label: 'Hafalan', icon: BookMarked },
-  { href: '/guru/tasmi', label: 'Tasmi', icon: BookMarked },
-  { href: '/guru/laporan', label: 'Laporan', icon: FileText },
-]
+  const isAuthorized = await verifyUserContext(session, 'teacher')
+  if (!isAuthorized) redirect('/auth/forbidden')
 
-import AppShell from '@/components/layout/AppShell'
-import AccountMenu from '@/components/layout/AccountMenu'
-
-export default function GuruLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/login')
-    router.refresh()
-  }
-
-  const topbarLeft = (
-    <div className="flex items-center gap-2">
-      <img src="/icon.png" alt="Mahabbah Qur'an" className="w-7 h-7 object-contain" />
-      <div className="text-sm font-bold text-gray-900 truncate">Portal Guru Tahfizh 👋</div>
-    </div>
-  )
-
-  const topbarRight = (
-    <div className="flex items-center gap-3">
-      <div className="md:hidden">
-        <AccountMenu 
-          initials="AS" 
-          onLogout={handleLogout} 
-          colorClass="bg-[#7B4BD6] text-white" 
-          profileHref="/guru/akun"
-        />
-      </div>
-    </div>
-  )
+  const availableContexts = await getAvailableUserContexts(session)
 
   return (
-    <AppShell
-      variant="portal"
-      navItems={NAV}
-      brandSubtitle="GURU TAHFIZH"
-      userInitials="AS"
-      userName="Ustadz Aldi Solihin"
-      userRoleLabel="Guru Kelompok A"
-      onLogout={handleLogout}
-      topbarLeft={topbarLeft}
-      topbarRight={topbarRight}
-    >
+    <GuruLayoutClient availableContexts={availableContexts}>
       {children}
-    </AppShell>
+    </GuruLayoutClient>
   )
 }

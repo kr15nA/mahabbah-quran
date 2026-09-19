@@ -241,7 +241,7 @@ async function run() {
   const fakeSessionC = { userId: learnerOnlyUserId, role: 'guru' as const, fullName: 'Guru Who Is Learner', email: null }
   const ctxC = await getAvailableUserContexts(fakeSessionC)
   assert(ctxC.admin === false, 'C: admin=false')
-  assert(ctxC.teacher === false, 'C: teacher=false (no assignment)')
+  assert(ctxC.teacher === true, 'C: teacher=true (Phase C transitional backward-compatibility rule for legacy role guru)')
   assert(ctxC.guardian === false, 'C: guardian=false')
   assert(ctxC.learner === true, 'C: learner=true — role-independent')
   assert(ctxC.selfStudentId === String(learnerOnlyStudentId), 'C: selfStudentId correct')
@@ -526,6 +526,37 @@ async function run() {
     threw = e.message.startsWith('NO_LEARNER_PROFILE')
   }
   assert(threw, 'Q: requireSelfStudentProfile throws NO_LEARNER_PROFILE when no profile')
+
+  // -------------------------------------------------------------------------
+  // SCENARIO R: Legacy Guru Fallback (Zero Assignment)
+  // -------------------------------------------------------------------------
+  console.log('\nR. Legacy Guru Fallback (Zero Assignment)')
+  const legacyGuruUserId = await makeUser({ email: `identity_r_legacy_guru_${ts}@test.com`, fullName: 'Legacy Guru', role: 'guru' })
+  const legacyGuruCtx = await getAvailableUserContexts({ userId: legacyGuruUserId, role: 'guru', fullName: 'Legacy Guru', email: null })
+  assert(legacyGuruCtx.teacher === true, 'R: teacher=true (Phase C transitional backward-compatibility rule)')
+  assert(legacyGuruCtx.learner === false, 'R: learner=false (unless explicitly linked)')
+  
+  // -------------------------------------------------------------------------
+  // SCENARIO S: Legacy Parent Fallback (Zero Guardian Relationship)
+  // -------------------------------------------------------------------------
+  console.log('\nS. Legacy Parent Fallback (Zero Guardian Relationship)')
+  const legacyParentUserId = await makeUser({ email: `identity_s_legacy_parent_${ts}@test.com`, fullName: 'Legacy Parent', role: 'orang_tua' })
+  const legacyParentCtx = await getAvailableUserContexts({ userId: legacyParentUserId, role: 'orang_tua', fullName: 'Legacy Parent', email: null })
+  assert(legacyParentCtx.guardian === true, 'S: guardian=true (Phase C transitional backward-compatibility rule)')
+  assert(legacyParentCtx.learner === false, 'S: learner=false (unless explicitly linked)')
+  
+  // -------------------------------------------------------------------------
+  // SCENARIO T: Fallback Data Scope Independence
+  // -------------------------------------------------------------------------
+  console.log('\nT. Fallback Data Scope Independence')
+  const legacyParentChildren = await getAuthorizedAcademicChildren(legacyParentUserId)
+  assert(legacyParentChildren.length === 0, 'T: legacy Parent without relationship has NO authorized children')
+  
+  const legacyGuruHasTeacherCtx = await hasTeacherContext(legacyGuruUserId, 'guru')
+  assert(legacyGuruHasTeacherCtx === true, 'T: legacy Guru has Teacher context')
+  // We don't have a getClassesByTeacher helper imported, but logically it's driven by teacherAssignments table.
+  const assignmentsR = await db.select().from(teacherAssignments).where(eq(teacherAssignments.teacherId, legacyGuruUserId))
+  assert(assignmentsR.length === 0, 'T: legacy Guru without assignment has NO actual teacher assignments')
 
   // -------------------------------------------------------------------------
   // Summary
