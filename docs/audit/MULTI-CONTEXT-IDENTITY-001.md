@@ -3,7 +3,7 @@
 
 **Branch:** feature/multi-context-identity-001
 **Baseline:** d4d914e3cb658c37e1b395d8af7fdfccfaf68c35
-**Status:** PHASE A RELEASED, PHASE B RELEASED, PHASE C PENDING, PHASE D PENDING
+**Status:** PHASE A RELEASED, PHASE B RELEASED, PHASE C RELEASED, PHASE D PENDING
 
 ---
 
@@ -514,7 +514,7 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 
 - **Phase A (Self Learner Identity Foundation)**: ✅ RELEASED (`multi-context-identity-phase-a-v1.0.0`)
 - **Phase B (Admin Learner Identity Management + Formal Self-Assessment Guard)**: ✅ RELEASED (`multi-context-identity-phase-b-v1.0.0`)
-- **Phase C (Context Switcher + V1 Learner Portal)**: ✅ IMPLEMENTED — RELEASE CANDIDATE
+- **Phase C (Context Switcher + V1 Learner Portal)**: ✅ RELEASED (`multi-context-identity-phase-c-v1.0.0`)
 - **Phase D (Learner Achievement UI)**: ⏳ PENDING
 
 **Phase A Status:** RELEASED
@@ -580,4 +580,62 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 - **Regressions**: Phase B passed. Legacy tests passed. TypeScript build passed.
 - **Migration**: NONE.
 - **Production**: NOT CHANGED.
-- **Status**: IMPLEMENTED — RELEASE CANDIDATE
+- **Status**: RELEASED
+
+---
+
+## 13. Phase C Final Release Metadata
+
+**Phase C Status:**
+RELEASED
+
+**Main Release SHA:**
+88f5d8a9c20a76221669b3b38d39f5938874da28
+
+**Production Deployed SHA:**
+88f5d8a9c20a76221669b3b38d39f5938874da28
+
+**Tag:**
+multi-context-identity-phase-c-v1.0.0
+
+**Migration:**
+NONE
+
+**Context Switcher:**
+RELEASED
+
+**Context Chooser:**
+RELEASED
+
+**Landing Resolver:**
+RELEASED
+
+**Server Layout Context Enforcement:**
+RELEASED
+
+**mq_last_context:**
+UX PREFERENCE ONLY
+
+**JWT:**
+UNCHANGED
+
+**SessionPayload:**
+UNCHANGED
+
+**Teacher Compatibility Rule:**
+active assignment OR legacy guru fallback
+
+**Guardian Compatibility Rule:**
+active guardian relation OR legacy orang_tua fallback
+
+**Learner Rule:**
+explicit students.user_id self-link only
+
+**/santri:**
+MINIMAL CONTEXT SHELL RELEASED
+
+**Full Learner Academic UI:**
+NOT IMPLEMENTED
+
+**Phase D:**
+PENDING
