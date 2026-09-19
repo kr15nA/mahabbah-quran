@@ -114,3 +114,11 @@ Implement a read-only Admin Guardian Relationship Explorer to discover, overview
 
 **FINAL VERDICT**:
 GUARDIAN RELATIONSHIP EXPLORER RELEASE READY
+
+**RELEASED**
+**main release SHA**: eed95f5
+**production deployed SHA**: eed95f5
+**tag**: guardian-relationship-explorer-v1.0.0
+**Production smoke**: PASS
+**migration**: NONE
+**Production DB mutated**: NO
