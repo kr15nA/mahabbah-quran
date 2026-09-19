@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Search } from 'lucide-react'
 import ProgressRing from '@/components/ui/ProgressRing'
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar'
 import type { StudentRow } from '@/lib/db/queries/students'
 
 export default function GuruSantriClient({ students, teacherName }: { students: StudentRow[], teacherName: string }) {
@@ -41,9 +42,12 @@ export default function GuruSantriClient({ students, teacherName }: { students: 
           {filtered.map((s) => (
             <div key={s.id} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex justify-between items-center relative overflow-hidden group hover:border-[#FBBF24] transition-colors">
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-12 h-12 rounded-full bg-[#4B21A2] text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
-                  {s.full_name.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                </div>
+                <ProfileAvatar 
+                  src={s.photo_url} 
+                  name={s.full_name} 
+                  size={48} 
+                  className="bg-[#4B21A2] text-white font-bold text-sm flex-shrink-0"
+                />
                 <div className="min-w-0 pr-2">
                   <h4 className="font-bold text-gray-900 text-sm truncate">{s.full_name}</h4>
                   <p className="text-xs text-gray-500 truncate">{s.class_name || s.program_name}</p>

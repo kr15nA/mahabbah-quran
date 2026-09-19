@@ -17,7 +17,6 @@ export async function updateMyProfile(formData: FormData) {
 
     const fullName = formData.get('full_name') as string
     const phone = formData.get('phone') as string | null
-    const avatarUrl = formData.get('avatar_url') as string | null
 
     if (!fullName || fullName.trim().length === 0) {
       return { error: 'Nama lengkap wajib diisi' }
@@ -28,7 +27,6 @@ export async function updateMyProfile(formData: FormData) {
 
     const updates: Partial<typeof currentData> = {}
     const diff: Record<string, any> = {}
-    let avatarChanged = false
 
     if (currentData.full_name !== fullName.trim()) {
       updates.full_name = fullName.trim()
@@ -37,11 +35,6 @@ export async function updateMyProfile(formData: FormData) {
     if (currentData.phone !== (phone?.trim() || null)) {
       updates.phone = phone ? phone.trim() : null
       diff.phone = updates.phone
-    }
-    if (currentData.avatar_url !== (avatarUrl || null)) {
-      updates.avatar_url = avatarUrl || null
-      diff.avatar_url = updates.avatar_url
-      avatarChanged = true
     }
 
     if (Object.keys(updates).length > 0) {
@@ -57,34 +50,12 @@ export async function updateMyProfile(formData: FormData) {
           oldValues: {
             full_name: currentData.full_name,
             phone: currentData.phone,
-            avatar_url: currentData.avatar_url,
           },
           newValues: diff,
         })
-        
-        if (avatarChanged) {
-          await tx.insert(auditLogs).values({
-            actorUserId: userId,
-            action: 'AVATAR_UPDATED',
-            entityType: 'USER',
-            entityId: userId,
-            oldValues: { avatar_url: currentData.avatar_url },
-            newValues: { avatar_url: updates.avatar_url },
-          })
-        }
       })
-      
-      // Safely cleanup old avatar only AFTER successful DB update
-      if (avatarChanged && currentData.avatar_url) {
-        try {
-          await deleteImage(currentData.avatar_url)
-        } catch (e) {
-          console.warn('Failed to cleanup old avatar', e)
-        }
-      }
     }
 
-    // Revalidate across all possible profile domains
     revalidatePath('/admin/akun')
     revalidatePath('/guru/akun')
     revalidatePath('/orang-tua/akun')
@@ -93,6 +64,56 @@ export async function updateMyProfile(formData: FormData) {
   } catch (err: any) {
     console.error(err)
     return { error: 'Terjadi kesalahan sistem' }
+  }
+}
+
+import { uploadUserAvatar, removeUserAvatar } from './avatar'
+
+export async function updateMyAvatar(formData: FormData) {
+  try {
+    const session = await requireAuth()
+    const userId = session.session.userId
+
+    const file = formData.get('file') as File | null
+    if (!file) {
+      return { error: 'Tidak ada file foto' }
+    }
+
+    await uploadUserAvatar({
+      actorUserId: userId,
+      targetUserId: userId,
+      file
+    })
+
+    revalidatePath('/admin/akun')
+    revalidatePath('/guru/akun')
+    revalidatePath('/orang-tua/akun')
+
+    return { success: true }
+  } catch (err: any) {
+    console.error('Upload avatar error:', err)
+    return { error: err.message || 'Gagal mengubah foto profil' }
+  }
+}
+
+export async function removeMyAvatar() {
+  try {
+    const session = await requireAuth()
+    const userId = session.session.userId
+
+    await removeUserAvatar({
+      actorUserId: userId,
+      targetUserId: userId
+    })
+
+    revalidatePath('/admin/akun')
+    revalidatePath('/guru/akun')
+    revalidatePath('/orang-tua/akun')
+
+    return { success: true }
+  } catch (err: any) {
+    console.error('Remove avatar error:', err)
+    return { error: 'Gagal menghapus foto profil' }
   }
 }
 

@@ -1,12 +1,8 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { Sparkles, Calendar, BookOpen, ChevronRight, FileText } from 'lucide-react'
 import { FamilyChildDashboardDTO } from '@/lib/guardians/family-dashboard'
 import { buildParentChildHref } from '@/lib/guardians/parent-context'
-
-function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-}
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -19,15 +15,12 @@ export function SelectedChildDashboard({ child }: { child: FamilyChildDashboardD
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col w-full">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#18085A] to-[#4B21A2] p-5 sm:p-6 text-white flex items-start sm:items-center gap-5 rounded-t-2xl">
-        {child.student_photo ? (
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[3px] border-white overflow-hidden relative flex-shrink-0 mt-1 sm:mt-0 shadow-sm">
-            <Image src={child.student_photo} alt={child.student_name} fill className="object-cover" />
-          </div>
-        ) : (
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#FBBF24] text-[#18085A] font-bold text-xl flex items-center justify-center border-[3px] border-white flex-shrink-0 mt-1 sm:mt-0 shadow-sm">
-            {getInitials(child.student_name)}
-          </div>
-        )}
+        <ProfileAvatar 
+          src={child.student_photo} 
+          name={child.student_name} 
+          size={80} 
+          className="border-[3px] border-white flex-shrink-0 shadow-sm mt-1 sm:mt-0 bg-[#FBBF24] text-[#18085A] font-bold text-xl"
+        />
         <div className="min-w-0 flex-1">
           <h2 className="font-extrabold text-lg sm:text-xl text-white break-words leading-tight">{child.student_name}</h2>
           <p className="text-sm text-gray-300 break-words leading-relaxed mt-1.5">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Search, Plus, Eye, Edit, Trash2, X } from 'lucide-react'
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar'
 import ProgressRing from '@/components/ui/ProgressRing'
 import Pagination from '@/components/ui/Pagination'
 import EmptyState from '@/components/ui/EmptyState'
@@ -166,10 +167,13 @@ export default function StudentTableClient({ data, total, page, limit }: Props) 
     )
   }
 
-  const renderStudentAvatar = (name: string) => (
-    <div className="w-8 h-8 rounded-full bg-[#4B21A2] text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
-      {name.split(' ').map(n => n[0]).slice(0, 2).join('')}
-    </div>
+  const renderStudentAvatar = (s: StudentRow) => (
+    <ProfileAvatar 
+      src={s.photo_url} 
+      name={s.full_name} 
+      size={32} 
+      className="bg-[#4B21A2] text-white font-bold text-xs flex-shrink-0"
+    />
   )
 
   const renderActions = (s: StudentRow) => (
@@ -271,7 +275,7 @@ export default function StudentTableClient({ data, total, page, limit }: Props) 
                     <tr key={s.id} className="hover:bg-gray-50 transition-colors even:bg-gray-50/50 odd:bg-white">
                       <td className="p-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          {renderStudentAvatar(s.full_name)}
+                          {renderStudentAvatar(s)}
                           <div>
                             <div className="font-semibold text-gray-900">{s.full_name}</div>
                             <div className="text-[10px] text-gray-400">ID: {String(s.id).padStart(4, '0')}</div>
@@ -300,7 +304,7 @@ export default function StudentTableClient({ data, total, page, limit }: Props) 
               {data.map((s) => (
                 <div key={s.id} className="p-3">
                   <div className="flex items-start gap-3">
-                    {renderStudentAvatar(s.full_name)}
+                    {renderStudentAvatar(s)}
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-2">
                         <div className="font-bold text-gray-900 text-sm truncate">{s.full_name}</div>

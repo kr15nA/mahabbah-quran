@@ -12,7 +12,7 @@ import AccountMenu from '@/components/layout/AccountMenu'
 import { ContextSwitcher } from '@/components/layout/ContextSwitcher'
 import { UserContextMap } from '@/lib/identity/contexts'
 
-export default function SantriLayoutClient({ children, availableContexts, initials, userName }: { children: React.ReactNode, availableContexts: UserContextMap, initials: string, userName: string }) {
+export default function SantriLayoutClient({ children, availableContexts, initials, userName, userProfile }: { children: React.ReactNode, availableContexts: UserContextMap, initials: string, userName: string, userProfile?: any }) {
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -32,6 +32,8 @@ export default function SantriLayoutClient({ children, availableContexts, initia
     <div className="flex items-center gap-3">
       <ContextSwitcher currentContext="learner" availableContexts={availableContexts} />
       <AccountMenu 
+        name={userName}
+        avatarUrl={userProfile?.avatarUrl}
         initials={initials} 
         onLogout={handleLogout} 
         colorClass="bg-amber-100 text-amber-900" 
@@ -46,6 +48,7 @@ export default function SantriLayoutClient({ children, availableContexts, initia
       brandSubtitle="PORTAL SANTRI"
       userInitials={initials}
       userName={userName}
+      avatarUrl={userProfile?.avatarUrl}
       userRoleLabel="Santri"
       onLogout={handleLogout}
       topbarLeft={topbarLeft}

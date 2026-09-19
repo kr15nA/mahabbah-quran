@@ -24,7 +24,7 @@ import AccountMenu from '@/components/layout/AccountMenu'
 import { ContextSwitcher } from '@/components/layout/ContextSwitcher'
 import { UserContextMap } from '@/lib/identity/contexts'
 
-export default function GuruLayoutClient({ children, availableContexts }: { children: React.ReactNode, availableContexts: UserContextMap }) {
+export default function GuruLayoutClient({ children, availableContexts, userProfile }: { children: React.ReactNode, availableContexts: UserContextMap, userProfile: any }) {
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -40,6 +40,8 @@ export default function GuruLayoutClient({ children, availableContexts }: { chil
     </div>
   )
 
+  const userName = userProfile?.fullName || 'Ustadz'
+
   const topbarRight = (
     <div className="flex items-center gap-3">
       <div className="hidden md:block">
@@ -47,7 +49,8 @@ export default function GuruLayoutClient({ children, availableContexts }: { chil
       </div>
       <div className="md:hidden">
         <AccountMenu 
-          initials="AS" 
+          name={userName}
+          avatarUrl={userProfile?.avatarUrl}
           onLogout={handleLogout} 
           colorClass="bg-[#7B4BD6] text-white" 
           profileHref="/guru/akun"
@@ -61,9 +64,9 @@ export default function GuruLayoutClient({ children, availableContexts }: { chil
       variant="portal"
       navItems={NAV}
       brandSubtitle="GURU TAHFIZH"
-      userInitials="AS"
-      userName="Ustadz Aldi Solihin"
-      userRoleLabel="Guru Kelompok A"
+      userName={userName}
+      avatarUrl={userProfile?.avatarUrl}
+      userRoleLabel="Guru Pengampu"
       onLogout={handleLogout}
       topbarLeft={topbarLeft}
       topbarRight={topbarRight}

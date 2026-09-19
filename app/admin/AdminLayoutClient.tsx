@@ -93,7 +93,7 @@ const NAV_GROUPS = [
   }
 ]
 
-export default function AdminLayoutClient({ children, availableContexts }: { children: React.ReactNode, availableContexts: UserContextMap }) {
+export default function AdminLayoutClient({ children, availableContexts, userProfile }: { children: React.ReactNode, availableContexts: UserContextMap, userProfile: any }) {
   const router = useRouter()
   const pathname = usePathname()
   const [unread] = useState(3)
@@ -120,6 +120,8 @@ export default function AdminLayoutClient({ children, availableContexts }: { chi
     </div>
   )
 
+  const userName = userProfile?.fullName || 'Admin Pembina'
+
   const topbarRight = (
     <div className="flex items-center gap-4">
       <div className="relative bg-gray-100 rounded-lg px-3 py-2 hidden sm:flex items-center gap-2">
@@ -139,12 +141,13 @@ export default function AdminLayoutClient({ children, availableContexts }: { chi
         )}
       </Link>
       <div className="hidden sm:flex flex-col items-end mr-1">
-        <span className="text-sm font-bold text-gray-900">Admin Pembina</span>
+        <span className="text-sm font-bold text-gray-900">{userName}</span>
         <span className="text-xs text-gray-500">Administrator</span>
       </div>
       <ContextSwitcher currentContext="admin" availableContexts={availableContexts} />
       <AccountMenu 
-        initials="AP" 
+        name={userName}
+        avatarUrl={userProfile?.avatarUrl}
         onLogout={handleLogout} 
         colorClass="bg-[#FBBF24] text-[#18085A]" 
         profileHref="/admin/akun"
@@ -157,8 +160,8 @@ export default function AdminLayoutClient({ children, availableContexts }: { chi
       variant="admin"
       navGroups={navGroups}
       brandSubtitle="Sistem Informasi Pendidikan Qur'an"
-      userInitials="AP"
-      userName="Admin Pembina"
+      userName={userName}
+      avatarUrl={userProfile?.avatarUrl}
       userRoleLabel="Administrator"
       onLogout={handleLogout}
       topbarLeft={topbarLeft}
