@@ -9,11 +9,13 @@ import {
   financeFunds,
   financeJournalEntries,
   auditLogs,
-  students
+  students,
+  financeInvoiceScholarships
 } from '@/drizzle/schema'
 import { eq, inArray, sum, and, sql } from 'drizzle-orm'
 import { postJournalEntry, reverseJournalEntry } from './ledger'
 import { generateDocumentNumber } from './sequence'
+import { calculateInvoiceBalance } from './invoice-balance'
 
 function serializeForAudit(obj: any) {
   if (!obj) return obj
@@ -149,6 +151,28 @@ export async function allocatePayment(paymentId: number, allocations: { invoiceI
       if (invoice.status === 'DRAFT' || invoice.status === 'CANCELLED' || invoice.status === 'PAID') {
         throw new Error(`Cannot allocate to invoice ${alloc.invoiceId} with status ${invoice.status}`)
       }
+
+      const existingAllocs = await tx.select({
+        allocatedAmount: financePaymentAllocations.allocatedAmount
+      })
+      .from(financePaymentAllocations)
+      .innerJoin(financePayments, eq(financePayments.id, financePaymentAllocations.paymentId))
+      .where(and(eq(financePaymentAllocations.invoiceId, alloc.invoiceId), eq(financePayments.status, 'CONFIRMED')))
+      
+      const existingPaid = existingAllocs.reduce((sum: bigint, a: any) => sum + BigInt(a.allocatedAmount), BigInt(0))
+
+      const [snapshot] = await tx.select().from(financeInvoiceScholarships).where(eq(financeInvoiceScholarships.invoiceId, alloc.invoiceId))
+      const scholarshipAmount = snapshot ? snapshot.scholarshipAmount : BigInt(0)
+      
+      const { netPayable } = calculateInvoiceBalance({
+        grossAmount: invoice.amount,
+        scholarshipAmount,
+        paidAmount: BigInt(0)
+      })
+
+      if (existingPaid + alloc.amount > netPayable) {
+        throw new Error(`Overpayment: Invoice ${alloc.invoiceId} net payable is ${netPayable}, already paid ${existingPaid}, allocation is ${alloc.amount}`)
+      }
     }
 
     // Delete old allocations
@@ -189,8 +213,17 @@ export async function reconcileInvoiceStatus(invoiceId: number, tx: any) {
 
   const paidAmount = allocs.reduce((sum: bigint, a: any) => sum + BigInt(a.allocatedAmount), BigInt(0))
   
+  const [snapshot] = await tx.select().from(financeInvoiceScholarships).where(eq(financeInvoiceScholarships.invoiceId, invoiceId))
+  const scholarshipAmount = snapshot ? snapshot.scholarshipAmount : BigInt(0)
+
+  const { netPayable } = calculateInvoiceBalance({
+    grossAmount: invoice.amount,
+    scholarshipAmount,
+    paidAmount: BigInt(0)
+  })
+  
   let newStatus = 'ISSUED'
-  if (paidAmount >= invoice.amount) {
+  if (paidAmount >= netPayable) {
     newStatus = 'PAID'
   } else if (paidAmount > BigInt(0)) {
     newStatus = 'PARTIALLY_PAID'
@@ -239,8 +272,18 @@ export async function confirmPayment(paymentId: number, confirmedBy: number): Pr
       const existingPaid = existingAllocs.reduce((sum: bigint, a: any) => sum + BigInt(a.allocatedAmount), BigInt(0))
       
       const newPaid = existingPaid + BigInt(alloc.allocatedAmount)
-      if (newPaid > BigInt(invoice.amount)) {
-        throw new Error(`Overpayment: Invoice ${invoice.id} amount is ${invoice.amount}, already paid ${existingPaid}, allocation is ${alloc.allocatedAmount}`)
+
+      const [snapshot] = await tx.select().from(financeInvoiceScholarships).where(eq(financeInvoiceScholarships.invoiceId, invoice.id))
+      const scholarshipAmount = snapshot ? snapshot.scholarshipAmount : BigInt(0)
+
+      const { netPayable } = calculateInvoiceBalance({
+        grossAmount: BigInt(invoice.amount),
+        scholarshipAmount,
+        paidAmount: BigInt(0)
+      })
+
+      if (newPaid > netPayable) {
+        throw new Error(`Overpayment: Invoice ${invoice.id} net payable is ${netPayable}, already paid ${existingPaid}, allocation is ${alloc.allocatedAmount}`)
       }
 
       // Find Fee Type to get fund & accounts

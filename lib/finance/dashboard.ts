@@ -108,11 +108,15 @@ export async function getAcademicReceivableReconciliation() {
   // Business Outstanding
   const invoiceRes = await db.execute(sql`
     SELECT 
-      COALESCE(SUM(i.amount), 0) as total_invoiced
+      COALESCE(SUM(i.amount), 0) as total_gross,
+      COALESCE(SUM(s.scholarship_amount), 0) as total_scholarship
     FROM finance_invoices i
+    LEFT JOIN finance_invoice_scholarships s ON i.id = s.invoice_id
     WHERE i.status IN ('ISSUED', 'PARTIALLY_PAID')
   `)
-  const totalInvoiced = BigInt(invoiceRes.rows[0].total_invoiced as string)
+  const totalGross = BigInt(invoiceRes.rows[0].total_gross as string)
+  const totalScholarship = BigInt(invoiceRes.rows[0].total_scholarship as string)
+  const totalInvoiced = totalGross > totalScholarship ? totalGross - totalScholarship : BigInt(0)
 
   const allocationsRes = await db.execute(sql`
     SELECT 

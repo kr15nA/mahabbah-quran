@@ -8,7 +8,8 @@ import {
   students,
   academicYears,
 } from '@/drizzle/schema'
-import { eq, and, ne } from 'drizzle-orm'
+import { and, eq, lte, or, gte, sql } from 'drizzle-orm'
+import { serializeForAudit } from '../audit'
 
 export interface AssignStudentScholarshipInput {
   studentId: number
@@ -142,7 +143,7 @@ export async function assignStudentScholarship(input: AssignStudentScholarshipIn
       action: 'STUDENT_SCHOLARSHIP_ASSIGN',
       entityType: 'STUDENT_SCHOLARSHIP',
       entityId: createdAward.id,
-      newValues: { studentId: input.studentId, scholarshipProgramId: input.scholarshipProgramId, academicYearId: input.academicYearId, startDate: input.startDate, endDate: input.endDate ?? null, status: 'ACTIVE' }
+      newValues: serializeForAudit({ studentId: input.studentId, scholarshipProgramId: input.scholarshipProgramId, academicYearId: input.academicYearId, startDate: input.startDate, endDate: input.endDate ?? null, status: 'ACTIVE' })
     })
 
     return createdAward.id
@@ -173,7 +174,7 @@ export async function updateStudentScholarship(id: number, input: UpdateStudentS
       action: 'STUDENT_SCHOLARSHIP_UPDATE',
       entityType: 'STUDENT_SCHOLARSHIP',
       entityId: id,
-      newValues: { ...input }
+      newValues: serializeForAudit({ ...input })
     })
   })
 }
@@ -195,7 +196,7 @@ export async function revokeStudentScholarship(id: number, revokedBy: number) {
       action: 'STUDENT_SCHOLARSHIP_REVOKE',
       entityType: 'STUDENT_SCHOLARSHIP',
       entityId: id,
-      newValues: { status: 'REVOKED' }
+      newValues: serializeForAudit({ status: 'REVOKED' })
     })
   })
 }

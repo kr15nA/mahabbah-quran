@@ -311,3 +311,73 @@ A rogue `npx drizzle-kit push` was executed during the Phase A hardening workflo
 3. **Production Affected**: **NO**. The `.env.local` credential targeted DEV/QA, not Production. Production environment and credentials were never loaded.
 4. **Migration Consistency**: **YES**. Subsequent verification via `npx drizzle-kit check` confirmed the schema matches the current codebase (`drizzle.config.ts`), and `npm run db:migrate` cleanly applied the `0019` and `0020` migrations. No duplicate or partial migration state exists.
 5. **Remediation**: None required. State is clean.
+
+## K. PHASE B IMPLEMENTATION
+
+**LIVE BILLING INTEGRATION**: ENABLED
+**Existing invoices**: UNCHANGED
+**Outstanding formula**: UPDATED to use Net Payable
+**Ledger posting**: UPDATED (3-way split when scholarship applied)
+**Parent Finance**: UNCHANGED (Admin UI deferred to Phase C)
+
+### Migrations
+- **New Migrations**: NONE. Schema unchanged in Phase B.
+
+### Eligibility Date & Resolver
+- **Source**: `invoice.period` (Format: `YYYY-MM`) -> mapped to `YYYY-MM-01`.
+- **Criteria**:
+  - Scholarship `startDate <= YYYY-MM-01`
+  - Scholarship `endDate IS NULL` OR `YYYY-MM-01 <= endDate`
+  - Program & Award must be `ACTIVE`
+  - `feeTypeId` must be mapped to Program
+- **Future/Expired/Revoked Awards**: DENIED.
+- **Current Date**: Explicitly NOT used for eligibility determination.
+
+### Draft Snapshot Lifecycle
+- **Creation**: `createInvoiceDraft` atomically creates gross invoice, resolves scholarship, and inserts snapshot.
+- **Recalculation**: `recalculateDraftScholarship(invoiceId)` deletes existing snapshot, re-resolves, and inserts new snapshot.
+  - Allowed for `DRAFT` status only.
+- **Immutability**: Once an invoice is `ISSUED`, `PARTIALLY_PAID`, `PAID`, or `CANCELLED`, the snapshot is strictly immutable. Changes to Programs or Award revocations do not alter existing snapshots.
+
+### Invoice Balance Formula
+- **Gross Amount**: `invoice.amount`
+- **Scholarship Amount**: Sum of scholarship snapshots for the invoice.
+- **Net Payable**: `MAX(Gross - Scholarship, 0)`
+- **Paid Amount**: Sum of `CONFIRMED` payment allocations.
+- **Outstanding Amount**: `MAX(Net - Paid, 0)`
+
+### Status Resolution (100% Scholarship)
+- If `Net Payable = 0`, invoice status is resolved to `PAID` immediately upon issuance or recalculation.
+- **Outstanding**: 0
+- **Cash Collected / Paid**: 0
+- **Overdue**: Never overdue (outstanding = 0).
+
+### Ledger (Journal Posting)
+- **No Scholarship**: Unchanged legacy behavior (Dr Receivable, Cr Income).
+- **Partial/Fixed/Percentage Scholarship**:
+  - Dr Receivable: `Net Payable`
+  - Dr Scholarship Expense: `Scholarship Amount`
+  - Cr Income: `Gross Amount`
+- **Full Scholarship**:
+  - Dr Scholarship Expense: `Gross Amount`
+  - Cr Income: `Gross Amount`
+  - Zero-amount receivable lines are NOT created.
+- **Reversal**: Existing snapshot and persisted journal lines are accurately reversed without creating unbalanced journals.
+
+### Fund Safety Guard
+- Phase B V1 only supports scholarships funded from UNRESTRICTED funds that exactly match the `feeType.defaultFundId`.
+- **Restricted/Cross-Fund**: DENIED/DEFERRED.
+
+### Payment Allocation & Confirmation Guards
+- **Allocation Guard**: `allocatePayment` prevents total allocations from exceeding `Net Payable`.
+- **Confirmation Guard**: `confirmPayment` validates total confirmed allocations concurrently against `Net Payable` to prevent pending-payment race scenarios from overpaying.
+
+### Audit Serialization Helper
+- The codebase experienced `TypeError: Do not know how to serialize a BigInt` when audit logging `BigInt` objects.
+- Solved by `serializeForAudit` in `lib/finance/audit.ts`, maintaining structured JSON format but casting nested bigints to string decimals seamlessly.
+
+### Performance & Query Multiplication (N+1)
+- Scholarship values and allocations are safely pre-aggregated without row multiplication or N+1 queries.
+
+### Test Integrity
+- Phase A & Phase B test scripts pass sequentially with strict TypeScript and Database checks enabled. No `@ts-nocheck` overrides present.
