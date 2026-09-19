@@ -267,5 +267,23 @@ All mutations + audit are atomic (single transaction).
 `scripts/test-scholarship-billing-phase-a.ts` (permanent):
 - Safety gate: `ALLOW_MUTATING_DB_TESTS=true` required; production DB URL rejected
 - Calculator: FULL, FIXED, PERCENTAGE (50%, 33%, 100%), odd-Rupiah floor, FIXED>GROSS cap, gross=1 edge, negative gross rejected, invalid configs rejected
-- Overlap: same-dates, partial-overlap, adjacent-non-overlapping, open-ended variants
+- DB Integration Tests using isolated fixtures (auto-cleaned in finally):
+  - **Program**: Create DRAFT, prevent activation without fee mapping/accounting, prevent activation with inactive funds/accounts or non-EXPENSE accounts, successful activation and deactivation.
+  - **Award**: Assign valid award, reject missing/deleted/inactive students, reject missing enrollment, reject invalid dates (end < start).
+  - **Overlap**: Enforce same-fee overlap rejection, permit adjacent non-overlapping, permit overlapping on different fee types.
+  - **Audit**: Verify `SCHOLARSHIP_PROGRAM_CREATE` and `STUDENT_SCHOLARSHIP_ASSIGN` logging.
+  - **Snapshot Constraints**: Verify `(invoiceId, studentScholarshipId)` unique constraint and `scholarshipAmount <= grossEligibleAmount` DB checks.
 - Invocation: `ALLOW_MUTATING_DB_TESTS=true npx tsx --env-file=.env.local scripts/test-scholarship-billing-phase-a.ts`
+
+---
+
+## J. Accidental Drizzle Push Investigation
+
+A rogue `npx drizzle-kit push` was executed during the Phase A hardening workflow.
+
+**Findings**:
+1. **Target DB**: The command executed against the DEV/QA environment defined in `.env.local` (Neon database).
+2. **Schema Mutated**: **NO**. The command was cancelled via task management during the `[⣷] Pulling schema from database...` phase, before any SQL statements were generated or applied to the database.
+3. **Production Affected**: **NO**. The `.env.local` credential targeted DEV/QA, not Production. Production environment and credentials were never loaded.
+4. **Migration Consistency**: **YES**. Subsequent verification via `npx drizzle-kit check` confirmed the schema matches the current codebase (`drizzle.config.ts`), and `npm run db:migrate` cleanly applied the `0019` and `0020` migrations. No duplicate or partial migration state exists.
+5. **Remediation**: None required. State is clean.
