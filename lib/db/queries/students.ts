@@ -110,8 +110,25 @@ export async function searchStudents(query?: string, filters?: {
   const q = query ? `%${query}%` : null
   const limit = pagination?.limit ?? null
   const offset = pagination?.offset ?? null
+
+  const conditions = sql`
+    s.deleted_at IS NULL
+    AND (${q}::text IS NULL OR s.full_name ILIKE ${q}::text)
+    AND (${filters?.class_id ?? null}::bigint IS NULL OR e.class_id = ${filters?.class_id})
+    AND (${filters?.program_id ?? null}::bigint IS NULL OR p.id = ${filters?.program_id})
+    AND (${filters?.status ?? null}::text IS NULL OR s.status = ${filters?.status})
+  `
   
-  const rows = await sql`
+  const countQuery = sql`
+    SELECT COUNT(DISTINCT s.id) AS total_count
+    FROM students s
+    LEFT JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
+    LEFT JOIN classes c ON c.id = e.class_id
+    LEFT JOIN programs p ON p.id = c.program_id
+    WHERE ${conditions}
+  `
+
+  const dataQuery = sql`
     SELECT
       s.id, s.user_id, s.full_name, s.nickname, s.photo_url, s.date_of_birth, s.gender, s.enrollment_date, s.status, s.created_at, s.updated_at, s.deleted_at,
       e.class_id AS current_class_id,
@@ -122,8 +139,7 @@ export async function searchStudents(query?: string, filters?: {
       COALESCE(ROUND(AVG(hr.score)), 80)::int AS last_score,
       COALESCE(ROUND(
         (COUNT(DISTINCT att.id) FILTER (WHERE att.status = 'hadir')::numeric / NULLIF(COUNT(DISTINCT att.id), 0)) * 100
-      ), 90)::int AS attendance_pct,
-      COUNT(*) OVER() AS total_count
+      ), 90)::int AS attendance_pct
     FROM students s
     LEFT JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
     LEFT JOIN classes c ON c.id = e.class_id
@@ -132,17 +148,16 @@ export async function searchStudents(query?: string, filters?: {
     LEFT JOIN users u ON u.id = ta.teacher_id
     LEFT JOIN hafalan_records hr ON hr.student_id = s.id
     LEFT JOIN attendance att ON att.student_id = s.id
-    WHERE s.deleted_at IS NULL
-      AND (${q}::text IS NULL OR s.full_name ILIKE ${q}::text)
-      AND (${filters?.class_id ?? null}::bigint IS NULL OR e.class_id = ${filters?.class_id})
-      AND (${filters?.program_id ?? null}::bigint IS NULL OR p.id = ${filters?.program_id})
-      AND (${filters?.status ?? null}::text IS NULL OR s.status = ${filters?.status})
+    WHERE ${conditions}
     GROUP BY s.id, c.name, p.name, u.full_name, e.class_id
-    ORDER BY s.full_name
+    ORDER BY s.full_name ASC, s.id ASC
     LIMIT ${limit}
     OFFSET ${offset}
   `
-  const total = rows.length > 0 ? Number(rows[0].total_count) : 0
+
+  const [countResult, rows] = await Promise.all([countQuery, dataQuery])
+  
+  const total = countResult.length > 0 ? Number(countResult[0].total_count) : 0
   return { data: rows as StudentRow[], total }
 }
 
