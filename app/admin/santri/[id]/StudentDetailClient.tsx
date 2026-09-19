@@ -2,16 +2,19 @@
 
 import { useState } from 'react'
 import GuardianTab from './GuardianTab'
+import AkunTab from './AkunTab'
 
 type StudentDetailClientProps = {
   student: any
   initialGuardians: any[]
+  initialLinkedUser: any | null
 }
 
-export default function StudentDetailClient({ student, initialGuardians }: StudentDetailClientProps) {
-  const [activeTab, setActiveTab] = useState<'profil' | 'wali'>('profil')
+export default function StudentDetailClient({ student, initialGuardians, initialLinkedUser }: StudentDetailClientProps) {
+  const [activeTab, setActiveTab] = useState<'profil' | 'wali' | 'akun'>('profil')
 
   return (
+
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="flex border-b border-gray-100 px-2 overflow-x-auto">
         <button 
@@ -26,7 +29,14 @@ export default function StudentDetailClient({ student, initialGuardians }: Stude
         >
           Wali & Akses
         </button>
+        <button 
+          onClick={() => setActiveTab('akun')}
+          className={`px-4 py-4 text-sm font-bold border-b-2 whitespace-nowrap transition-colors ${activeTab === 'akun' ? 'border-[#4B21A2] text-[#4B21A2]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+        >
+          Akun & Akses
+        </button>
       </div>
+
 
       <div className="p-6">
         {activeTab === 'profil' && (
@@ -88,7 +98,12 @@ export default function StudentDetailClient({ student, initialGuardians }: Stude
         {activeTab === 'wali' && (
           <GuardianTab studentId={student.id} initialGuardians={initialGuardians} />
         )}
+
+        {activeTab === 'akun' && (
+          <AkunTab studentId={student.id} initialLinkedUser={initialLinkedUser} />
+        )}
       </div>
+
     </div>
   )
 }

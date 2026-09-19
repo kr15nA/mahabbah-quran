@@ -3,6 +3,7 @@ import { requireAuth, requireStudentAccess } from '@/lib/auth/rbac'
 import { getHafalanByStudent, insertHafalanRecord } from '@/lib/db/queries/hafalan'
 import { getSurahById } from '@/lib/db/queries/surahs'
 import { validateSurahAyahRange } from '@/lib/quran/validators'
+import { assertNotSelfAssessment } from '@/lib/identity/self-assessment'
 
 export async function GET(req: NextRequest) {
   try {
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest) {
     if (!body.ayah_start || !body.ayah_end) return NextResponse.json({ error: 'ayah_start and ayah_end are required' }, { status: 400 })
 
     await requireStudentAccess(body.student_id)
+    await assertNotSelfAssessment({ actorUserId: session.userId, targetStudentId: body.student_id })
     
     const surah = await getSurahById(body.surah_id)
     const validationError = validateSurahAyahRange(surah, body.ayah_start, body.ayah_end)

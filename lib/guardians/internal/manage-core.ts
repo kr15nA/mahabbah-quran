@@ -114,6 +114,12 @@ async function handlePrimaryReplacement(tx: any, studentId: number, targetId: nu
 export async function _createGuardianRelationshipCore(actorUserId: number, input: GuardianInput) {
   const data = guardianInputSchema.parse(input)
 
+  const studentData = await db.select({ userId: students.userId }).from(students).where(eq(students.id, data.studentId)).limit(1)
+  if (!studentData.length) throw new Error("Student not found")
+  if (studentData[0].userId !== null && studentData[0].userId === data.parentId) {
+    throw new Error("Akun ini tidak dapat dijadikan wali karena merupakan akun profil belajar santri itu sendiri.")
+  }
+
   const existing = await db.select().from(studentParents).where(
     and(
       eq(studentParents.studentId, data.studentId),
@@ -164,6 +170,12 @@ export async function _createGuardianRelationshipCore(actorUserId: number, input
 
 export async function _reactivateGuardianRelationshipCore(actorUserId: number, input: GuardianInput) {
   const data = guardianInputSchema.parse(input)
+
+  const studentData = await db.select({ userId: students.userId }).from(students).where(eq(students.id, data.studentId)).limit(1)
+  if (!studentData.length) throw new Error("Student not found")
+  if (studentData[0].userId !== null && studentData[0].userId === data.parentId) {
+    throw new Error("Akun ini tidak dapat diaktifkan kembali sebagai wali karena merupakan akun profil belajar santri itu sendiri.")
+  }
 
   const existing = await db.select().from(studentParents).where(
     and(

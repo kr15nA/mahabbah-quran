@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { requireAuth, requirePermission } from '@/lib/auth/rbac'
 import { getStudentById } from '@/lib/db/queries/students'
 import { listStudentGuardians } from '@/lib/guardians/manage'
+import { getLinkedUserForStudent } from '@/lib/identity/learner'
 import StudentDetailClient from './StudentDetailClient'
 
 export const dynamic = 'force-dynamic'
@@ -23,13 +24,15 @@ export default async function StudentDetailPage({
   // We explicitly fetch guardians for the initial view since Admin holds system.user.manage
   // (In reality, we rely on the component or this page to enforce manage rights)
   let guardians: any[] = []
+  let linkedUser: any = null
   try {
     guardians = await listStudentGuardians(studentId)
+    linkedUser = await getLinkedUserForStudent(studentId)
   } catch (e) {
     // If they lack system.user.manage, they just see empty or get a 403 on that tab, 
     // but the page load might fail. Let's assume admins have it.
     // If not, we could handle it here gracefully.
-    console.error('Failed to load guardians:', e)
+    console.error('Failed to load guardians or linked user:', e)
   }
 
   return (
@@ -60,7 +63,7 @@ export default async function StudentDetailPage({
         </div>
       </div>
 
-      <StudentDetailClient student={student} initialGuardians={guardians} />
+      <StudentDetailClient student={student} initialGuardians={guardians} initialLinkedUser={linkedUser} />
     </div>
   )
 }
