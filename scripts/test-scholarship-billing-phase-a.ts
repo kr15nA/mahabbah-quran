@@ -132,8 +132,8 @@ async function runDBTests() {
     
     const [cat] = await financeDb.insert(financeCategories).values({ code: F_PREFIX + 'CAT1', name: F_PREFIX + 'CAT', type: 'INCOME', domain: 'ACADEMIC' }).returning()
 
-    const [fee1] = await financeDb.insert(financeFeeTypes).values({ code: F_PREFIX + 'FEE1', name: F_PREFIX + 'FEE1', categoryId: cat.id, receivableAccountId: accInc.id, incomeAccountId: accInc.id }).returning()
-    const [fee2] = await financeDb.insert(financeFeeTypes).values({ code: F_PREFIX + 'FEE2', name: F_PREFIX + 'FEE2', categoryId: cat.id, receivableAccountId: accInc.id, incomeAccountId: accInc.id }).returning()
+    const [fee1] = await financeDb.insert(financeFeeTypes).values({ code: F_PREFIX + 'FEE1', name: F_PREFIX + 'FEE1', categoryId: cat.id, receivableAccountId: accInc.id, incomeAccountId: accInc.id, defaultFundId: fund.id }).returning()
+    const [fee2] = await financeDb.insert(financeFeeTypes).values({ code: F_PREFIX + 'FEE2', name: F_PREFIX + 'FEE2', categoryId: cat.id, receivableAccountId: accInc.id, incomeAccountId: accInc.id, defaultFundId: fund.id }).returning()
 
     // --- PROGRAM TESTS ---
     console.log('[Test] Program creation and activation')

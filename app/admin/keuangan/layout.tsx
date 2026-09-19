@@ -8,6 +8,7 @@ const FINANCE_TABS = [
   { href: '/admin/keuangan/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/keuangan/tagihan', label: 'Tagihan', icon: Receipt },
   { href: '/admin/keuangan/jenis-tagihan', label: 'Jenis Tagihan', icon: Settings2 },
+  { href: '/admin/keuangan/beasiswa', label: 'Beasiswa', icon: Wallet },
   { href: '/admin/keuangan/pembayaran', label: 'Pembayaran', icon: Wallet },
   { href: '/admin/keuangan/ziswaf', label: 'ZISWAF', icon: HandCoins },
   { href: '/admin/keuangan/pengeluaran', label: 'Pengeluaran', icon: Activity },

@@ -7,14 +7,17 @@ import { Camera, CheckCircle2, AlertCircle } from 'lucide-react'
 import { ProfileAvatar } from '@/components/ui/ProfileAvatar'
 import { uploadStudentPhotoAction, removeStudentPhotoAction } from './actions'
 
+import BeasiswaTab from './BeasiswaTab'
+
 type StudentDetailClientProps = {
   student: any
   initialGuardians: any[]
   initialLinkedUser: any | null
+  initialScholarships: any[]
 }
 
-export default function StudentDetailClient({ student, initialGuardians, initialLinkedUser }: StudentDetailClientProps) {
-  const [activeTab, setActiveTab] = useState<'profil' | 'wali' | 'akun'>('profil')
+export default function StudentDetailClient({ student, initialGuardians, initialLinkedUser, initialScholarships }: StudentDetailClientProps) {
+  const [activeTab, setActiveTab] = useState<'profil' | 'wali' | 'akun' | 'beasiswa'>('profil')
   const [photoUrl, setPhotoUrl] = useState(student.photo_url)
   const [uploading, setUploading] = useState(false)
   const [photoMsg, setPhotoMsg] = useState<{type: 'success'|'error', text: string} | null>(null)
@@ -90,6 +93,12 @@ export default function StudentDetailClient({ student, initialGuardians, initial
           className={`px-4 py-4 text-sm font-bold border-b-2 whitespace-nowrap transition-colors ${activeTab === 'akun' ? 'border-[#4B21A2] text-[#4B21A2]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
         >
           Akun & Akses
+        </button>
+        <button 
+          onClick={() => setActiveTab('beasiswa')}
+          className={`px-4 py-4 text-sm font-bold border-b-2 whitespace-nowrap transition-colors ${activeTab === 'beasiswa' ? 'border-[#4B21A2] text-[#4B21A2]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+        >
+          Beasiswa
         </button>
       </div>
 
@@ -209,6 +218,10 @@ export default function StudentDetailClient({ student, initialGuardians, initial
 
         {activeTab === 'akun' && (
           <AkunTab studentId={student.id} initialLinkedUser={initialLinkedUser} />
+        )}
+
+        {activeTab === 'beasiswa' && (
+          <BeasiswaTab studentId={student.id} scholarships={initialScholarships} />
         )}
       </div>
 
