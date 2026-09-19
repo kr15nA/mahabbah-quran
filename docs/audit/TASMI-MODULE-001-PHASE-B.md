@@ -51,3 +51,30 @@ Implemented Admin & Guru Tasmi management UI based on the Phase A backend domain
 - **Preview**: Deployment URL is https://mahabbah-quran-mjquheekt-krisnarefac-9550.vercel.app
 
 Proceed with Preview manual UAT. Phase B is ready for release.
+
+Phase B Status:
+RELEASED
+
+Main Release SHA:
+85a27ffd44d669c1f8a828fba397daed808a7ef5
+
+Production Deployed SHA:
+85a27ffd44d669c1f8a828fba397daed808a7ef5
+
+Tag:
+tasmi-module-phase-b-v1.0.0
+
+Schema migration:
+NONE
+
+Production RBAC automatic grant:
+NONE
+
+Guru permission strategy:
+MANUAL DYNAMIC RBAC
+
+Production smoke:
+PASS
+
+Known limitation:
+Guru nav static; route permission remains authoritative.
