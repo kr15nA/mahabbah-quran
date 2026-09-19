@@ -18,7 +18,7 @@
  */
 
 import { db } from '@/lib/db/client'
-import { students } from '@/drizzle/schema'
+import { students, users } from '@/drizzle/schema'
 import { eq, isNull, and } from 'drizzle-orm'
 import { normalizeStudentId } from '@/lib/guardians/parent-context'
 
@@ -107,7 +107,7 @@ export async function requireSelfStudentProfile(userId: number): Promise<SelfLea
  * Uses EXISTS pattern (LIMIT 1) — O(1) regardless of student count.
  */
 export async function hasLearnerContext(userId: number): Promise<boolean> {
-  const rows = await db
+  const count = await db
     .select({ id: students.id })
     .from(students)
     .where(
@@ -118,5 +118,31 @@ export async function hasLearnerContext(userId: number): Promise<boolean> {
     )
     .limit(1)
 
-  return rows.length > 0
+  return count.length > 0
+}
+
+/**
+ * Returns the safe User summary linked to this Student.
+ * Safe DTO only. No sensitive fields.
+ */
+export async function getLinkedUserForStudent(studentIdRaw: string | number) {
+  const normalizedId = normalizeStudentId(studentIdRaw)
+  if (!normalizedId) return null
+  const studentId = parseInt(normalizedId, 10)
+
+  const rows = await db
+    .select({
+      id: users.id,
+      fullName: users.fullName,
+      email: users.email,
+      role: users.role,
+      isActive: users.isActive
+    })
+    .from(students)
+    .innerJoin(users, eq(students.userId, users.id))
+    .where(eq(students.id, studentId))
+    .limit(1)
+
+  if (rows.length === 0) return null
+  return rows[0]
 }

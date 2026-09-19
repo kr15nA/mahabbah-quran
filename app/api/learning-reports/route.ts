@@ -9,6 +9,7 @@ import {
 import { insertHafalanRecord } from '@/lib/db/queries/hafalan'
 import { insertTahsinRecord } from '@/lib/db/queries/tahsin'
 import { getActiveEnrollment } from '@/lib/db/queries/academic-context'
+import { assertNotSelfAssessment } from '@/lib/identity/self-assessment'
 
 export async function GET(req: NextRequest) {
   try {
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
     if (!body.student_id) return NextResponse.json({ error: 'student_id is required' }, { status: 400 })
 
     await requireStudentAccess(body.student_id)
+    await assertNotSelfAssessment({ actorUserId: session.userId, targetStudentId: body.student_id })
 
     const activeEnrollment = await getActiveEnrollment(body.student_id)
     if (!activeEnrollment) {

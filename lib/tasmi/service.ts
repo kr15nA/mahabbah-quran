@@ -5,6 +5,7 @@ import { requirePermission, requireStudentAccess } from '@/lib/auth/rbac'
 import { TasmiInput, tasmiInputSchema } from './validation'
 import { normalizeStudentId, studentIdToDbNumber } from '@/lib/guardians/parent-context'
 import { AuthError } from '@/lib/auth/rbac'
+import { assertNotSelfAssessment } from '@/lib/identity/self-assessment'
 
 export async function createTasmiSession(input: TasmiInput & { studentIdRaw: string | number }) {
   // 1. Authorize: requires basic manage permission
@@ -17,6 +18,7 @@ export async function createTasmiSession(input: TasmiInput & { studentIdRaw: str
 
   // 3. Granular authorize: ensure actor can manage this specific student's academic records
   await requireStudentAccess(studentId)
+  await assertNotSelfAssessment({ actorUserId: session.userId, targetStudentId: studentId })
 
   const validated = tasmiInputSchema.parse({
     ...input,
@@ -68,6 +70,7 @@ export async function updateTasmiSession(id: number, input: TasmiInput & { stude
   const studentId = studentIdToDbNumber(normalizedId)
 
   await requireStudentAccess(studentId)
+  await assertNotSelfAssessment({ actorUserId: session.userId, targetStudentId: studentId })
 
   const validated = tasmiInputSchema.parse({
     ...input,
@@ -124,6 +127,7 @@ export async function deleteTasmiSession(id: number, studentIdRaw: string | numb
   const studentId = studentIdToDbNumber(normalizedId)
 
   await requireStudentAccess(studentId)
+  await assertNotSelfAssessment({ actorUserId: session.userId, targetStudentId: studentId })
 
   await db.transaction(async (tx) => {
     const existing = await tx.select().from(tasmiSessions).where(eq(tasmiSessions.id, id)).limit(1)

@@ -511,7 +511,15 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 
 ## 10. Release Metadata
 
+## Summary Status
+
+- **Phase A (Self Learner Identity Foundation)**: ✅ RELEASED (`multi-context-identity-phase-a-v1.0.0`)
+- **Phase B (Admin Learner Identity Management + Formal Self-Assessment Guard)**: ✅ RELEASE CANDIDATE
+- **Phase C (Context Switcher + V1 Learner Portal)**: ⏳ PENDING
+- **Phase D (Learner Achievement UI)**: ⏳ PENDING
+
 **Phase A Status:** RELEASED
+**Phase B Status:** RELEASE CANDIDATE
 **Main Release SHA:** 9060f668507634a3fc01547b2d94464369855b33
 **Production Deployed SHA:** 9060f668507634a3fc01547b2d94464369855b33
 **Migration:** `0018_typical_scalphunter.sql`
@@ -525,4 +533,14 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 
 **Context Switcher:** NOT IMPLEMENTED
 **/santri:** NOT IMPLEMENTED
-**Self-assessment guard:** NOT IMPLEMENTED — Phase B
+**Self-assessment guard:** IMPLEMENTED (Phase B)
+
+---
+
+## 11. Phase B Implementation
+
+- **Admin UI**: `/admin/santri/[id]` "Akun & Akses" tab implemented.
+- **Server Actions**: Link, create-and-link, relink, and unlink operations with audit trail (`STUDENT_USER_LINK`, `STUDENT_USER_UNLINK`, `STUDENT_USER_RELINK`).
+- **Security Guards**: `assertNotSelfAssessment()` added to Hafalan, Tahsin, and Tasmi grading/mutation actions.
+- **Guardian Validation**: Service validation ensuring `student.user_id !== actorUserId`.
+- **Status**: RELEASE CANDIDATE
