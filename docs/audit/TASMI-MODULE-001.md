@@ -79,8 +79,11 @@ export const tasmiSessions = pgTable('tasmi_sessions', {
 - **Guru**: `/guru/tasmi`
 - **Parent**: Tasmi read-only tab or card in `/orang-tua/beranda` (Selected Child Dashboard C2.1).
 
-## Test Strategy
-- Ensure check constraints reject invalid states (e.g. JUZ_RANGE with surah_id).
-- Test achievement derivation logic (e.g. failed attempts don't overwrite successful highest range).
-- Test deterministic ordering (`session_date DESC, id DESC`).
-- Ensure `requireStudentAccess` works securely for creation/reading.
+## Phase A Final Verification
+- **Historical Academic Context Strategy**: `academic_year_id` and `class_id` are deliberately not stored directly on `tasmi_sessions`. Historical context is inferred dynamically at query time using active `enrollments` mapped against `session_date` bounded by `academic_years.start_date` and `end_date`.
+- **Permission Provisioning**: Roles mapping in codebase (`lib/auth/rbac.ts`) + DB seed. Future prod deployments require explicit admin/DB provisioning for `academic.tasmi.read` and `academic.tasmi.manage`.
+- **Transaction Semantics**: Mutations (CREATE/UPDATE/DELETE) and their corresponding `auditLogs` inserts are wrapped in strict DB transactions. Audit failures roll back the entire mutation.
+- **`updated_at` Behavior**: Re-evaluated correctly upon `UPDATE` operation explicitly setting `updatedAt: new Date()` within the service layer transaction.
+- **Index Rationale**: `idx_tasmi_student_date` accelerates history queries perfectly. `idx_tasmi_mode` is technically low selectivity but left intact in Phase A migration to preserve deterministic migration history; can be omitted or removed in a future DB optimization phase.
+- **Test Safety**: `scripts/test-tasmi-domain-001.ts` creates and cleans up its own mocked examiner and student via isolated deterministic cleanup, guarding against polluting dev DB.
+- **Migration Status**: Generated as `0016_lame_cyclops.sql`, successfully applied to dev. Not applied to production.
