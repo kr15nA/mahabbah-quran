@@ -385,7 +385,8 @@ A rogue `npx drizzle-kit push` was executed during the Phase A hardening workflo
 - **Pre-release Integration/UAT**: Local DEV/QA Sandbox
 - **Pre-release UAT SHA**: 20fadf598da1ba608b89841e4e4a860de9572019
 - **Pre-release UAT**: PASS
-- **Actual Vercel Preview**: NOT RUN
+- **Actual Vercel Preview**: https://mahabbah-quran-m0b8c0pjb-krisnarefac-9550.vercel.app
+- **Actual Preview UAT**: PENDING MANUAL VERIFICATION (Vercel Authentication lock encountered)
 
 ### Use Cases Validated
 - No scholarship: PASS
