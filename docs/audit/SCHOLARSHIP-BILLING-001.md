@@ -434,3 +434,19 @@ A rogue `npx drizzle-kit push` was executed during the Phase A hardening workflo
 - **Read Model**: `lib/finance/scholarships/queries.ts` provides server-side pagination, bounded search, and aggregated program counts (recipients, fee types, funds) securely without triggering N+1 load queries.
 - **BigInt Serialization**: Strict compatibility guarantees enforced (e.g., `BigInt(0)` over `0n`) eliminating down-level transpilation crashes.
 - **Tests**: Permanent integration tests (`scripts/test-scholarship-billing-phase-c.ts`) comprehensively validate Program lifecycle, activation guards, and Award overlap conditions locally. All Phase A, B, and C tests run concurrently with 0 failures.
+
+## N. PHASE C PREVIEW VERIFICATION & UAT
+
+- **Phase C Runtime Candidate**: `85a4ef4`
+- **Actual Vercel Preview**: https://mahabbah-quran-rb5sj1x1a-krisnarefac-9550.vercel.app
+- **Manual Preview UAT**: PASS
+- **Program UAT**: PASS
+- **Award UAT**: PASS
+- **Phase B integration**: PASS
+- **Full Scholarship**: PASS
+- **Responsive**: 
+  - 375: PASS
+  - 430: PASS
+  - 768: PASS
+  - 1024: PASS
+  - 1280: PASS
