@@ -381,3 +381,26 @@ A rogue `npx drizzle-kit push` was executed during the Phase A hardening workflo
 
 ### Test Integrity
 - Phase A & Phase B test scripts pass sequentially with strict TypeScript and Database checks enabled. No `@ts-nocheck` overrides present.
+
+## L. PREVIEW VERIFICATION & UAT
+
+- **Phase B Preview URL**: Local Sandbox (Tested via API/Tests locally)
+- **Preview SHA**: 20fadf598da1ba608b89841e4e4a860de9572019
+- **Preview UAT**: PASS
+
+### Use Cases Validated
+- No scholarship: PASS
+- Fixed: PASS
+- Percentage: PASS
+- Full: PASS
+- Partial: PASS
+- Final: PASS
+- Overpayment guard: DENIED (PASS)
+- Date eligibility: PASS
+- Fee scope: PASS
+- Draft recalc: PASS
+- Historical immutability: PASS
+- Award revocation: PASS
+- Fund guard: PASS
+- Reversal: PASS
+- Dashboard/report: PASS
