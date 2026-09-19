@@ -42,6 +42,7 @@ const NAV_GROUPS = [
     label: 'AKADEMIK',
     items: [
       { id: 'santri', href: '/admin/santri', label: 'Data Santri', icon: Users },
+      { id: 'wali', href: '/admin/wali', label: 'Wali & Keluarga', icon: Users },
       { id: 'guru', href: '/admin/guru', label: 'Data Guru', icon: User },
       { id: 'program', href: '/admin/program', label: 'Program', icon: BookOpen },
       { id: 'tahun-ajaran', href: '/admin/tahun-ajaran', label: 'Tahun Ajaran', icon: Calendar },
