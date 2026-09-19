@@ -30,7 +30,7 @@ async function run() {
   console.log(`canViewFinance: ${financeCount}`)
 
   if (allRels.length > 0) {
-    const testRel = allRels.find(r => r.canViewFinance) || allRels[0]
+    const testRel = allRels[0]
     const userId = testRel.parentId
     const studentId = testRel.studentId
 
