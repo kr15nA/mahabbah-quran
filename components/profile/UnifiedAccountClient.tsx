@@ -2,7 +2,8 @@
 
 import { useState, useRef, useTransition } from 'react'
 import { User, Key, Save, Camera, CheckCircle2, AlertCircle, Shield, Link as LinkIcon } from 'lucide-react'
-import { updateMyProfile, changeMyPassword } from '@/lib/profile/actions'
+import { updateMyProfile, changeMyPassword, updateMyAvatar, removeMyAvatar } from '@/lib/profile/actions'
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar'
 
 export type ProfileData = {
   id: number
@@ -43,29 +44,44 @@ export default function UnifiedAccountClient({ data }: { data: ProfileData }) {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('entityType', 'users')
-      formData.append('entityId', data.id.toString())
-      if (data.avatar_url) formData.append('oldUrl', data.avatar_url)
       
-      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      const json = await res.json()
-      if (res.ok) {
-        setAvatarUrl(json.url)
-      } else {
-        setProfileMsg({ type: 'error', text: json.error || 'Gagal mengupload foto' })
-      }
+      startTransition(async () => {
+        const res = await updateMyAvatar(formData)
+        if (res.error) {
+          setProfileMsg({ type: 'error', text: res.error })
+        } else {
+          setProfileMsg({ type: 'success', text: 'Foto profil berhasil diperbarui.' })
+          const objUrl = URL.createObjectURL(file)
+          setAvatarUrl(objUrl)
+        }
+        setUploading(false)
+      })
     } catch (err) {
       setProfileMsg({ type: 'error', text: 'Terjadi kesalahan saat upload' })
-    } finally {
       setUploading(false)
     }
+  }
+
+  const handleAvatarRemove = async () => {
+    if (!confirm('Hapus foto profil?')) return
+    setUploading(true)
+    setProfileMsg(null)
+    startTransition(async () => {
+      const res = await removeMyAvatar()
+      if (res.error) {
+        setProfileMsg({ type: 'error', text: res.error })
+      } else {
+        setProfileMsg({ type: 'success', text: 'Foto profil berhasil dihapus.' })
+        setAvatarUrl('')
+      }
+      setUploading(false)
+    })
   }
 
   const handleProfileSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setProfileMsg(null)
     const formData = new FormData(e.currentTarget)
-    formData.append('avatar_url', avatarUrl)
 
     startTransition(async () => {
       const res = await updateMyProfile(formData)
@@ -149,33 +165,46 @@ export default function UnifiedAccountClient({ data }: { data: ProfileData }) {
 
             <div className="flex flex-col sm:flex-row gap-6 items-start">
               <div className="flex flex-col items-center gap-3">
-                <div className="w-24 h-24 rounded-full bg-gray-100 overflow-hidden relative border border-gray-200 flex items-center justify-center text-gray-400">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <User className="w-10 h-10" />
-                  )}
+                <div className="relative">
+                  <ProfileAvatar 
+                    src={avatarUrl} 
+                    name={data.full_name} 
+                    size={96} 
+                    className="border border-gray-200" 
+                  />
                   {uploading && (
-                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-white/70 rounded-full flex items-center justify-center">
                       <div className="w-5 h-5 border-2 border-[#4B21A2] border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   )}
                 </div>
                 <input 
                   type="file" 
-                  accept="image/*" 
+                  accept="image/jpeg,image/png,image/webp" 
                   className="hidden" 
                   ref={fileInputRef} 
                   onChange={handleAvatarUpload}
                 />
-                <button 
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-[#4B21A2] disabled:opacity-50"
-                >
-                  <Camera className="w-3.5 h-3.5" /> Ubah Foto
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-[#4B21A2] disabled:opacity-50"
+                  >
+                    <Camera className="w-3.5 h-3.5" /> Ubah Foto
+                  </button>
+                  {avatarUrl && (
+                    <button 
+                      type="button"
+                      onClick={handleAvatarRemove}
+                      disabled={uploading}
+                      className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:text-red-700 disabled:opacity-50 ml-2"
+                    >
+                      Hapus
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="flex-1 space-y-4 w-full">

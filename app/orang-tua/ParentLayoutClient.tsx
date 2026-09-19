@@ -15,7 +15,7 @@ import AccountMenu from '@/components/layout/AccountMenu'
 import { ContextSwitcher } from '@/components/layout/ContextSwitcher'
 import { UserContextMap } from '@/lib/identity/contexts'
 
-export default function ParentLayoutClient({ children, availableContexts }: { children: React.ReactNode, availableContexts: UserContextMap }) {
+export default function ParentLayoutClient({ children, availableContexts, userProfile }: { children: React.ReactNode, availableContexts: UserContextMap, userProfile: any }) {
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -31,11 +31,14 @@ export default function ParentLayoutClient({ children, availableContexts }: { ch
     </div>
   )
 
+  const userName = userProfile?.fullName || 'Wali Santri'
+
   const topbarRight = (
     <div className="flex items-center gap-3">
       <ContextSwitcher currentContext="guardian" availableContexts={availableContexts} />
       <AccountMenu 
-        initials="MQ" 
+        name={userName}
+        avatarUrl={userProfile?.avatarUrl}
         onLogout={handleLogout} 
         colorClass="bg-[#FBBF24] text-[#18085A]" 
         profileHref="/orang-tua/akun"
@@ -48,8 +51,8 @@ export default function ParentLayoutClient({ children, availableContexts }: { ch
       variant="mobile"
       navItems={NAV}
       brandSubtitle="PORTAL ORANG TUA"
-      userInitials="MQ"
-      userName="Mahabbah Qur'an"
+      userName={userName}
+      avatarUrl={userProfile?.avatarUrl}
       userRoleLabel="Orang Tua Santri"
       onLogout={handleLogout}
       topbarLeft={topbarLeft}

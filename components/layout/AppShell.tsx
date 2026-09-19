@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut, Menu, ChevronLeft, ChevronRight, MoreHorizontal, X, ChevronDown } from 'lucide-react'
 
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar'
+
 export type NavItem = {
   id?: string
   href: string
@@ -24,8 +26,9 @@ export type AppShellProps = {
   navItems?: NavItem[] // For backward compatibility with mobile/portal
   navGroups?: NavGroup[] // For Admin
   brandSubtitle: string
-  userInitials: string
+  userInitials?: string
   userName: string
+  avatarUrl?: string
   userRoleLabel: string
   onLogout: () => void
   topbarLeft: React.ReactNode
@@ -40,6 +43,7 @@ export default function AppShell({
   brandSubtitle,
   userInitials,
   userName,
+  avatarUrl,
   userRoleLabel,
   onLogout,
   topbarLeft,
@@ -346,9 +350,12 @@ export default function AppShell({
         {/* Footer User Info */}
         <div className="p-4 bg-black/20 border-t border-white/5">
           <div className={`flex items-center transition-all duration-300 ${isMounted && effectiveCollapsed ? 'md:justify-center' : 'gap-3'}`}>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#FBBF24] to-orange-500 text-[#160B3F] font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-lg border border-white/20">
-              {userInitials}
-            </div>
+            <ProfileAvatar 
+              src={avatarUrl}
+              name={userName || userInitials}
+              size={36}
+              className="bg-gradient-to-br from-[#FBBF24] to-orange-500 text-[#160B3F] font-bold text-sm flex-shrink-0 shadow-lg border border-white/20"
+            />
             <div className={`flex-1 min-w-0 transition-all duration-300 ${isMounted && effectiveCollapsed ? 'md:hidden' : 'block'}`}>
               <div className="text-white text-sm font-semibold truncate leading-tight">{userName}</div>
               <div className="text-white/50 text-xs truncate leading-tight mt-0.5">{userRoleLabel}</div>

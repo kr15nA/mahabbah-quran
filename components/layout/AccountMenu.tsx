@@ -4,14 +4,18 @@ import { useState, useRef, useEffect } from 'react'
 import { User, Key, LogOut } from 'lucide-react'
 import Link from 'next/link'
 
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar'
+
 type Props = {
-  initials: string
+  initials?: string
+  name?: string
+  avatarUrl?: string
   onLogout: () => void
   colorClass: string
   profileHref?: string
 }
 
-export default function AccountMenu({ initials, onLogout, colorClass, profileHref }: Props) {
+export default function AccountMenu({ initials, name, avatarUrl, onLogout, colorClass, profileHref }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -29,11 +33,11 @@ export default function AccountMenu({ initials, onLogout, colorClass, profileHre
     <div className="relative" ref={menuRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-8 h-8 rounded-full ${colorClass} font-bold text-xs flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#18085A] transition-transform active:scale-95`}
+        className={`w-8 h-8 rounded-full ${colorClass} font-bold text-xs flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#18085A] transition-transform active:scale-95 border border-white/20`}
         aria-label="Account Menu"
         aria-expanded={isOpen}
       >
-        {initials}
+        <ProfileAvatar src={avatarUrl} name={name || initials} size={32} className="w-full h-full text-inherit bg-transparent" />
       </button>
 
       {isOpen && (

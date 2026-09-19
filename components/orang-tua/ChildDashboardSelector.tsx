@@ -1,10 +1,6 @@
 import Link from 'next/link'
-import Image from 'next/image'
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar'
 import { SafeChildDisplay, buildParentChildHref } from '@/lib/guardians/parent-context'
-
-function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
-}
 
 export function ChildDashboardSelector({ 
   childrenList, 
@@ -35,15 +31,12 @@ export function ChildDashboardSelector({
                 }
               `}
             >
-              {child.student_photo ? (
-                <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden relative flex-shrink-0 shadow-sm">
-                  <Image src={child.student_photo} alt={child.student_name} fill className="object-cover" />
-                </div>
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-[#FBBF24] text-[#18085A] font-bold text-sm flex items-center justify-center border-2 border-white flex-shrink-0 shadow-sm">
-                  {getInitials(child.student_name)}
-                </div>
-              )}
+              <ProfileAvatar 
+                src={child.student_photo} 
+                name={child.student_name} 
+                size={40} 
+                className="border-2 border-white flex-shrink-0 shadow-sm bg-[#FBBF24] text-[#18085A] font-bold text-sm"
+              />
               <div className="min-w-0 flex-1">
                 <div className={`font-bold text-sm truncate ${isSelected ? 'text-[#18085A]' : 'text-gray-900'}`}>
                   {child.student_nickname || child.student_name.split(' ')[0]}

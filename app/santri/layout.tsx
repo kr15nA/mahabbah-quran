@@ -1,6 +1,7 @@
 import { getSession } from '@/lib/auth/session'
 import { verifyUserContext, getAvailableUserContexts } from '@/lib/identity/contexts'
 import { getSelfStudentProfile } from '@/lib/identity/learner'
+import { getCurrentUserProfile } from '@/lib/profile/avatar'
 import { redirect } from 'next/navigation'
 import SantriLayoutClient from './SantriLayoutClient'
 
@@ -17,9 +18,11 @@ export default async function SantriLayout({ children }: { children: React.React
   const selfProfile = await getSelfStudentProfile(session.userId)
   const name = selfProfile?.fullName || session.fullName
   const initials = name.substring(0, 2).toUpperCase()
+  
+  const userProfile = await getCurrentUserProfile(session.userId)
 
   return (
-    <SantriLayoutClient availableContexts={availableContexts} initials={initials} userName={name}>
+    <SantriLayoutClient availableContexts={availableContexts} initials={initials} userName={name} userProfile={userProfile}>
       {children}
     </SantriLayoutClient>
   )
