@@ -39,9 +39,7 @@ export async function POST(req: NextRequest) {
       email: user.email,
     })
 
-    const redirectPath = user.role === 'orang_tua' ? '/orang-tua/beranda' : `/${user.role}/dashboard`
-
-    return NextResponse.json({ success: true, role: user.role, redirect: redirectPath })
+    return NextResponse.json({ success: true, role: user.role, redirect: '/auth/landing' })
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json({ error: 'Terjadi kesalahan pada server' }, { status: 500 })

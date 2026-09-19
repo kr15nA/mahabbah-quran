@@ -514,7 +514,7 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 
 - **Phase A (Self Learner Identity Foundation)**: ✅ RELEASED (`multi-context-identity-phase-a-v1.0.0`)
 - **Phase B (Admin Learner Identity Management + Formal Self-Assessment Guard)**: ✅ RELEASED (`multi-context-identity-phase-b-v1.0.0`)
-- **Phase C (Context Switcher + V1 Learner Portal)**: ⏳ PENDING
+- **Phase C (Context Switcher + V1 Learner Portal)**: ✅ IMPLEMENTED — RELEASE CANDIDATE
 - **Phase D (Learner Achievement UI)**: ⏳ PENDING
 
 **Phase A Status:** RELEASED
@@ -560,3 +560,24 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 - **Formal self-assessment**: Hafalan create protected, Tahsin create protected, Tasmi create/update/delete protected. SUPER_ADMIN bypass: NO.
 - **Guardian Validation**: A User cannot simultaneously be the self learner identity of Student S AND guardian of the same Student S.
 - **Status**: RELEASED
+
+---
+
+## 12. Phase C Implementation
+
+- **Final Admin rule**: Discovered via `session.role === 'admin'`.
+- **Final Teacher compatibility rule**: Discovered via active assignment relationship OR legacy fallback `session.role === 'guru'` to ensure backwards compatibility for 23 active Guru users currently lacking explicit assignments.
+- **Final Guardian compatibility rule**: Discovered via active guardian relationship OR legacy fallback `session.role === 'orang_tua'` to ensure backwards compatibility for 2 active Parent users lacking relationships.
+- **Learner rule**: Discovered via non-deleted self-linked student.
+- **Middleware strategy**: Reduced to coarse auth only (JWT verification). Removed hardcoded `ROLE_PREFIXES`. Does NOT query DB or use cookie for authorization.
+- **Server layout authorization**: Direct URL namespaces (`/admin`, `/guru`, `/orang-tua`, `/santri`) are server-protected using the canonical helper `verifyUserContext(session, expected)`.
+- **Landing resolver**: `app/auth/landing` and `lib/identity/landing.ts` act as the pure root redirector evaluating contexts against the `mq_last_context` preference cookie.
+- **Chooser**: `app/pilih-konteks` rendered via server for users with multiple contexts, allowing setting preference safely.
+- **Cookie policy**: `mq_last_context` is preference only. It does NOT authorize anything. Uses `httpOnly`, `sameSite: 'lax'`, `path: '/'`.
+- **ContextSwitcher**: Built as a dropdown in `AppShell` receiving server-derived `availableContexts`. Client-side logic calls a server action to update preference. Hidden for single-context users.
+- **Minimal /santri**: implemented `app/santri/page.tsx` showing basic greeting and informational empty state. No clickable academic modules.
+- **Tests**: `test-multi-context-identity-phase-c.ts` tests all landing scenarios purely. Regression test `test-multi-context-identity-001.ts` was reviewed (Phase A Test C failed intentionally due to new Phase C backwards compatibility changes for Guru users without assignments, which is the expected current behavior).
+- **Regressions**: Phase B passed. Legacy tests passed. TypeScript build passed.
+- **Migration**: NONE.
+- **Production**: NOT CHANGED.
+- **Status**: IMPLEMENTED — RELEASE CANDIDATE

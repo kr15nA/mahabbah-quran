@@ -3,12 +3,6 @@ import { jwtVerify } from 'jose'
 
 import { getJwtSecretKey } from '@/lib/auth/session'
 
-const ROLE_PREFIXES: Record<string, string[]> = {
-  guru: ['/guru'],
-  orang_tua: ['/orang-tua'],
-  admin: ['/admin'],
-}
-
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
@@ -17,10 +11,8 @@ export async function middleware(req: NextRequest) {
     const token = req.cookies.get('mq_session')?.value
     if (!token) return NextResponse.redirect(new URL('/login', req.url))
     try {
-      const { payload } = await jwtVerify(token, getJwtSecretKey())
-      const role = (payload.role as string) || 'admin'
-      const target = role === 'orang_tua' ? '/orang-tua/beranda' : `/${role}/dashboard`
-      return NextResponse.redirect(new URL(target, req.url))
+      await jwtVerify(token, getJwtSecretKey())
+      return NextResponse.redirect(new URL('/auth/landing', req.url))
     } catch {
       return NextResponse.redirect(new URL('/login', req.url))
     }
@@ -50,14 +42,6 @@ export async function middleware(req: NextRequest) {
     const { payload } = await jwtVerify(token, getJwtSecretKey())
     const role = payload.role as string
 
-    if (!pathname.startsWith('/api/')) {
-      const allowed = ROLE_PREFIXES[role] ?? []
-      if (!allowed.some(prefix => pathname.startsWith(prefix))) {
-        const fallback = role === 'orang_tua' ? '/orang-tua/beranda' : `/${role.replace('_', '-')}/dashboard`
-        return NextResponse.redirect(new URL(fallback, req.url))
-      }
-    }
-
     const res = NextResponse.next()
     res.headers.set('x-user-id', String(payload.userId))
     res.headers.set('x-user-role', role)
@@ -71,5 +55,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/(guru|orang-tua|admin)/:path*', '/api/((?!auth).*)'],
+  matcher: ['/', '/(guru|orang-tua|admin|santri)/:path*', '/api/((?!auth).*)', '/pilih-konteks', '/auth/landing'],
 }

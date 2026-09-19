@@ -80,7 +80,7 @@ export function hasAdminContext(session: SessionPayload): boolean {
  *
  * Uses LIMIT 1 (EXISTS pattern) — O(1) regardless of assignment count.
  */
-export async function hasTeacherContext(userId: number): Promise<boolean> {
+export async function hasTeacherContext(userId: number, sessionRole?: string): Promise<boolean> {
   const rows = await db
     .select({ id: teacherAssignments.id })
     .from(teacherAssignments)
@@ -99,7 +99,9 @@ export async function hasTeacherContext(userId: number): Promise<boolean> {
     )
     .limit(1)
 
-  return rows.length > 0
+  // Transitional compatibility rule: if user has legacy 'guru' role, they retain context
+  // even without an active assignment to prevent locking out valid accounts (23 out of 32 in DB).
+  return rows.length > 0 || sessionRole === 'guru'
 }
 
 /**
@@ -112,7 +114,7 @@ export async function hasTeacherContext(userId: number): Promise<boolean> {
  *
  * Reuses released guardian helper — preserves existing behavior exactly.
  */
-export async function hasGuardianContext(userId: number): Promise<boolean> {
+export async function hasGuardianContext(userId: number, sessionRole?: string): Promise<boolean> {
   const rows = await db
     .select({ id: studentParents.id })
     .from(studentParents)
@@ -125,7 +127,9 @@ export async function hasGuardianContext(userId: number): Promise<boolean> {
     )
     .limit(1)
 
-  return rows.length > 0
+  // Transitional compatibility rule: if user has legacy 'orang_tua' role, they retain context
+  // even without an active guardian relationship to prevent locking out valid accounts.
+  return rows.length > 0 || sessionRole === 'orang_tua'
 }
 
 // ---------------------------------------------------------------------------
@@ -156,11 +160,11 @@ export async function getAvailableUserContexts(
   // Admin: O(1), derived from session (no DB query)
   const admin = hasAdminContext(session)
 
-  // Teacher: 1 query (EXISTS pattern)
-  const teacher = await hasTeacherContext(userId)
+  // Teacher: 1 query (EXISTS pattern) + compatibility
+  const teacher = await hasTeacherContext(userId, session.role)
 
-  // Guardian: 1 query (EXISTS pattern via released guardian helper)
-  const guardian = await hasGuardianContext(userId)
+  // Guardian: 1 query (EXISTS pattern) + compatibility
+  const guardian = await hasGuardianContext(userId, session.role)
 
   // Learner + selfStudentId: 1 query via getSelfStudentProfile
   const selfProfile = await getSelfStudentProfile(userId)
@@ -174,3 +178,22 @@ export async function getAvailableUserContexts(
     ...(selfProfile ? { selfStudentId: selfProfile.id } : {}),
   }
 }
+
+// ---------------------------------------------------------------------------
+// Server-Side Context Enforcements
+// ---------------------------------------------------------------------------
+
+export type ContextIdentifier = 'admin' | 'teacher' | 'guardian' | 'learner'
+
+/**
+ * Enforces that a user has the specified context available.
+ * Must be used in server layouts or actions.
+ * Throws an error (e.g., AuthError) or returns boolean.
+ * We throw a safe response or boolean so the caller can redirect.
+ * Returning boolean allows the layout to call `notFound()` or redirect.
+ */
+export async function verifyUserContext(session: SessionPayload, requiredContext: ContextIdentifier): Promise<boolean> {
+  const contexts = await getAvailableUserContexts(session)
+  return contexts[requiredContext] === true
+}
+
