@@ -514,15 +514,31 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 ## Summary Status
 
 - **Phase A (Self Learner Identity Foundation)**: ✅ RELEASED (`multi-context-identity-phase-a-v1.0.0`)
-- **Phase B (Admin Learner Identity Management + Formal Self-Assessment Guard)**: ✅ RELEASE CANDIDATE
+- **Phase B (Admin Learner Identity Management + Formal Self-Assessment Guard)**: ✅ RELEASED (`multi-context-identity-phase-b-v1.0.0`)
 - **Phase C (Context Switcher + V1 Learner Portal)**: ⏳ PENDING
 - **Phase D (Learner Achievement UI)**: ⏳ PENDING
 
 **Phase A Status:** RELEASED
-**Phase B Status:** RELEASE CANDIDATE
-**Main Release SHA:** 9060f668507634a3fc01547b2d94464369855b33
-**Production Deployed SHA:** 9060f668507634a3fc01547b2d94464369855b33
-**Migration:** `0018_typical_scalphunter.sql`
+**Phase B Status:** RELEASED
+**Main Release SHA:** a1e6bf599c2125a274135a70c50312719bb6811f
+**Production Deployed SHA:** a1e6bf599c2125a274135a70c50312719bb6811f
+**Tag:** `multi-context-identity-phase-b-v1.0.0`
+**Migration:** NONE
+
+**Admin Learner Identity:** RELEASED
+**Link/Unlink/Relink:** RELEASED
+**Self-Guardian Bidirectional Guard:** RELEASED
+**Formal Self-Assessment Guard:** RELEASED
+**Hafalan:** create protected
+**Tahsin:** create protected
+**Tasmi:** create/update/delete protected
+
+**Create-and-link:** DEFERRED
+**Context Switcher:** NOT IMPLEMENTED
+**/santri:** NOT IMPLEMENTED
+**auth/session:** UNCHANGED
+**middleware:** UNCHANGED
+
 **Production Migration:** APPLIED
 **Tag:** `multi-context-identity-phase-a-v1.0.0`
 
@@ -543,4 +559,4 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 - **Server Actions**: Link, create-and-link, relink, and unlink operations with audit trail (`STUDENT_USER_LINK`, `STUDENT_USER_UNLINK`, `STUDENT_USER_RELINK`).
 - **Security Guards**: `assertNotSelfAssessment()` added to Hafalan, Tahsin, and Tasmi grading/mutation actions.
 - **Guardian Validation**: Service validation ensuring `student.user_id !== actorUserId`.
-- **Status**: RELEASE CANDIDATE
+- **Status**: RELEASED
