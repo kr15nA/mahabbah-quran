@@ -52,6 +52,7 @@ const NAV_GROUPS = [
       { id: 'absensi', href: '/admin/absensi', label: 'Absensi', icon: Calendar },
       { id: 'hafalan', href: '/admin/hafalan', label: 'Hafalan', icon: BookMarked },
       { id: 'tahsin', href: '/admin/tahsin', label: 'Tahsin', icon: Award },
+      { id: 'tasmi', href: '/admin/tasmi', label: 'Tasmi', icon: BookMarked },
       { id: 'penilaian', href: '/admin/penilaian', label: 'Penilaian', icon: Star },
     ]
   },
