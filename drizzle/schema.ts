@@ -657,13 +657,18 @@ export const financeInvoiceScholarships = pgTable('finance_invoice_scholarships'
   fixedAmountSnapshot: bigint('fixed_amount_snapshot', { mode: 'bigint' }),
   grossEligibleAmount: bigint('gross_eligible_amount', { mode: 'bigint' }).notNull(),
   scholarshipAmount: bigint('scholarship_amount', { mode: 'bigint' }).notNull(),
-  
+
+  // Historical metadata: preserve display even if program is renamed/deleted
+  programNameSnapshot: varchar('program_name_snapshot', { length: 100 }).notNull(),
+
   fundIdSnapshot: bigint('fund_id_snapshot', { mode: 'number' }).references(() => financeFunds.id, { onDelete: 'set null' }),
   scholarshipAccountIdSnapshot: bigint('scholarship_account_id_snapshot', { mode: 'number' }).references(() => financeAccounts.id, { onDelete: 'set null' }),
-  
+
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   amountCheck: check('finance_invoice_scholarships_amounts_chk', sql`${table.grossEligibleAmount} >= 0 AND ${table.scholarshipAmount} >= 0 AND ${table.scholarshipAmount} <= ${table.grossEligibleAmount}`),
   invoiceIdx: index('idx_finance_invoice_scholarships_invoice').on(table.invoiceId),
-  calcTypeCheck: check('finance_invoice_scholarships_calc_type_chk', sql`${table.calculationTypeSnapshot} IN ('PERCENTAGE', 'FIXED_AMOUNT', 'FULL')`)
+  calcTypeCheck: check('finance_invoice_scholarships_calc_type_chk', sql`${table.calculationTypeSnapshot} IN ('PERCENTAGE', 'FIXED_AMOUNT', 'FULL')`),
+  // Prevent double-application of the same award to one invoice
+  uniqInvoiceAward: uniqueIndex('idx_finance_invoice_scholarships_uniq').on(table.invoiceId, table.studentScholarshipId),
 }))

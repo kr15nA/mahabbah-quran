@@ -1,7 +1,6 @@
-import { db } from '@/lib/db/client'
 import { financeDb } from '../tx'
-import { scholarshipPrograms, scholarshipProgramFeeTypes, auditLogs } from '@/drizzle/schema'
-import { eq, inArray, and } from 'drizzle-orm'
+import { scholarshipPrograms, scholarshipProgramFeeTypes, financeAccounts, financeFunds, auditLogs } from '@/drizzle/schema'
+import { eq } from 'drizzle-orm'
 
 export interface CreateScholarshipProgramInput {
   name: string
@@ -105,10 +104,26 @@ export async function activateScholarshipProgram(id: number, actorId: number) {
     if (!program) throw new Error('Scholarship program not found')
     if (program.status === 'ACTIVE') return
 
-    // Phase A rule: ACTIVE program must have complete accounting configuration (Phase B posting)
+    // Activation requires complete accounting configuration
     if (!program.scholarshipAccountId || !program.fundingFundId) {
       throw new Error('Cannot activate program without complete accounting configuration (scholarshipAccountId, fundingFundId)')
     }
+
+    // Activation requires at least one eligible fee type
+    const feeTypes = await tx.select().from(scholarshipProgramFeeTypes).where(eq(scholarshipProgramFeeTypes.programId, id))
+    if (feeTypes.length === 0) {
+      throw new Error('Cannot activate program with no eligible fee types configured')
+    }
+
+    // Validate referenced fund exists and is active
+    const [fund] = await tx.select({ id: financeFunds.id, isActive: financeFunds.isActive }).from(financeFunds).where(eq(financeFunds.id, program.fundingFundId))
+    if (!fund || !fund.isActive) throw new Error('Configured funding fund is missing or inactive')
+
+    // Validate referenced account exists and is active
+    const [account] = await tx.select({ id: financeAccounts.id, isActive: financeAccounts.isActive, accountType: financeAccounts.accountType }).from(financeAccounts).where(eq(financeAccounts.id, program.scholarshipAccountId))
+    if (!account || !account.isActive) throw new Error('Configured scholarship account is missing or inactive')
+    // Account must be EXPENSE type (scholarship is an expense, not a payment method)
+    if (account.accountType !== 'EXPENSE') throw new Error('Scholarship account must be of type EXPENSE')
 
     await tx.update(scholarshipPrograms).set({
       status: 'ACTIVE',

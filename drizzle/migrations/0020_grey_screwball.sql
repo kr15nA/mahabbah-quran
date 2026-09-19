@@ -1,0 +1,2 @@
+ALTER TABLE "finance_invoice_scholarships" ADD COLUMN "program_name_snapshot" varchar(100) NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_finance_invoice_scholarships_uniq" ON "finance_invoice_scholarships" USING btree ("invoice_id","student_scholarship_id");

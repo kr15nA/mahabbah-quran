@@ -134,6 +134,20 @@
       "when": 1789800421796,
       "tag": "0018_typical_scalphunter",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789819059796,
+      "tag": "0019_pale_sabretooth",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789819910317,
+      "tag": "0020_grey_screwball",
+      "breakpoints": true
     }
   ]
 }
