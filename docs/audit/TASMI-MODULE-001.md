@@ -80,7 +80,7 @@ export const tasmiSessions = pgTable('tasmi_sessions', {
 - **Parent**: Tasmi read-only tab or card in `/orang-tua/beranda` (Selected Child Dashboard C2.1).
 
 ## Phase A Final Verification
-- **Historical Academic Context Strategy**: `academic_year_id` and `class_id` are deliberately not stored directly on `tasmi_sessions`. Historical context is inferred dynamically at query time using active `enrollments` mapped against `session_date` bounded by `academic_years.start_date` and `end_date`.
+- **Historical Academic Context Strategy**: `academic_year_id` and `class_id` are deliberately not stored directly on `tasmi_sessions`. Schema supports historical academic-year resolution, but Tasmi Phase A does not persist or currently expose historical class/program context.
 - **Permission Provisioning**: Deterministically provisioned by formal migration `0017_tasmi_rbac.sql` which adds `academic.tasmi.read` and `academic.tasmi.manage` to the DB catalog securely. 
 - **Default Grants**: 
   - `SUPER_ADMIN` receives automatic effective permission via dynamic codebase lookup. 
