@@ -3,10 +3,12 @@
 ## Release Status
 
 - **PHASE B STATUS**: RELEASED
-- **Feature Release SHA**: b5bad39
-- **Main Release SHA**: 22d8f42
-- **Production Deployed SHA**: 22d8f42
-- **Tag**: scholarship-billing-phase-b-v1.0.0
+- **PHASE B RUNTIME RELEASE SHA**: 22d8f42056873c765d3f1ee130bc5ca1f5079b87
+- **RELEASE TAG**: scholarship-billing-phase-b-v1.0.0
+- **CURRENT PRODUCTION SHA**: 365eef50ff4be48de1fa7e5705bbce50f30304f1
+
+Runtime code corresponds to Phase B release SHA: YES
+Production contains additional docs-only commit: YES
 
 ### Production Migrations
 - **0019**: APPLIED
@@ -380,9 +382,10 @@ A rogue `npx drizzle-kit push` was executed during the Phase A hardening workflo
 
 ## L. PREVIEW VERIFICATION & UAT
 
-- **Phase B Preview URL**: Local Sandbox (Tested via API/Tests locally)
-- **Preview SHA**: 20fadf598da1ba608b89841e4e4a860de9572019
-- **Preview UAT**: PASS
+- **Pre-release Integration/UAT**: Local DEV/QA Sandbox
+- **Pre-release UAT SHA**: 20fadf598da1ba608b89841e4e4a860de9572019
+- **Pre-release UAT**: PASS
+- **Actual Vercel Preview**: NOT RUN
 
 ### Use Cases Validated
 - No scholarship: PASS
