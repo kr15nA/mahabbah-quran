@@ -506,3 +506,23 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 - **Self-assessment**: NOT IMPLEMENTED — explicitly deferred to Phase B.
 - **Production**: NOT MIGRATED yet.
 - **Tests**: `scripts/test-multi-context-identity-001.ts` created and fully passes 63/63 assertions, verifying all contexts and invariants.
+
+---
+
+## 10. Release Metadata
+
+**Phase A Status:** RELEASED
+**Main Release SHA:** 9060f668507634a3fc01547b2d94464369855b33
+**Production Deployed SHA:** 9060f668507634a3fc01547b2d94464369855b33
+**Migration:** `0018_typical_scalphunter.sql`
+**Production Migration:** APPLIED
+**Tag:** `multi-context-identity-phase-a-v1.0.0`
+
+**students.user_id:** canonical self-learner identity foundation
+**Unique:** REGULAR UNIQUE
+**FK:** ON DELETE SET NULL
+**Backfill:** NONE
+
+**Context Switcher:** NOT IMPLEMENTED
+**/santri:** NOT IMPLEMENTED
+**Self-assessment guard:** NOT IMPLEMENTED — Phase B
