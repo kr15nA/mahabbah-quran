@@ -34,3 +34,12 @@ Improve the Parent Family Dashboard (Beranda) UX by switching from a multi-child
 ## RESPONSIVE
 - Tested horizontally down to 375px. 
 - Only the selector strip may scroll horizontally (`overflow-x-auto`). The dashboard itself is strictly vertical and fits within the viewport.
+
+## Release Metadata
+- **Status**: RELEASED
+- **Main Release SHA**: c450cd7d5677dd16dff4373a060b4814bc72c8ea
+- **Production Deployed SHA**: c450cd7d5677dd16dff4373a060b4814bc72c8ea
+- **Tag**: parent-family-dashboard-c2.1-v1.0.0
+- **Production Smoke**: PASS
+- **Migration**: NONE
+- **Production DB Mutated**: NO
