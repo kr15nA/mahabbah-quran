@@ -13,6 +13,7 @@ import {
   unique,
   jsonb,
   check,
+  integer,
   AnyPgColumn,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
@@ -584,4 +585,90 @@ export const financeDisbursements = pgTable('finance_disbursements', {
 }, (table) => ({
   amountCheck: check('finance_disbursements_amount_chk', sql`${table.amount} > 0`),
   statusCheck: check('finance_disbursements_status_chk', sql`${table.status} IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'PAID', 'CANCELLED', 'REVERSED')`),
+}))
+
+// ==========================================
+// SCHOLARSHIPS (PHASE A)
+// ==========================================
+
+export const scholarshipPrograms = pgTable('scholarship_programs', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  calculationType: varchar('calculation_type', { length: 20 }).notNull(), // PERCENTAGE, FIXED_AMOUNT, FULL
+  percentageBasisPoints: integer('percentage_basis_points'), // 10000 = 100.00%
+  fixedAmount: bigint('fixed_amount', { mode: 'bigint' }),
+  status: varchar('status', { length: 20 }).notNull().default('DRAFT'), // DRAFT, ACTIVE, INACTIVE
+  fundingFundId: bigint('funding_fund_id', { mode: 'number' }).references(() => financeFunds.id, { onDelete: 'restrict' }),
+  scholarshipAccountId: bigint('scholarship_account_id', { mode: 'number' }).references(() => financeAccounts.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  createdBy: bigint('created_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  updatedBy: bigint('updated_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+}, (table) => ({
+  calcTypeCheck: check('scholarship_programs_calc_type_chk', sql`${table.calculationType} IN ('PERCENTAGE', 'FIXED_AMOUNT', 'FULL')`),
+  pctRangeCheck: check('scholarship_programs_pct_range_chk', sql`${table.percentageBasisPoints} IS NULL OR (${table.percentageBasisPoints} > 0 AND ${table.percentageBasisPoints} <= 10000)`),
+  fixedAmountCheck: check('scholarship_programs_fixed_amount_chk', sql`${table.fixedAmount} IS NULL OR ${table.fixedAmount} > 0`),
+  calcConstraints: check('scholarship_programs_calc_constraints_chk', sql`
+    (${table.calculationType} = 'PERCENTAGE' AND ${table.percentageBasisPoints} IS NOT NULL AND ${table.fixedAmount} IS NULL) OR
+    (${table.calculationType} = 'FIXED_AMOUNT' AND ${table.fixedAmount} IS NOT NULL AND ${table.percentageBasisPoints} IS NULL) OR
+    (${table.calculationType} = 'FULL' AND ${table.fixedAmount} IS NULL AND ${table.percentageBasisPoints} IS NULL)
+  `),
+}))
+
+export const scholarshipProgramFeeTypes = pgTable('scholarship_program_fee_types', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  programId: bigint('program_id', { mode: 'number' }).notNull().references(() => scholarshipPrograms.id, { onDelete: 'cascade' }),
+  feeTypeId: bigint('fee_type_id', { mode: 'number' }).notNull().references(() => financeFeeTypes.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  uniqProgramFeeType: uniqueIndex('idx_scholarship_program_fee_types_uniq').on(table.programId, table.feeTypeId)
+}))
+
+export const studentScholarships = pgTable('student_scholarships', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id, { onDelete: 'restrict' }),
+  scholarshipProgramId: bigint('scholarship_program_id', { mode: 'number' }).notNull().references(() => scholarshipPrograms.id, { onDelete: 'restrict' }),
+  academicYearId: bigint('academic_year_id', { mode: 'number' }).notNull().references(() => academicYears.id, { onDelete: 'restrict' }),
+  startDate: date('start_date').notNull(),
+  endDate: date('end_date'), // inclusive
+  status: varchar('status', { length: 20 }).notNull().default('ACTIVE'), // ACTIVE, REVOKED, EXPIRED
+  notes: text('notes'),
+  awardedAt: timestamp('awarded_at', { withTimezone: true }).notNull().defaultNow(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+}, (table) => ({
+  statusCheck: check('student_scholarships_status_chk', sql`${table.status} IN ('ACTIVE', 'REVOKED', 'EXPIRED')`),
+  activeLookupIdx: index('idx_student_scholarships_active').on(table.studentId, table.academicYearId, table.status),
+}))
+
+export const financeInvoiceScholarships = pgTable('finance_invoice_scholarships', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  invoiceId: bigint('invoice_id', { mode: 'number' }).notNull().references(() => financeInvoices.id, { onDelete: 'cascade' }),
+  studentScholarshipId: bigint('student_scholarship_id', { mode: 'number' }).notNull().references(() => studentScholarships.id, { onDelete: 'restrict' }),
+  scholarshipProgramId: bigint('scholarship_program_id', { mode: 'number' }).notNull().references(() => scholarshipPrograms.id, { onDelete: 'restrict' }),
+  
+  // Snapshotted values at the time of invoice creation
+  calculationTypeSnapshot: varchar('calculation_type_snapshot', { length: 20 }).notNull(),
+  percentageBasisPointsSnapshot: integer('percentage_basis_points_snapshot'),
+  fixedAmountSnapshot: bigint('fixed_amount_snapshot', { mode: 'bigint' }),
+  grossEligibleAmount: bigint('gross_eligible_amount', { mode: 'bigint' }).notNull(),
+  scholarshipAmount: bigint('scholarship_amount', { mode: 'bigint' }).notNull(),
+
+  // Historical metadata: preserve display even if program is renamed/deleted
+  programNameSnapshot: varchar('program_name_snapshot', { length: 100 }).notNull(),
+
+  fundIdSnapshot: bigint('fund_id_snapshot', { mode: 'number' }).references(() => financeFunds.id, { onDelete: 'set null' }),
+  scholarshipAccountIdSnapshot: bigint('scholarship_account_id_snapshot', { mode: 'number' }).references(() => financeAccounts.id, { onDelete: 'set null' }),
+
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  amountCheck: check('finance_invoice_scholarships_amounts_chk', sql`${table.grossEligibleAmount} >= 0 AND ${table.scholarshipAmount} >= 0 AND ${table.scholarshipAmount} <= ${table.grossEligibleAmount}`),
+  invoiceIdx: index('idx_finance_invoice_scholarships_invoice').on(table.invoiceId),
+  calcTypeCheck: check('finance_invoice_scholarships_calc_type_chk', sql`${table.calculationTypeSnapshot} IN ('PERCENTAGE', 'FIXED_AMOUNT', 'FULL')`),
+  // Prevent double-application of the same award to one invoice
+  uniqInvoiceAward: uniqueIndex('idx_finance_invoice_scholarships_uniq').on(table.invoiceId, table.studentScholarshipId),
 }))
