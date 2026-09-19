@@ -63,4 +63,18 @@
 - Student/Parent Domain Regressions: **PASS**
 - User Profile Regressions: **PASS**
 
-**Status**: IMPLEMENTED — RELEASE CANDIDATE
+**Status**: RELEASED
+**Main Release SHA**: f154a51599b377b805367f68367855e9abd4dd7b
+**Production Deployed SHA**: f154a51599b377b805367f68367855e9abd4dd7b
+**Tag**: user-student-profile-photo-v1.0.0
+**Migration**: NONE
+**User Avatar**: RELEASED
+**Student Photo**: RELEASED
+**Vercel Blob**: RELEASED
+**Profile Processing**: 512x512 WebP quality 82
+**Existing Media Default**: 400x400 unchanged
+**User/Student photo isolation**: VERIFIED
+**Production Blob UAT**: PASS
+**Parent edit Student photo**: DENIED
+**Guru edit Student photo**: DENIED
+**Student self-edit Student photo**: DENIED
