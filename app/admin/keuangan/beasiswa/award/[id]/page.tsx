@@ -10,11 +10,12 @@ import { revokeStudentScholarshipAction } from '../../actions'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AwardDetailPage({ params }: { params: { id: string } }) {
+export default async function AwardDetailPage(props: { params: Promise<{ id: string }> }) {
   await requirePermission('finance.billing.view')
   const { session } = await requirePermission('finance.billing.manage').catch(() => ({ session: null }))
   const canManage = !!session
 
+  const params = await props.params
   const awardId = parseInt(params.id, 10)
   if (isNaN(awardId)) notFound()
 

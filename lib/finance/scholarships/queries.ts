@@ -62,7 +62,7 @@ export async function getScholarshipPrograms(filters: ScholarshipProgramFilters)
     accountName: financeAccounts.name,
     activeRecipientsCount: sql<number>`(
       SELECT count(*) FROM ${studentScholarships} ss 
-      WHERE ss.program_id = ${scholarshipPrograms.id} AND ss.status = 'ACTIVE'
+      WHERE ss.scholarship_program_id = ${scholarshipPrograms.id} AND ss.status = 'ACTIVE'
     )`.mapWith(Number)
   })
   .from(scholarshipPrograms)

@@ -8,12 +8,13 @@ import { ArrowLeft } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-export default async function TetapkanPage({ searchParams }: { searchParams: { studentId?: string } }) {
+export default async function TetapkanPage(props: { searchParams: Promise<{ studentId?: string }> }) {
   await requirePermission('finance.billing.manage')
   
   const programs = await getActiveScholarshipProgramsForSelect()
   const academicYears = await getActiveAcademicYearsForSelect()
 
+  const searchParams = await props.searchParams
   const defaultStudentId = searchParams.studentId ? parseInt(searchParams.studentId, 10) : undefined
 
   return (

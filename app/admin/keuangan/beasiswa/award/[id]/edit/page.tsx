@@ -7,9 +7,10 @@ import { getActiveScholarshipProgramsForSelect, getActiveAcademicYearsForSelect 
 
 export const dynamic = 'force-dynamic'
 
-export default async function EditAwardPage({ params }: { params: { id: string } }) {
+export default async function EditAwardPage(props: { params: Promise<{ id: string }> }) {
   await requirePermission('finance.billing.manage')
 
+  const params = await props.params
   const awardId = parseInt(params.id, 10)
   if (isNaN(awardId)) notFound()
 

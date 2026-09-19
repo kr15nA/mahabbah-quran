@@ -263,6 +263,22 @@ async function runTests() {
   await revokeStudentScholarship(award2Id, admin.id)
   console.log('Revoke passed.')
 
+  console.log('\n--- 5. Testing Read Model Stability ---')
+  const { getScholarshipPrograms, getScholarshipAwards } = await import('../lib/finance/scholarships/queries')
+  
+  // Test program query (which previously crashed due to invalid column in subquery)
+  const programsResult = await getScholarshipPrograms({ page: 1, limit: 10, search: F_PREFIX })
+  if (!programsResult.data.some((p: any) => p.name.includes(F_PREFIX))) {
+    throw new Error('FAIL: Read model did not return inserted test programs.')
+  }
+  
+  // Test award query
+  const awardsResult = await getScholarshipAwards({ page: 1, limit: 10, search: F_PREFIX })
+  if (awardsResult.data.length === 0) {
+    throw new Error('FAIL: Read model did not return inserted test awards.')
+  }
+  console.log('Read models passed (no SQL exceptions).')
+
   await cleanupFixtures()
   console.log('--- ALL PASS ---')
 }

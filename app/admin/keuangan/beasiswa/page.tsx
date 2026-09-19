@@ -8,13 +8,12 @@ import { Plus, Users, BookOpen } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-export default async function BeasiswaPage({
-  searchParams
-}: {
-  searchParams: { tab?: string, page?: string, search?: string, status?: string, type?: string }
+export default async function BeasiswaPage(props: {
+  searchParams: Promise<{ tab?: string, page?: string, search?: string, status?: string, type?: string }>
 }) {
   await requirePermission('finance.billing.view')
 
+  const searchParams = await props.searchParams
   const currentTab = searchParams.tab || 'programs'
   const page = parseInt(searchParams.page || '1', 10)
 
