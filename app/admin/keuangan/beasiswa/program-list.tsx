@@ -7,6 +7,7 @@ import { Eye, Edit, ShieldAlert } from 'lucide-react'
 import Link from 'next/link'
 import Pagination from '@/components/ui/Pagination'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { formatRupiah } from '@/lib/finance/utils'
 
 export function ProgramList({ programs, pagination }: { programs: any[], pagination: any }) {
   const router = useRouter()
@@ -39,10 +40,7 @@ export function ProgramList({ programs, pagination }: { programs: any[], paginat
     router.push(`${pathname}?${params.toString()}`)
   }
 
-  const formatCurrency = (amount: string) => {
-    if (!amount) return '-'
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(amount))
-  }
+
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -127,7 +125,7 @@ export function ProgramList({ programs, pagination }: { programs: any[], paginat
                     {p.calculationType === 'PERCENTAGE' 
                       ? `${p.percentageBasisPoints / 100}%` 
                       : p.calculationType === 'FIXED_AMOUNT' 
-                        ? formatCurrency(p.fixedAmount) 
+                        ? formatRupiah(p.fixedAmount) 
                         : '100%'}
                   </td>
                   <td className="px-6 py-4">{getStatusBadge(p.status)}</td>

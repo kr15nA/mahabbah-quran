@@ -8,24 +8,23 @@ import Link from 'next/link'
 import { Edit, CheckCircle, XCircle, ArrowLeft } from 'lucide-react'
 import { activateScholarshipProgramAction, deactivateScholarshipProgramAction } from '../actions'
 import { revalidatePath } from 'next/cache'
+import { formatRupiah } from '@/lib/finance/utils'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ProgramDetailPage({ params }: { params: { id: string } }) {
+export default async function ProgramDetailPage(props: { params: Promise<{ id: string }> }) {
   await requirePermission('finance.billing.view')
   const { session } = await requirePermission('finance.billing.manage').catch(() => ({ session: null }))
   const canManage = !!session
 
+  const params = await props.params
   const programId = parseInt(params.id, 10)
   if (isNaN(programId)) notFound()
 
   const program = await getScholarshipProgramDetail(programId)
   if (!program) notFound()
 
-  const formatCurrency = (amount: string) => {
-    if (!amount) return '-'
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(amount))
-  }
+
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -85,7 +84,7 @@ export default async function ProgramDetailPage({ params }: { params: { id: stri
                   {program.calculationType === 'PERCENTAGE' 
                     ? `${(program.percentageBasisPoints || 0) / 100}%` 
                     : program.calculationType === 'FIXED_AMOUNT' 
-                      ? formatCurrency(program.fixedAmount || '0') 
+                      ? formatRupiah(program.fixedAmount || '0') 
                       : '100%'}
                 </dd>
               </div>
@@ -102,7 +101,7 @@ export default async function ProgramDetailPage({ params }: { params: { id: stri
               {program.feeTypes.map((f: any) => (
                 <li key={f.id} className="flex justify-between items-center text-sm border-b border-gray-100 pb-2 last:border-0 last:pb-0">
                   <span className="text-gray-700">{f.name}</span>
-                  <span className="font-mono text-gray-500">{formatCurrency(f.defaultAmount)}</span>
+                  <span className="font-mono text-gray-500">{formatRupiah(f.defaultAmount)}</span>
                 </li>
               ))}
             </ul>

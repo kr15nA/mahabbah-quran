@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import Link from 'next/link'
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react'
 import { revokeStudentScholarshipAction } from '../../actions'
+import { formatRupiah } from '@/lib/finance/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,10 +53,7 @@ export default async function AwardDetailPage(props: { params: Promise<{ id: str
 
   if (!award) notFound()
 
-  const formatCurrency = (amount: string | bigint | null) => {
-    if (!amount) return '-'
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(amount))
-  }
+
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -109,7 +107,7 @@ export default async function AwardDetailPage(props: { params: Promise<{ id: str
                   Nilai: {award.calculationType === 'PERCENTAGE' 
                     ? `${(award.percentageBasisPoints || 0) / 100}%` 
                     : award.calculationType === 'FIXED_AMOUNT' 
-                      ? formatCurrency(award.fixedAmount) 
+                      ? formatRupiah(award.fixedAmount) 
                       : 'Penuh (100%)'}
                 </dd>
               </div>

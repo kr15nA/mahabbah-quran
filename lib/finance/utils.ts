@@ -31,14 +31,19 @@ export function serializeAmountForApi(amount: bigint): string {
  * Formats a bigint amount to standard Indonesian Rupiah format for UI presentation.
  * Example: 150000n -> "Rp150.000"
  */
-export function formatRupiah(amount: bigint): string {
-  // Use Intl.NumberFormat for robust formatting
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount)
+export function formatRupiah(amount: bigint | string | null | undefined): string {
+  if (amount === null || amount === undefined || amount === '') return '-'
+  try {
+    const bg = typeof amount === 'string' ? BigInt(amount) : amount
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(bg)
+  } catch {
+    return '-'
+  }
 }
 
 /**

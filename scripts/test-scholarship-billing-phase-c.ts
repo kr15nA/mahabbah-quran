@@ -107,7 +107,13 @@ async function runTests() {
   assertBigInt(parseRupiahToBigInt("Rp 500.000"), BigInt(500000), "Rupiah with prefix")
   assertThrows(() => parseRupiahToBigInt("0"), "Zero rupiah should throw")
   assertThrows(() => parseRupiahToBigInt("-1000"), "Negative rupiah should throw")
+  const { formatRupiah } = await import('../lib/finance/utils')
   
+  assertStrictEq(formatRupiah(BigInt(500000)), 'Rp 500.000', "formatRupiah bigint 500k")
+  assertStrictEq(formatRupiah(BigInt(1000000)), 'Rp 1.000.000', "formatRupiah bigint 1m")
+  assertStrictEq(formatRupiah(BigInt("9007199254740993")), 'Rp 9.007.199.254.740.993', "formatRupiah bigint beyond MAX_SAFE_INTEGER")
+  assertStrictEq(formatRupiah("500000"), 'Rp 500.000', "formatRupiah string 500k")
+  assertStrictEq(formatRupiah(null), '-', "formatRupiah null fallback")
   console.log('\n--- 2. Setting up DB Fixtures ---')
   
   const [admin] = await financeDb.insert(users).values({
