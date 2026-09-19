@@ -2,25 +2,21 @@
 
 ## Release Status
 
-- **PHASE A STATUS**: RELEASED
-- **Feature Release SHA**: 8ed23e453be28f594c420a83cfcec3e857afb84d
-- **Main Release SHA**: 58a16d9001c248e34b03d64f7514eb3cf75414ea
-- **Production Deployed SHA**: 58a16d9001c248e34b03d64f7514eb3cf75414ea
-- **Tag**: scholarship-billing-phase-a-v1.0.0
+- **PHASE B STATUS**: RELEASED
+- **Feature Release SHA**: b5bad39
+- **Main Release SHA**: 22d8f42
+- **Production Deployed SHA**: 22d8f42
+- **Tag**: scholarship-billing-phase-b-v1.0.0
 
 ### Production Migrations
 - **0019**: APPLIED
 - **0020**: APPLIED
 
 ### Impact
-- **Live Billing Integration**: NOT ENABLED
-- **Existing invoice behavior**: UNCHANGED
-- **Outstanding**: UNCHANGED
-- **Ledger**: UNCHANGED
-- **Payment**: UNCHANGED
-- **Parent Finance**: UNCHANGED
-- **Production Scholarship Business Data**: NONE
-- **Phase B**: NOT STARTED
+- **Live Billing Integration**: ENABLED
+- **Restricted Fund**: DEFERRED
+- **Cross Fund**: DEFERRED
+- **Phase C**: NOT STARTED
 
 ---
 
