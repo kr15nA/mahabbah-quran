@@ -111,10 +111,10 @@ async function runDBTests() {
     await financeDb.update(students).set({ deletedAt: new Date() }).where(eq(students.id, studentDel.id))
     
     const [acadYear] = await financeDb.insert(academicYears).values({ 
-      name: F_PREFIX + '2026/2027', startDate: '2026-07-01', endDate: '2027-06-30', isActive: true 
+      name: F_PREFIX + '2026/2027', startDate: '2026-07-01', endDate: '2027-06-30', isActive: false 
     }).returning()
     const [acadYear2] = await financeDb.insert(academicYears).values({ 
-      name: F_PREFIX + '2027/2028', startDate: '2027-07-01', endDate: '2028-06-30', isActive: true 
+      name: F_PREFIX + '2027/2028', startDate: '2027-07-01', endDate: '2028-06-30', isActive: false 
     }).returning()
     
     // Enroll active student in acadYear1 ONLY
