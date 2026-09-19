@@ -94,3 +94,14 @@ export const tasmiSessions = pgTable('tasmi_sessions', {
   - `0016_lame_cyclops.sql`: Tasmi table/schema (Applied to Dev)
   - `0017_tasmi_rbac.sql`: Tasmi permission catalog provisioning (Applied to Dev)
   - Production: neither migration applied yet.
+
+## Release Metadata
+- **Phase A Status**: RELEASED
+- **Main Release SHA**: 252c5e062eda6c8a86d9b715b960da203a844fac
+- **Production Deployed SHA**: 252c5e062eda6c8a86d9b715b960da203a844fac
+- **Tag**: tasmi-module-phase-a-v1.0.0
+- **Production migrations**: 0016_lame_cyclops, 0017_tasmi_rbac
+- **Production migration**: PASS
+- **Production permission catalog**: PASS
+- **Tasmi Production rows created during release**: 0
+- **Production smoke**: PASS
