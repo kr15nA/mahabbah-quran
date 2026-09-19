@@ -3,7 +3,7 @@
 
 **Branch:** feature/multi-context-identity-001
 **Baseline:** d4d914e3cb658c37e1b395d8af7fdfccfaf68c35
-**Status:** PHASE A IMPLEMENTED — RELEASE CANDIDATE
+**Status:** PHASE A RELEASED, PHASE B RELEASED, PHASE C PENDING, PHASE D PENDING
 
 ---
 
@@ -342,10 +342,9 @@ ALTER TABLE students
   ADD CONSTRAINT students_user_id_users_id_fk
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 
--- 2. Add unique partial index
+-- 2. Add REGULAR UNIQUE on students.user_id
 CREATE UNIQUE INDEX idx_students_user_id_unique
-  ON students (user_id)
-  WHERE user_id IS NOT NULL;
+  ON students (user_id);
 ```
 
 ---
@@ -410,8 +409,8 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 | Context confusion | Route namespace authoritative; RSC re-validates per page |
 | Permission leakage | Scopes queried independently; no union |
 | Teacher self-assessment | `assertNotSelfAssessment()` in Phase B |
-| Guardian/self-learner mixing | Service validation: `student.user_id !== actorUserId` |
-| Duplicate learner profile | UNIQUE INDEX ON students(user_id) WHERE user_id IS NOT NULL |
+| Guardian/self-learner mixing | A User cannot simultaneously be the self learner identity of Student S AND guardian of the same Student S. |
+| Duplicate learner profile | REGULAR UNIQUE on students.user_id |
 | Legacy role assumptions | Retained until Phase C fully migrates routing |
 | Deleted Student retaining context | `getSelfStudentProfile()` filters `deleted_at IS NULL` |
 | Session trusting context | No context in JWT; always derived from DB at runtime |
@@ -487,7 +486,7 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 **AUTH-ROLE-SWITCH-001:** SUPERSEDED by Phase C
 **Tasmi Phase C order:** Tasmi Phase C → MULTI-CONTEXT Phase A → B → C → D
 
-**FINAL STATUS: MULTI CONTEXT IDENTITY 001 PHASE A IMPLEMENTED — RELEASE CANDIDATE**
+**FINAL STATUS: MULTI CONTEXT IDENTITY 001 PHASE A RELEASED, PHASE B RELEASED**
 
 ---
 
@@ -555,8 +554,9 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 
 ## 11. Phase B Implementation
 
-- **Admin UI**: `/admin/santri/[id]` "Akun & Akses" tab implemented.
-- **Server Actions**: Link, create-and-link, relink, and unlink operations with audit trail (`STUDENT_USER_LINK`, `STUDENT_USER_UNLINK`, `STUDENT_USER_RELINK`).
-- **Security Guards**: `assertNotSelfAssessment()` added to Hafalan, Tahsin, and Tasmi grading/mutation actions.
-- **Guardian Validation**: Service validation ensuring `student.user_id !== actorUserId`.
+- **Admin UI**: `/admin/santri/[id]` -> Akun & Akses
+- **Identity operations**: LINK, UNLINK, RELINK. Create-and-link: DEFERRED.
+- **Audit**: `STUDENT_USER_LINK`, `STUDENT_USER_UNLINK`, `STUDENT_USER_RELINK`
+- **Formal self-assessment**: Hafalan create protected, Tahsin create protected, Tasmi create/update/delete protected. SUPER_ADMIN bypass: NO.
+- **Guardian Validation**: A User cannot simultaneously be the self learner identity of Student S AND guardian of the same Student S.
 - **Status**: RELEASED
