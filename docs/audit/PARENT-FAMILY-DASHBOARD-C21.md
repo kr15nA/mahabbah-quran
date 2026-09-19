@@ -13,7 +13,8 @@ Improve the Parent Family Dashboard (Beranda) UX by switching from a multi-child
 - **1 Child (no child_id param)**: Auto-resolves and renders that child directly without a selector.
 - **Multi-Child (no child_id param)**: Redirects explicitly to `/orang-tua/beranda?child_id=<first_authorized_child>` to provide a deterministic Beranda-specific default without breaking C1 strict semantics.
 - **Multi-Child (valid child_id)**: Renders selector and the selected dashboard.
-- **Invalid / Forbidden Child**: Redirects to `/orang-tua/beranda` to safely fallback or deny access cleanly.
+- **Invalid Child**: Safe redirect to clean Beranda.
+- **Forbidden Child**: Akses Ditolak.
 
 ## Data Fetching & Query Semantics
 - **Reused C2 Strategy**: Kept `getFamilyDashboardData` which batches queries for *all* authorized children (1 auth query + 4 metric queries).

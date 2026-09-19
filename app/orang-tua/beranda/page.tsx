@@ -46,8 +46,21 @@ export default async function ParentBerandaPage({
   }
 
   // 3. Handle specific routing / fallback states
-  if (resolution.status === 'INVALID_CHILD' || resolution.status === 'FORBIDDEN_CHILD') {
+  if (resolution.status === 'INVALID_CHILD') {
     redirect('/orang-tua/beranda')
+  }
+
+  if (resolution.status === 'FORBIDDEN_CHILD') {
+    return (
+      <div className="space-y-6 pb-20 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+        <div className="bg-red-50 p-8 rounded-2xl border border-red-200 shadow-sm text-center">
+          <h3 className="font-bold text-red-900 mb-2 text-xl">Akses Ditolak</h3>
+          <p className="text-sm text-red-700">
+            Anda tidak memiliki akses untuk melihat data santri ini.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   if (resolution.status === 'CHILD_REQUIRED') {
