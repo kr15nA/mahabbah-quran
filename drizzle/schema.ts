@@ -140,6 +140,36 @@ export const tahsinRecords = pgTable('tahsin_records', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+export const tasmiSessions = pgTable('tasmi_sessions', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),
+  examinerId: bigint('examiner_id', { mode: 'number' }).notNull().references(() => users.id),
+  mode: varchar('mode', { length: 20 }).notNull(), // 'SURAH' | 'JUZ_RANGE'
+  surahId: bigint('surah_id', { mode: 'number' }).references(() => surahs.id),
+  startJuz: smallint('start_juz'),
+  endJuz: smallint('end_juz'),
+  sessionDate: date('session_date').notNull(),
+  score: smallint('score'),
+  status: varchar('status', { length: 20 }).notNull(), // 'PASSED' | 'NEEDS_REVIEW'
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  modeCheck: check('tasmi_sessions_mode_chk', sql`${table.mode} IN ('SURAH', 'JUZ_RANGE')`),
+  statusCheck: check('tasmi_sessions_status_chk', sql`${table.status} IN ('PASSED', 'NEEDS_REVIEW')`),
+  modePayloadCheck: check(
+    'tasmi_sessions_mode_payload_chk',
+    sql`(${table.mode} = 'SURAH' AND ${table.surahId} IS NOT NULL AND ${table.startJuz} IS NULL AND ${table.endJuz} IS NULL) OR (${table.mode} = 'JUZ_RANGE' AND ${table.surahId} IS NULL AND ${table.startJuz} IS NOT NULL AND ${table.endJuz} IS NOT NULL)`
+  ),
+  juzBoundsCheck: check(
+    'tasmi_sessions_juz_bounds_chk',
+    sql`${table.mode} != 'JUZ_RANGE' OR (${table.startJuz} BETWEEN 1 AND 30 AND ${table.endJuz} BETWEEN 1 AND 30 AND ${table.startJuz} <= ${table.endJuz})`
+  ),
+  scoreBoundsCheck: check('tasmi_sessions_score_bounds_chk', sql`${table.score} IS NULL OR (${table.score} >= 0 AND ${table.score} <= 100)`),
+  studentDateIdx: index('idx_tasmi_student_date').on(table.studentId, table.sessionDate),
+  modeIdx: index('idx_tasmi_mode').on(table.mode),
+}))
+
 export const learningReports = pgTable('learning_reports', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),
