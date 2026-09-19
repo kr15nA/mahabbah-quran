@@ -45,11 +45,25 @@ import { getAuthorizedAcademicChildren, normalizeStudentId } from '@/lib/guardia
 // ---------------------------------------------------------------------------
 
 const DB_URL = process.env.DATABASE_URL ?? ''
-if (process.env.NODE_ENV === 'production' || process.env.ALLOW_MUTATING_DB_TESTS !== 'true') {
-  console.error('BLOCKED: Production environment detected or ALLOW_MUTATING_DB_TESTS is not true. Tests must not run against production.')
+if (process.env.NODE_ENV === 'production') {
+  console.error('BLOCKED: NODE_ENV is production.')
   process.exit(1)
 }
-console.log('Production guard: OK (explicit opt-in present)')
+if (process.env.ALLOW_MUTATING_DB_TESTS !== 'true') {
+  console.error('BLOCKED: ALLOW_MUTATING_DB_TESTS is not true.')
+  process.exit(1)
+}
+if (
+  DB_URL.includes('mahabbah-quran.vercel') || 
+  DB_URL.match(/ep-[a-z]+-[a-z]+-[a-z0-9]+\.us-east/)
+) {
+  // If it matches neon's generic pattern, we require an explicit expected branch to avoid accidental prod mutation
+  if (!process.env.EXPECTED_DB_BRANCH || !DB_URL.includes(process.env.EXPECTED_DB_BRANCH)) {
+    console.error('BLOCKED: Database URL looks like a remote Neon database but EXPECTED_DB_BRANCH is missing or does not match.')
+    process.exit(1)
+  }
+}
+console.log('Production guard: OK (layered protection passed)')
 
 // ---------------------------------------------------------------------------
 // Tracking for cleanup

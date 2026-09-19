@@ -3,7 +3,7 @@
 
 **Branch:** feature/multi-context-identity-001
 **Baseline:** d4d914e3cb658c37e1b395d8af7fdfccfaf68c35
-**Status:** PLAN READY — DO NOT IMPLEMENT YET
+**Status:** PHASE A IMPLEMENTED — RELEASE CANDIDATE
 
 ---
 
@@ -165,7 +165,7 @@ The column already exists. Required changes:
 
 ```sql
 -- Change FK: ON DELETE NO ACTION → ON DELETE SET NULL
--- Add: UNIQUE INDEX (user_id) WHERE user_id IS NOT NULL
+-- Add: REGULAR UNIQUE on user_id
 ```
 
 **Cardinality:**
@@ -257,12 +257,14 @@ Normal Student + Enrollment + TeacherAssignment handles this fully.
 **Recommended guard (Phase B):**
 
 ```typescript
+import { normalizeStudentId } from '@/lib/guardians/parent-context'
+
 async function assertNotSelfAssessment({
   actorUserId,
   targetStudentId,
 }: { actorUserId: number; targetStudentId: number }): Promise<void> {
   const selfProfile = await getSelfStudentProfile(actorUserId)
-  if (selfProfile && selfProfile.id === targetStudentId) {
+  if (selfProfile && selfProfile.id === normalizeStudentId(targetStudentId)) {
     throw new AuthError(403, 'Forbidden: Cannot formally assess your own learner profile')
   }
 }
@@ -485,7 +487,7 @@ CREATE UNIQUE INDEX idx_students_user_id_unique
 **AUTH-ROLE-SWITCH-001:** SUPERSEDED by Phase C
 **Tasmi Phase C order:** Tasmi Phase C → MULTI-CONTEXT Phase A → B → C → D
 
-**FINAL STATUS: MULTI CONTEXT IDENTITY 001 PLAN READY FOR IMPLEMENTATION**
+**FINAL STATUS: MULTI CONTEXT IDENTITY 001 PHASE A IMPLEMENTED — RELEASE CANDIDATE**
 
 ---
 

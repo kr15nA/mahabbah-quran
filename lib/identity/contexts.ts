@@ -140,9 +140,9 @@ export async function hasGuardianContext(userId: number): Promise<boolean> {
  *   2. Teacher:  1 query — EXISTS on teacher_assignments + active academic year
  *   3. Guardian: 1 query — active student_parents rows
  *   4. Learner:  1 query — students.user_id match (non-deleted)
- *   5. selfStudentId: 1 query — if learner = true (same row reused)
+ *   5. selfStudentId: 0 query — inferred from Learner query
  *
- * Total: max 4 DB queries. Fixed overhead, not proportional to relationship count.
+ * Total: max 3 DB queries. Fixed overhead, not proportional to relationship count.
  *
  * NOTE: This helper is NOT yet wired into JWT, session, middleware, or
  * login redirect. It is infrastructure for Phase C. Calling it has no
