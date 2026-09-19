@@ -24,3 +24,15 @@ The `useEffect` hook in `app/admin/santri/StudentTableClient.tsx` previously dep
 - Validated on Vercel Preview across 375px, 768px, and 1280px without layout breakage.
 - Migration: NONE.
 - Production DB Mutated: NO.
+
+## Production Release Info
+- **Status:** RELEASED
+- **Main Release SHA:** f8307b0
+- **Production Deployed SHA:** f8307b0
+- **Tag:** admin-student-pagination-v1.0.0
+- **Production Smoke:** PASS
+- **Page-size options:** 10, 30, 50, 100
+- **Stable ordering:** ORDER BY full_name ASC, id ASC
+- **Migration:** NONE
+- **Production DB Mutated:** NO
+- **Guardian B1 regression:** PASS
