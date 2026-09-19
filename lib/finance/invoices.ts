@@ -11,11 +11,15 @@ import {
   financeJournalEntries,
   auditLogs,
   students,
-  academicYears
+  academicYears,
+  financeInvoiceScholarships
 } from '@/drizzle/schema'
 import { eq, and, sql, isNotNull, inArray } from 'drizzle-orm'
 import { generateDocumentNumber } from './sequence'
 import { postJournalEntry, reverseJournalEntry } from './ledger'
+import { resolveScholarshipForInvoice } from './scholarships/resolver'
+import { calculateInvoiceBalance } from './invoice-balance'
+import { serializeForAudit } from './audit'
 
 export interface InvoiceDraftInput {
   studentId: number
@@ -85,6 +89,23 @@ export async function createInvoiceDraft(input: InvoiceDraftInput): Promise<numb
       createdBy: input.createdBy
     }).returning({ id: financeInvoices.id })
 
+    if (input.period) {
+      const snapshot = await resolveScholarshipForInvoice({
+        studentId: input.studentId,
+        academicYearId: input.academicYearId,
+        feeTypeId: input.feeTypeId,
+        period: input.period,
+        grossAmount: input.amount
+      }, tx)
+
+      if (snapshot) {
+        await tx.insert(financeInvoiceScholarships).values({
+          invoiceId: result.id,
+          ...snapshot
+        })
+      }
+    }
+
     await tx.insert(auditLogs).values({
       actorUserId: input.createdBy,
       action: 'CREATE',
@@ -94,6 +115,33 @@ export async function createInvoiceDraft(input: InvoiceDraftInput): Promise<numb
     })
 
     return result.id
+  })
+}
+
+export async function recalculateDraftScholarship(invoiceId: number, actorId: number): Promise<void> {
+  await financeDb.transaction(async (tx) => {
+    const [invoice] = await tx.select().from(financeInvoices).where(eq(financeInvoices.id, invoiceId))
+    if (!invoice) throw new Error('Invoice not found')
+    if (invoice.status !== 'DRAFT') throw new Error('Only DRAFT invoices can be recalculated')
+
+    await tx.delete(financeInvoiceScholarships).where(eq(financeInvoiceScholarships.invoiceId, invoiceId))
+
+    if (invoice.period) {
+      const snapshot = await resolveScholarshipForInvoice({
+        studentId: invoice.studentId,
+        academicYearId: invoice.academicYearId,
+        feeTypeId: invoice.feeTypeId,
+        period: invoice.period,
+        grossAmount: invoice.amount
+      }, tx)
+
+      if (snapshot) {
+        await tx.insert(financeInvoiceScholarships).values({
+          invoiceId: invoiceId,
+          ...snapshot
+        })
+      }
+    }
   })
 }
 
@@ -117,47 +165,105 @@ export async function issueInvoice(invoiceId: number, issuedBy: number): Promise
 
     if (!receivable || !income || !category) throw new Error('Invalid accounting configuration for Fee Type')
     
+    const [snapshot] = await tx.select().from(financeInvoiceScholarships).where(eq(financeInvoiceScholarships.invoiceId, invoiceId))
+    
     let fundId = feeType.defaultFundId
     if (fundId) {
       const [fund] = await tx.select().from(financeFunds).where(eq(financeFunds.id, fundId))
       if (!fund || fund.isActive !== true) throw new Error('Configured default fund is missing or inactive')
     }
 
+    if (snapshot) {
+      if (snapshot.fundIdSnapshot && snapshot.fundIdSnapshot !== fundId) {
+        throw new Error('DEFERRED: Cross-fund scholarship not supported in Phase B V1')
+      }
+      if (snapshot.fundIdSnapshot) {
+        const [fund] = await tx.select().from(financeFunds).where(eq(financeFunds.id, snapshot.fundIdSnapshot))
+        if (!fund || fund.restrictionType !== 'UNRESTRICTED') {
+          throw new Error('DEFERRED: Restricted fund scholarship not supported in Phase B V1')
+        }
+      }
+      if (snapshot.scholarshipAccountIdSnapshot) {
+        const [account] = await tx.select().from(financeAccounts).where(and(eq(financeAccounts.id, snapshot.scholarshipAccountIdSnapshot), eq(financeAccounts.accountType, 'EXPENSE')))
+        if (!account || !account.isActive) {
+          throw new Error('Scholarship account is missing, inactive, or not an EXPENSE account')
+        }
+      } else {
+        throw new Error('Scholarship account is required for scholarship program')
+      }
+    }
+
+    const scholarshipAmount = snapshot ? snapshot.scholarshipAmount : BigInt(0)
+    const { netPayable } = calculateInvoiceBalance({
+      grossAmount: invoice.amount,
+      scholarshipAmount,
+      paidAmount: BigInt(0)
+    })
+
+    const newStatus = netPayable === BigInt(0) ? 'PAID' : 'ISSUED'
+
     await tx.update(financeInvoices)
-      .set({ status: 'ISSUED', issuedAt: new Date(), updatedAt: new Date() })
+      .set({ status: newStatus, issuedAt: new Date(), updatedAt: new Date() })
       .where(eq(financeInvoices.id, invoiceId))
 
-    await postJournalEntry({
-      transactionDate: new Date(),
-      description: `Invoice Issuance ${invoice.invoiceNumber}`,
-      sourceType: 'INVOICE',
-      sourceId: invoiceId,
-      sourceEvent: 'ISSUED',
-      createdBy: issuedBy,
-      lines: [
-        {
-          accountId: feeType.receivableAccountId,
-          fundId: feeType.defaultFundId,
-          debit: invoice.amount,
-          credit: BigInt(0),
-          description: `Receivable for ${invoice.invoiceNumber}`
-        },
-        {
-          accountId: feeType.incomeAccountId,
-          fundId: feeType.defaultFundId,
-          debit: BigInt(0),
-          credit: invoice.amount,
-          description: `Income for ${invoice.invoiceNumber}`
-        }
-      ]
-    }, tx)
+    const lines: any[] = []
+    
+    // Debit Receivable for Net
+    if (netPayable > BigInt(0)) {
+      lines.push({
+        accountId: feeType.receivableAccountId,
+        fundId: feeType.defaultFundId,
+        debit: netPayable,
+        credit: BigInt(0),
+        description: `Receivable for ${invoice.invoiceNumber}`
+      })
+    }
+
+    // Debit Scholarship Expense
+    if (scholarshipAmount > BigInt(0) && snapshot) {
+      lines.push({
+        accountId: snapshot.scholarshipAccountIdSnapshot,
+        fundId: feeType.defaultFundId, // Safe because we asserted it equals fundingFundId
+        debit: scholarshipAmount,
+        credit: BigInt(0),
+        description: `Scholarship for ${invoice.invoiceNumber}`
+      })
+    }
+
+    // Credit Income for Gross
+    if (invoice.amount > BigInt(0)) {
+      lines.push({
+        accountId: feeType.incomeAccountId,
+        fundId: feeType.defaultFundId,
+        debit: BigInt(0),
+        credit: invoice.amount,
+        description: `Income for ${invoice.invoiceNumber}`
+      })
+    }
+
+    if (lines.length > 0) {
+      await postJournalEntry({
+        transactionDate: new Date(),
+        description: `Invoice Issuance ${invoice.invoiceNumber}`,
+        sourceType: 'INVOICE',
+        sourceId: invoiceId,
+        sourceEvent: 'ISSUED',
+        createdBy: issuedBy,
+        lines
+      }, tx)
+    }
 
     await tx.insert(auditLogs).values({
       actorUserId: issuedBy,
       action: 'ISSUE',
       entityType: 'INVOICE',
       entityId: invoiceId,
-      newValues: { status: 'ISSUED' }
+      newValues: serializeForAudit({ 
+        status: newStatus,
+        hasScholarship: !!snapshot,
+        scholarshipAmount: scholarshipAmount.toString(),
+        netPayable: netPayable.toString()
+      })
     })
   })
 }
@@ -231,12 +337,21 @@ export async function getInvoiceDetails(invoiceId: number) {
     if (alloc.allocatedAmount) paidAmount += alloc.allocatedAmount
   }
 
-  const outstandingAmount = invoice.amount - paidAmount
+  const [snapshot] = await db.select().from(financeInvoiceScholarships).where(eq(financeInvoiceScholarships.invoiceId, invoiceId))
+  const scholarshipAmount = snapshot ? snapshot.scholarshipAmount : BigInt(0)
+
+  const balance = calculateInvoiceBalance({
+    grossAmount: invoice.amount,
+    scholarshipAmount,
+    paidAmount
+  })
 
   return {
     ...invoice,
-    paidAmount,
-    outstandingAmount,
+    scholarshipAmount: balance.scholarshipAmount,
+    netPayable: balance.netPayable,
+    paidAmount: balance.paidAmount,
+    outstandingAmount: balance.outstandingAmount,
     payments
   }
 }

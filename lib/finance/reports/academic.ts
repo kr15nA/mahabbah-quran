@@ -38,11 +38,13 @@ export async function getAcademicBillingReport(params?: PaginationParams, filter
          FROM finance_payment_allocations a 
          JOIN finance_payments p ON a.payment_id = p.id 
          WHERE a.invoice_id = i.id AND p.status = 'CONFIRMED'), 0
-      ) as paid_amount
+      ) as paid_amount,
+      COALESCE(s.scholarship_amount, 0) as scholarship_amount
     FROM finance_invoices i
-    JOIN users s ON i.student_id = s.id
+    JOIN users u ON i.student_id = u.id
     JOIN finance_fee_types ft ON i.fee_type_id = ft.id
     JOIN academic_years ay ON i.academic_year_id = ay.id
+    LEFT JOIN finance_invoice_scholarships s ON i.id = s.invoice_id
     WHERE ${filterSql}
     ORDER BY i.due_date DESC, i.id DESC
     ${limitClause}
@@ -51,8 +53,10 @@ export async function getAcademicBillingReport(params?: PaginationParams, filter
   return {
     items: res.rows.map((r: any) => {
       const amount = BigInt(r.amount as string)
+      const scholarshipAmount = BigInt(r.scholarship_amount as string)
       const paid = BigInt(r.paid_amount as string)
-      const outstanding = amount - paid
+      const netPayable = amount > scholarshipAmount ? amount - scholarshipAmount : BigInt(0)
+      const outstanding = netPayable > paid ? netPayable - paid : BigInt(0)
       const today = new Date().toISOString().split('T')[0]
       const overdue = r.due_date < today && outstanding > BigInt(0) && (r.status === 'ISSUED' || r.status === 'PARTIALLY_PAID')
 
@@ -142,18 +146,19 @@ export async function getReceivableAgingReport(asOfDate?: string): Promise<{ ite
       SELECT 
         i.id,
         i.invoice_number,
-        s.full_name as student_name,
+        u.full_name as student_name,
         ft.name as fee_type,
         i.due_date,
-        i.amount - COALESCE(
+        GREATEST(0, (GREATEST(0, i.amount - COALESCE(s.scholarship_amount, 0)) - COALESCE(
           (SELECT SUM(a.allocated_amount) 
            FROM finance_payment_allocations a 
            JOIN finance_payments p ON a.payment_id = p.id 
            WHERE a.invoice_id = i.id AND p.status = 'CONFIRMED' AND p.payment_date <= ${asOf}), 0
-        ) as outstanding
+        ))) as outstanding
       FROM finance_invoices i
-      JOIN users s ON i.student_id = s.id
+      JOIN users u ON i.student_id = u.id
       JOIN finance_fee_types ft ON i.fee_type_id = ft.id
+      LEFT JOIN finance_invoice_scholarships s ON i.id = s.invoice_id
       WHERE i.status IN ('ISSUED', 'PARTIALLY_PAID')
     )
     SELECT * FROM invoice_balances WHERE outstanding > 0
@@ -227,11 +232,16 @@ export async function getReceivableAgingReport(asOfDate?: string): Promise<{ ite
 
 export async function getAcademicReconciliationReport() {
   const invoiceRes = await db.execute(sql`
-    SELECT COALESCE(SUM(i.amount), 0) as total_invoiced
+    SELECT 
+      COALESCE(SUM(i.amount), 0) as total_gross,
+      COALESCE(SUM(s.scholarship_amount), 0) as total_scholarship
     FROM finance_invoices i
+    LEFT JOIN finance_invoice_scholarships s ON i.id = s.invoice_id
     WHERE i.status IN ('ISSUED', 'PARTIALLY_PAID')
   `)
-  const totalInvoiced = BigInt(invoiceRes.rows[0].total_invoiced as string)
+  const totalGross = BigInt(invoiceRes.rows[0].total_gross as string)
+  const totalScholarship = BigInt(invoiceRes.rows[0].total_scholarship as string)
+  const totalInvoiced = totalGross > totalScholarship ? totalGross - totalScholarship : BigInt(0)
 
   const allocationsRes = await db.execute(sql`
     SELECT COALESCE(SUM(a.allocated_amount), 0) as total_paid

@@ -1,5 +1,6 @@
 import { financeDb } from '../tx'
 import { scholarshipPrograms, scholarshipProgramFeeTypes, financeAccounts, financeFunds, auditLogs } from '@/drizzle/schema'
+import { serializeForAudit } from '../audit'
 import { eq } from 'drizzle-orm'
 
 export interface CreateScholarshipProgramInput {
@@ -19,6 +20,8 @@ export interface UpdateScholarshipProgramInput {
   percentageBasisPoints?: number | null
   fixedAmount?: bigint | null
   feeTypeIds?: number[]
+  fundingFundId?: number | null
+  scholarshipAccountId?: number | null
 }
 
 export async function createScholarshipProgram(input: CreateScholarshipProgramInput) {
@@ -49,7 +52,7 @@ export async function createScholarshipProgram(input: CreateScholarshipProgramIn
       action: 'SCHOLARSHIP_PROGRAM_CREATE',
       entityType: 'SCHOLARSHIP_PROGRAM',
       entityId: program.id,
-      newValues: { ...input }
+      newValues: serializeForAudit({ ...input })
     })
 
     return program.id
@@ -66,13 +69,15 @@ export async function updateScholarshipProgramDraft(id: number, input: UpdateSch
       throw new Error('Scholarship Program must be applicable to at least one fee type')
     }
 
-    if (input.name || input.description || input.calculationType || input.percentageBasisPoints !== undefined || input.fixedAmount !== undefined) {
+    if (input.name || input.description || input.calculationType || input.percentageBasisPoints !== undefined || input.fixedAmount !== undefined || input.fundingFundId !== undefined || input.scholarshipAccountId !== undefined) {
       await tx.update(scholarshipPrograms).set({
         name: input.name ?? program.name,
         description: input.description ?? program.description,
         calculationType: input.calculationType ?? (program.calculationType as any),
         percentageBasisPoints: input.percentageBasisPoints !== undefined ? input.percentageBasisPoints : program.percentageBasisPoints,
         fixedAmount: input.fixedAmount !== undefined ? input.fixedAmount : program.fixedAmount,
+        fundingFundId: input.fundingFundId !== undefined ? input.fundingFundId : program.fundingFundId,
+        scholarshipAccountId: input.scholarshipAccountId !== undefined ? input.scholarshipAccountId : program.scholarshipAccountId,
         updatedAt: new Date(),
         updatedBy
       }).where(eq(scholarshipPrograms.id, id))
@@ -93,7 +98,7 @@ export async function updateScholarshipProgramDraft(id: number, input: UpdateSch
       action: 'SCHOLARSHIP_PROGRAM_UPDATE',
       entityType: 'SCHOLARSHIP_PROGRAM',
       entityId: id,
-      newValues: { ...input }
+      newValues: serializeForAudit({ ...input })
     })
   })
 }
@@ -136,7 +141,7 @@ export async function activateScholarshipProgram(id: number, actorId: number) {
       action: 'SCHOLARSHIP_PROGRAM_ACTIVATE',
       entityType: 'SCHOLARSHIP_PROGRAM',
       entityId: id,
-      newValues: { status: 'ACTIVE' }
+      newValues: serializeForAudit({ status: 'ACTIVE' })
     })
   })
 }
@@ -157,7 +162,7 @@ export async function deactivateScholarshipProgram(id: number, actorId: number) 
       action: 'SCHOLARSHIP_PROGRAM_DEACTIVATE',
       entityType: 'SCHOLARSHIP_PROGRAM',
       entityId: id,
-      newValues: { status: 'INACTIVE' }
+      newValues: serializeForAudit({ status: 'INACTIVE' })
     })
   })
 }
