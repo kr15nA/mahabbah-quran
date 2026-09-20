@@ -1,11 +1,35 @@
 import { getSession } from '@/lib/auth/session'
 import { getSelfStudentProfile } from '@/lib/identity/learner'
+import { getStudentScholarships } from '@/lib/finance/scholarships/queries'
+import { Sparkles, Calendar } from 'lucide-react'
 
 export default async function SantriPage() {
   const session = await getSession()
   if (!session) return null // Handled by layout redirect
 
   const profile = await getSelfStudentProfile(session.userId)
+  
+  let activeScholarship = null
+  if (profile) {
+    const scholarships = await getStudentScholarships(Number(profile.id))
+    activeScholarship = scholarships.find(s => {
+      if (!s.startDate) return false
+      const now = new Date()
+      const start = new Date(s.startDate)
+      if (now < start) return false
+      if (s.endDate) {
+        const end = new Date(s.endDate)
+        if (now > end) return false
+      }
+      return true
+    })
+  }
+
+  const formatBenefit = (s: any) => {
+    if (s.calculationType === 'FULL') return 'Beasiswa Penuh (100%)'
+    if (s.calculationType === 'PERCENTAGE') return `Diskon Biaya ${s.percentageBasisPoints! / 100}%`
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(BigInt(s.fixedAmount || 0))
+  }
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
@@ -23,7 +47,7 @@ export default async function SantriPage() {
         <div className="space-y-4">
           <div>
             <p className="text-sm text-gray-500">Nama Santri</p>
-            <p className="font-medium text-gray-900">{profile?.fullName}</p>
+            <p className="font-medium text-gray-900">{profile?.fullName || '-'}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500">Status</p>
@@ -35,11 +59,42 @@ export default async function SantriPage() {
               )}
             </p>
           </div>
-          <div>
-            <p className="text-sm text-gray-500">Program Aktif</p>
-            <p className="font-medium text-gray-900">Belum ada program aktif</p>
-          </div>
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="mb-4 pb-4 border-b border-gray-100 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-[#4B21A2]" />
+          <h2 className="text-lg font-bold">Beasiswa Saya</h2>
+        </div>
+        
+        {!profile ? (
+          <p className="text-sm text-gray-500 italic">Data profil tidak ditemukan.</p>
+        ) : !activeScholarship ? (
+          <p className="text-sm text-gray-500 italic">Belum ada program beasiswa</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-bold text-indigo-700 ring-1 ring-inset ring-indigo-600/20 mb-2">AKTIF</span>
+                <h3 className="font-bold text-lg text-[#18085A]">{activeScholarship.programName}</h3>
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4 text-sm pt-2">
+              <div>
+                <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">Benefit Beasiswa</div>
+                <div className="font-semibold text-gray-900">{formatBenefit(activeScholarship)}</div>
+              </div>
+              <div>
+                <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">Periode</div>
+                <div className="font-medium text-gray-700 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                  {new Date(activeScholarship.startDate).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })} – {activeScholarship.endDate ? new Date(activeScholarship.endDate).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }) : 'Seterusnya'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rounded-md bg-blue-50 p-4 border border-blue-100">

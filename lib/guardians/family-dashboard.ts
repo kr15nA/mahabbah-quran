@@ -41,11 +41,24 @@ export type ReportMetric = {
   } | null
 }
 
+export type ScholarshipMetric = {
+  available: boolean
+  record: {
+    programName: string
+    calculationType: string
+    percentageBasisPoints: number | null
+    fixedAmount: string | null
+    startDate: string
+    endDate: string | null
+  } | null
+}
+
 export type FamilyChildDashboardDTO = SafeChildDisplay & {
   attendance: AttendanceMetric
   hafalan: HafalanMetric
   tahsin: TahsinMetric
   report: ReportMetric
+  scholarship: ScholarshipMetric
 }
 
 export async function getFamilyDashboardData(userId: number): Promise<FamilyChildDashboardDTO[]> {
@@ -109,23 +122,43 @@ export async function getFamilyDashboardData(userId: number): Promise<FamilyChil
     ORDER BY student_id, report_date DESC, id DESC
   `
 
+  const scholarshipQuery = sql`
+    SELECT DISTINCT ON (ss.student_id)
+      ss.student_id,
+      sp.name as program_name,
+      sp.calculation_type,
+      sp.percentage_basis_points,
+      sp.fixed_amount,
+      ss.start_date,
+      ss.end_date
+    FROM student_scholarships ss
+    JOIN scholarship_programs sp ON sp.id = ss.scholarship_program_id
+    WHERE ss.student_id = ANY(${dbStudentIds}::int8[])
+      AND ss.status = 'ACTIVE'
+      AND sp.status = 'ACTIVE'
+    ORDER BY ss.student_id, ss.created_at DESC
+  `
+
   const results = await Promise.allSettled([
     attendanceQuery,
     hafalanQuery,
     tahsinQuery,
-    reportQuery
+    reportQuery,
+    scholarshipQuery
   ])
 
   const attendanceMap = new Map<string, AttendanceMetric>()
   const hafalanMap = new Map<string, HafalanMetric>()
   const tahsinMap = new Map<string, TahsinMetric>()
   const reportMap = new Map<string, ReportMetric>()
+  const scholarshipMap = new Map<string, ScholarshipMetric>()
 
   for (const child of children) {
     attendanceMap.set(child.student_id, { available: false, hasData: false, hadir: 0, izin: 0, sakit: 0, alfa: 0 })
     hafalanMap.set(child.student_id, { available: false, record: null })
     tahsinMap.set(child.student_id, { available: false, record: null })
     reportMap.set(child.student_id, { available: false, record: null })
+    scholarshipMap.set(child.student_id, { available: false, record: null })
   }
 
   // Attendance
@@ -214,11 +247,35 @@ export async function getFamilyDashboardData(userId: number): Promise<FamilyChil
     console.error('Failed to batch fetch reports:', results[3].reason)
   }
 
+  // Scholarship
+  if (results[4].status === 'fulfilled') {
+    for (const child of children) {
+      scholarshipMap.get(child.student_id)!.available = true
+    }
+    for (const row of results[4].value) {
+      const canonicalId = row.student_id.toString()
+      const entry = scholarshipMap.get(canonicalId)
+      if (entry) {
+        entry.record = {
+          programName: row.program_name,
+          calculationType: row.calculation_type,
+          percentageBasisPoints: row.percentage_basis_points,
+          fixedAmount: row.fixed_amount ? row.fixed_amount.toString() : null,
+          startDate: new Date(row.start_date).toISOString(),
+          endDate: row.end_date ? new Date(row.end_date).toISOString() : null
+        }
+      }
+    }
+  } else {
+    console.error('Failed to batch fetch scholarship:', results[4].reason)
+  }
+
   return children.map(child => ({
     ...child,
     attendance: attendanceMap.get(child.student_id)!,
     hafalan: hafalanMap.get(child.student_id)!,
     tahsin: tahsinMap.get(child.student_id)!,
-    report: reportMap.get(child.student_id)!
+    report: reportMap.get(child.student_id)!,
+    scholarship: scholarshipMap.get(child.student_id)!
   })).sort((a, b) => a.student_name.localeCompare(b.student_name))
 }
