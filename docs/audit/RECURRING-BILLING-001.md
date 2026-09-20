@@ -272,6 +272,20 @@
 
 ---
 
-**FINAL VERDICT**:
-RECURRING-BILLING-001 PHASE A IMPLEMENTED
-READY FOR RELEASE GATE
+**PHASE A STATUS**:
+RELEASE CANDIDATE
+
+- Runtime/schema candidate SHA: `b68586dac6e2f64da3c8dda10d6e764d26326faa`
+- Feature release SHA: `2fa73a15cf28e52adc4fdc1fbf241718f2a68d2d`
+- Migration: `0021_free_forgotten_one`
+- Migration SHA-256: `c2acb7bd09e3f518b925580ee803bf5128b6563da70f98d870d6d2cb5972f448`
+- Migration structure: 4 CREATE TABLE, 0 DROP, 0 unrelated ALTER
+- DEV/QA migration: PASS
+- Recurring Phase A: 26 PASS / 0 FAIL
+- Scholarship A-D: PASS
+- Typecheck: PASS
+- Build: PASS
+- Production migration: NOT YET APPLIED
+- Production status: NOT YET RELEASED
+
+*Note: test-idempotency follow-up commit changed only `scripts/test-recurring-billing-phase-a.ts`. Runtime/schema diff from tested candidate is NONE.*
