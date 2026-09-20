@@ -15,6 +15,7 @@
 - **amount**: `amount` (bigint)
 - **due date**: `due_date` (date)
 - **status**: `status` (varchar: 'DRAFT', 'ISSUED', 'PARTIALLY_PAID', 'PAID', 'CANCELLED')
+- **invoice schema change**: NONE
 
 ---
 
@@ -31,9 +32,9 @@
 
 ## ELIGIBILITY
 
-- **authoritative source**: `enrollments` table joined with `students` status ('AKTIF'), filtered by `academicYearId`.
-- **Student ↔ Fee Type mapping**: NO (Currently implicit based on Admin-selected filters in bulk generation).
-- **missing concept**: Explicit entity linking a specific recurring fee to a student or class (e.g., `student_fee_assignments`). Currently relies on selecting a Fee Type and applying it to all active students in a cohort.
+- **authoritative source**: Future `finance_student_fee_assignments` explicitly mapping a student to a recurring fee type for a temporal period.
+- **Student ↔ Fee Type mapping**: Required explicitly in V1. Temporal range dictates validity (Start Period to End Period).
+- **amount override**: DEFERRED (The gross amount is strictly locked to `finance_fee_types.defaultAmount`).
 
 ---
 
@@ -44,24 +45,78 @@
 - **race safe**: YES (Protected by database UNIQUE constraint)
 - **recommended key**: `studentId + academicYearId + feeTypeId + period`
 - **DB constraint required**: YES (already exists)
+- **invoice uniqueness**: REMAINS AUTHORITATIVE. No new invoice origin flags will be added. Existing invoices (manual or recurring) will trigger `SKIPPED_EXISTING`.
 
 ---
 
 ## RECURRING CONFIG
 
-- **frequency support**: YES (`billingFrequency` in `financeFeeTypes` enum 'ONE_TIME', 'MONTHLY', 'CUSTOM')
-- **amount source**: Currently supplied by client in bulk generation API (`req.body.amount`), but `defaultAmount` exists on `financeFeeTypes`.
-- **due date rule**: missing (No configuration for dynamic due dates on `financeFeeTypes`, e.g., 'Due on 10th of month').
-- **billing day**: missing (No configuration for generation trigger day, e.g., '1st of month').
+- **frequency support**: YES (Must be `MONTHLY` for recurring config to activate).
+- **amount source**: `finance_fee_types.defaultAmount`.
+- **due date rule**: Added via dedicated table `finance_recurring_billing_configs` (`dueDayOfMonth` constrained to 1..28).
+- **billing day**: DEFERRED TO AUTOMATION.
+- **fee type schema change**: NONE.
 
 ---
 
 ## SCHEMA GAP
 
-- **migration required**: YES
+- **migration expected**: YES
 - **required changes**:
-  1. Add `due_date_rule` and `billing_day_rule` to `finance_fee_types` (or create a dedicated `recurring_billing_config` table).
-  2. Create a `billing_runs` table to track batch status, actor, period, success/fail counts for auditability and idempotency of the job itself.
+
+### TABLE 1: finance_recurring_billing_configs
+- `id` (bigserial)
+- `feeTypeId` (bigint, NOT NULL, FK `financeFeeTypes.id` RESTRICT, UNIQUE)
+- `isActive` (boolean, default true)
+- `dueDayOfMonth` (smallint, NOT NULL, CHECK BETWEEN 1 AND 28)
+- `createdAt` (timestamp)
+- `updatedAt` (timestamp)
+
+### TABLE 2: finance_student_fee_assignments
+- `id` (bigserial)
+- `studentId` (bigint, FK `students.id` RESTRICT)
+- `academicYearId` (bigint, FK `academicYears.id` RESTRICT)
+- `feeTypeId` (bigint, FK `financeFeeTypes.id` RESTRICT)
+- `startPeriod` (varchar(7), NOT NULL, CHECK `YYYY-MM`)
+- `endPeriod` (varchar(7), NULL, CHECK `YYYY-MM`, CHECK `>= startPeriod`)
+- `status` (varchar(20), NOT NULL, e.g. `VALID`, `VOIDED`)
+- `createdBy` (bigint, FK `users.id` SET NULL)
+- `createdAt` (timestamp)
+- `updatedAt` (timestamp)
+- **Assignment overlap strategy**: Transaction-level overlap guard using explicit concurrency locking on the DB (e.g. `pg_advisory_xact_lock` on student+fee type or SELECT FOR UPDATE) to ensure two VALID assignments for the same student, year, and fee type never overlap in their period ranges.
+
+### TABLE 3: finance_billing_runs
+- `id` (bigserial)
+- `academicYearId` (bigint, FK `academicYears.id` RESTRICT)
+- `feeTypeId` (bigint, FK `financeFeeTypes.id` RESTRICT)
+- `period` (varchar(7), NOT NULL, CHECK `YYYY-MM`)
+- `status` (varchar(30), NOT NULL, `PENDING`, `RUNNING`, `COMPLETED`, `COMPLETED_WITH_ERRORS`, `FAILED`)
+- `startedBy` (bigint, FK `users.id` SET NULL)
+- `startedAt` (timestamp)
+- `completedAt` (timestamp)
+- `eligibleCount` (integer, default 0)
+- `generatedCount` (integer, default 0)
+- `skippedCount` (integer, default 0)
+- `failedCount` (integer, default 0)
+- `createdAt` (timestamp)
+- `updatedAt` (timestamp)
+- **Constraints**: `UNIQUE(academicYearId, feeTypeId, period)`
+- **Run retry strategy**: Reuse/resume logical run. Newly eligible assignments discovered on an explicit rerun may be added to the same logical run. Existing successful run items will not regenerate invoices.
+
+### TABLE 4: finance_billing_run_items
+- `id` (bigserial)
+- `runId` (bigint, FK `financeBillingRuns.id` RESTRICT)
+- `studentId` (bigint, FK `students.id` RESTRICT)
+- `assignmentId` (bigint, FK `financeStudentFeeAssignments.id` RESTRICT)
+- `invoiceId` (bigint, FK `financeInvoices.id` SET NULL)
+- `status` (varchar(30), NOT NULL, `PENDING`, `GENERATED`, `SKIPPED_EXISTING`, `FAILED`)
+- `errorCode` (varchar(50), NULL)
+- `errorMessage` (text, NULL)
+- `createdAt` (timestamp)
+- `updatedAt` (timestamp)
+- **Constraints**: `UNIQUE(runId, assignmentId)`
+
+**FK delete behavior**: All relational finance/audit records use `RESTRICT` to preserve history, except user references (`createdBy`/`startedBy`) which use `SET NULL`. Invoices use `SET NULL` on `invoiceId`.
 
 ---
 
@@ -83,22 +138,24 @@
 
 ## EXECUTION
 
-- **recommended V1**: Hybrid Admin UI Manual Trigger + Chunked Background API Execution. (Admin clicks "Generate", which tracks progress in `billing_runs`. Vercel Cron is deferred until the manual generation mechanism is robust).
-- **batch entity**: YES (`billing_runs` table is required to track large generations and prevent stateless Vercel timeouts from losing state).
-- **batch size recommendation**: Limit DB transaction boundaries to chunks of 50-100 students to prevent Neon DB locks and Vercel serverless function timeouts.
+- **recommended V1**: Admin UI manual generation.
+- **batch entity**: YES (`finance_billing_runs` + `finance_billing_run_items`).
+- **batch size recommendation**: Chunks of 50-100 students to prevent DB transaction/Vercel timeout limits.
 
 ---
 
 ## ADMIN
 
-- **route**: `/admin/keuangan/tagihan/generate` (or a dedicated tab on `/admin/keuangan/tagihan`)
+- **route**: `/admin/keuangan/tagihan/generate` (or dedicated tab)
 - **permission**: `finance.billing.manage`
-- **dry run**: YES (Crucial for Admin to see '79 Invoices Will Generate, 8 Skipped' before committing to DB).
+- **dry run**: YES (Preview execution counts before commit).
 
 ---
 
 ## DEFERRED
 
+- amount override (Custom pricing)
+- billing day (Trigger Automation)
 - payment gateway
 - QRIS
 - VA
@@ -113,26 +170,25 @@
 - period closing
 - approval workflow
 - payroll
-- Fully automatic Vercel Cron (focus on manual batch V1 first)
+- Fully automatic Vercel Cron
 
 ---
 
 ## PROPOSED PHASES
 
-- **Phase A**: Domain + Schema (Add recurrence rules to Fee Types, create Billing Runs tracking table).
-- **Phase B**: Generator Engine & Dry Run (Logic to resolve amount, dates, check existing idempotency, and return preview stats).
-- **Phase C**: Admin UI (Interface to preview and execute the batch run).
-- **Phase D**: Automation & Scheduling (Optionally hook up Vercel Cron).
+- **Phase A**: Domain + Schema (Recurring Configs, Fee Assignments, Billing Runs, Constraints - No Generation Yet).
+- **Phase B**: Generator Engine & Dry Run (Eligibility resolver, Server-side amount, Idempotency, Chunking, Retry).
+- **Phase C**: Admin UI (Configure, Bulk assignments, Preview, Generate, Run history).
+- **Phase D**: Automation & Scheduling (Cron, Safe retry, Operational monitoring).
 
 ---
 
 ## RISKS
 
-1. **Vercel Timeout Limits**: Generating 1,000+ invoices synchronously will exceed Vercel's 10-60s timeout. Must use chunked generation or a batch runner entity.
-2. **Gross Amount Trust**: Current bulk endpoint relies on client-supplied amount. Recurring Billing must firmly resolve amount from Server (e.g., `feeType.defaultAmount`) to prevent manipulation.
-3. **Implicit Eligibility**: Without strict Student ↔ Fee Type assignments, generation assumes all active students in a Program/Class owe the fee. Any exceptions must be handled via 100% Scholarships rather than excluding from generation.
+1. **Vercel Timeout Limits**: Generating large sets synchronously will hit the Vercel timeout. Requires batched/chunked processing.
+2. **Assignment Overlaps**: Strict concurrency control is required when adding/modifying `financeStudentFeeAssignments` to avoid logical range overlaps.
 
 ---
 
 **FINAL VERDICT**:
-RECURRING-BILLING-001 ARCHITECTURE READY FOR IMPLEMENTATION
+RECURRING-BILLING-001 PHASE A PLAN APPROVED FOR IMPLEMENTATION
