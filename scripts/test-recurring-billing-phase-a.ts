@@ -70,6 +70,21 @@ async function assertThrows(fn: () => Promise<any>, label: string) {
 // SETUP
 // ─────────────────────────────────────────────
 async function setup() {
+  // Pre-cleanup: delete any stale RECTEST fixtures from previous runs
+  // Neon HTTP driver requires each statement as a separate execute call
+  await db.execute(sql`DELETE FROM finance_billing_run_items WHERE run_id IN (SELECT id FROM finance_billing_runs WHERE fee_type_id IN (SELECT id FROM finance_fee_types WHERE code LIKE 'RECTEST_%'))`)
+  await db.execute(sql`DELETE FROM finance_billing_runs WHERE fee_type_id IN (SELECT id FROM finance_fee_types WHERE code LIKE 'RECTEST_%')`)
+  await db.execute(sql`DELETE FROM finance_recurring_billing_configs WHERE fee_type_id IN (SELECT id FROM finance_fee_types WHERE code LIKE 'RECTEST_%')`)
+  await db.execute(sql`DELETE FROM finance_student_fee_assignments WHERE fee_type_id IN (SELECT id FROM finance_fee_types WHERE code LIKE 'RECTEST_%')`)
+  await db.execute(sql`DELETE FROM finance_fee_types WHERE code LIKE 'RECTEST_%'`)
+  await db.execute(sql`DELETE FROM finance_accounts WHERE code LIKE 'RECTEST_%'`)
+  await db.execute(sql`DELETE FROM finance_categories WHERE code LIKE 'RECTEST_%'`)
+  await db.execute(sql`DELETE FROM enrollments WHERE student_id IN (SELECT id FROM students WHERE full_name LIKE 'RecTest%')`)
+  await db.execute(sql`DELETE FROM students WHERE full_name LIKE 'RecTest%'`)
+  await db.execute(sql`DELETE FROM classes WHERE name = 'RecTest Class'`)
+  await db.execute(sql`DELETE FROM programs WHERE name = 'RecTest Program'`)
+  await db.execute(sql`DELETE FROM academic_years WHERE name LIKE '% RecTest'`)
+
   // financeCategories needs: code, name, type, domain
   const [category] = await db.insert(financeCategories).values({
     code: 'RECTEST_CAT',
