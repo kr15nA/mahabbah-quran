@@ -67,7 +67,7 @@
 ### TABLE 1: finance_recurring_billing_configs
 - `id` (bigserial)
 - `feeTypeId` (bigint, NOT NULL, FK `financeFeeTypes.id` RESTRICT, UNIQUE)
-- `isActive` (boolean, default true)
+- `isActive` (boolean, default false)
 - `dueDayOfMonth` (smallint, NOT NULL, CHECK BETWEEN 1 AND 28)
 - `createdAt` (timestamp)
 - `updatedAt` (timestamp)
@@ -83,7 +83,7 @@
 - `createdBy` (bigint, FK `users.id` SET NULL)
 - `createdAt` (timestamp)
 - `updatedAt` (timestamp)
-- **Assignment overlap strategy**: Transaction-level overlap guard using explicit concurrency locking on the DB (e.g. `pg_advisory_xact_lock` on student+fee type or SELECT FOR UPDATE) to ensure two VALID assignments for the same student, year, and fee type never overlap in their period ranges.
+- **Assignment overlap strategy**: Transaction-level overlap guard using explicit concurrency locking on the DB (Student row SELECT ... FOR UPDATE) to ensure two VALID assignments for the same student, year, and fee type never overlap in their period ranges.
 
 ### TABLE 3: finance_billing_runs
 - `id` (bigserial)
@@ -269,6 +269,17 @@
 - Unintended files committed: NO
 - Secret committed: NO
 - DATABASE_URL exposed only in local terminal output, never committed/pushed
+
+### Incident Record
+- Production migration 0021 was applied earlier during Phase A verification.
+- `.env.local` was later explicitly overwritten with `.env.production.local`.
+- A mutating Recurring Phase A test ran against Production as a result.
+- Only proven `RECTEST` fixtures were created; no business data was deleted or altered.
+- All fixtures were carefully identified and removed from Production.
+- Inherited fixtures were also removed from the development environment.
+- The schema migration was retained on Production.
+- DEV/Production database isolation was established (verified separate Neon endpoint).
+- The mutating DB test guard was hardened to strictly deny execution against Production hosts.
 
 ---
 
