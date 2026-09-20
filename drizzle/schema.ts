@@ -465,6 +465,82 @@ export const financeInvoices = pgTable('finance_invoices', {
 }))
 
 // ==========================================
+// RECURRING BILLING
+// ==========================================
+
+export const financeRecurringBillingConfigs = pgTable('finance_recurring_billing_configs', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  feeTypeId: bigint('fee_type_id', { mode: 'number' }).notNull().references(() => financeFeeTypes.id, { onDelete: 'restrict' }).unique(),
+  isActive: boolean('is_active').notNull().default(false),
+  dueDayOfMonth: smallint('due_day_of_month').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  dueDayCheck: check('finance_rec_billing_due_day_chk', sql`${table.dueDayOfMonth} BETWEEN 1 AND 28`)
+}))
+
+export const financeStudentFeeAssignments = pgTable('finance_student_fee_assignments', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id, { onDelete: 'restrict' }),
+  academicYearId: bigint('academic_year_id', { mode: 'number' }).notNull().references(() => academicYears.id, { onDelete: 'restrict' }),
+  feeTypeId: bigint('fee_type_id', { mode: 'number' }).notNull().references(() => financeFeeTypes.id, { onDelete: 'restrict' }),
+  startPeriod: varchar('start_period', { length: 7 }).notNull(),
+  endPeriod: varchar('end_period', { length: 7 }),
+  status: varchar('status', { length: 20 }).notNull().default('VALID'),
+  createdBy: bigint('created_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  startPeriodCheck: check('finance_fee_assign_start_chk', sql`${table.startPeriod} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+  endPeriodCheck: check('finance_fee_assign_end_chk', sql`${table.endPeriod} IS NULL OR (${table.endPeriod} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$' AND ${table.endPeriod} >= ${table.startPeriod})`),
+  statusCheck: check('finance_fee_assign_status_chk', sql`${table.status} IN ('VALID', 'VOIDED')`),
+  eligibilityIdx: index('idx_finance_assign_eligibility').on(table.academicYearId, table.feeTypeId, table.status, table.startPeriod, table.endPeriod),
+  studentHistoryIdx: index('idx_finance_assign_student_hist').on(table.studentId, table.academicYearId)
+}))
+
+export const financeBillingRuns = pgTable('finance_billing_runs', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  academicYearId: bigint('academic_year_id', { mode: 'number' }).notNull().references(() => academicYears.id, { onDelete: 'restrict' }),
+  feeTypeId: bigint('fee_type_id', { mode: 'number' }).notNull().references(() => financeFeeTypes.id, { onDelete: 'restrict' }),
+  period: varchar('period', { length: 7 }).notNull(),
+  status: varchar('status', { length: 30 }).notNull().default('PENDING'),
+  startedBy: bigint('started_by', { mode: 'number' }).references(() => users.id, { onDelete: 'set null' }),
+  startedAt: timestamp('started_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  eligibleCount: integer('eligible_count').notNull().default(0),
+  generatedCount: integer('generated_count').notNull().default(0),
+  skippedCount: integer('skipped_count').notNull().default(0),
+  failedCount: integer('failed_count').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  runStatusCheck: check('finance_billing_runs_status_chk', sql`${table.status} IN ('PENDING', 'RUNNING', 'COMPLETED', 'COMPLETED_WITH_ERRORS', 'FAILED')`),
+  periodCheck: check('finance_billing_runs_period_chk', sql`${table.period} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+  eligibleCountCheck: check('finance_billing_runs_eligible_chk', sql`${table.eligibleCount} >= 0`),
+  generatedCountCheck: check('finance_billing_runs_generated_chk', sql`${table.generatedCount} >= 0`),
+  skippedCountCheck: check('finance_billing_runs_skipped_chk', sql`${table.skippedCount} >= 0`),
+  failedCountCheck: check('finance_billing_runs_failed_chk', sql`${table.failedCount} >= 0`),
+  runLogicalIdx: uniqueIndex('idx_finance_billing_runs_logical').on(table.academicYearId, table.feeTypeId, table.period)
+}))
+
+export const financeBillingRunItems = pgTable('finance_billing_run_items', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  runId: bigint('run_id', { mode: 'number' }).notNull().references(() => financeBillingRuns.id, { onDelete: 'restrict' }),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id, { onDelete: 'restrict' }),
+  assignmentId: bigint('assignment_id', { mode: 'number' }).notNull().references(() => financeStudentFeeAssignments.id, { onDelete: 'restrict' }),
+  invoiceId: bigint('invoice_id', { mode: 'number' }).references(() => financeInvoices.id, { onDelete: 'set null' }),
+  status: varchar('status', { length: 30 }).notNull().default('PENDING'),
+  errorCode: varchar('error_code', { length: 50 }),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  itemStatusCheck: check('finance_billing_run_items_status_chk', sql`${table.status} IN ('PENDING', 'GENERATED', 'SKIPPED_EXISTING', 'FAILED')`),
+  runItemIdx: uniqueIndex('idx_finance_billing_run_items_uniq').on(table.runId, table.assignmentId),
+  runStatusIdx: index('idx_finance_billing_run_items_status').on(table.runId, table.status)
+}))
+
+// ==========================================
 // ACADEMIC PAYMENTS
 // ==========================================
 

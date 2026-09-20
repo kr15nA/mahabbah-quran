@@ -190,5 +190,88 @@
 
 ---
 
+## PHASE A — IMPLEMENTATION RECORD
+
+### Migration
+
+- **migration ID**: `0021_free_forgotten_one`
+- **new tables**: 4
+- **finance_fee_types altered**: NO
+- **finance_invoices altered**: NO
+- **drizzle-kit push used**: NO
+
+### New Tables & Exact Policies
+
+**finance_recurring_billing_configs**
+- `feeTypeId` UNIQUE, FK RESTRICT
+- `isActive` DEFAULT `false` (default-deny)
+- `dueDayOfMonth` SMALLINT CHECK BETWEEN 1 AND 28
+- No `billingDay` field
+
+**finance_student_fee_assignments**
+- `studentId` FK RESTRICT, `academicYearId` FK RESTRICT, `feeTypeId` FK RESTRICT
+- `createdBy` FK SET NULL
+- `startPeriod` / `endPeriod` VARCHAR(7) with YYYY-MM regex CHECKs
+- `endPeriod >= startPeriod` CHECK
+- `status` IN ('VALID', 'VOIDED') CHECK
+- No `amountOverride`
+- Overlap prevention: transaction-level **Student row `SELECT … FOR UPDATE`** before overlap query + insert
+- Indexes: `idx_finance_assign_eligibility` (academicYearId, feeTypeId, status, startPeriod, endPeriod), `idx_finance_assign_student_hist` (studentId, academicYearId)
+
+**finance_billing_runs**
+- `academicYearId` FK RESTRICT, `feeTypeId` FK RESTRICT
+- `startedBy` FK SET NULL
+- `period` VARCHAR(7) YYYY-MM regex CHECK
+- `status` IN ('PENDING','RUNNING','COMPLETED','COMPLETED_WITH_ERRORS','FAILED') CHECK
+- `eligibleCount / generatedCount / skippedCount / failedCount >= 0` CHECKs
+- Logical UNIQUE: `idx_finance_billing_runs_logical` (academicYearId, feeTypeId, period)
+- Retry behavior: reuse/resume same logical run; FAILED → RUNNING transition handled in Phase B
+
+**finance_billing_run_items**
+- `runId` FK RESTRICT, `studentId` FK RESTRICT, `assignmentId` FK RESTRICT
+- `invoiceId` FK SET NULL (invoices may be soft-deleted as DRAFT; RESTRICT would block cleanup)
+- `status` IN ('PENDING','GENERATED','SKIPPED_EXISTING','FAILED') CHECK
+- UNIQUE: `idx_finance_billing_run_items_uniq` (runId, assignmentId)
+- Index: `idx_finance_billing_run_items_status` (runId, status) — supports PENDING/FAILED chunk queries in Phase B
+
+### Domain Service
+
+- **file**: `lib/finance/recurring.ts`
+- `createOrUpdateRecurringConfig`: validates MONTHLY + due day 1..28, default-deny isActive
+- `assignStudentFee`: full cross-domain validation (Student, AcademicYear, FeeType, Enrollment, period bounds, VALID overlap), Student row FOR UPDATE concurrency lock
+- `voidStudentFeeAssignment`: sets status to VOIDED
+
+### Test Results
+
+- **test file**: `scripts/test-recurring-billing-phase-a.ts`
+- **result**: **26 PASS / 0 FAIL**
+- Safe refusal without `ALLOW_MUTATING_DB_TESTS=true`: CONFIRMED
+- invoice created by Phase A: NO
+- journal created: NO
+- payment created: NO
+- Production mutation: NO
+
+### Regression
+
+| Test | Result |
+|---|---|
+| Scholarship Phase A | PASS |
+| Scholarship Phase B | PASS |
+| Scholarship Phase C | PASS |
+| Scholarship Phase D | PASS |
+| Recurring Phase A | PASS (26/26) |
+| `tsc --noEmit` | PASS |
+| `npm run build` | PASS |
+
+### Git Hygiene Audit
+
+- `commit -am` incident: audited — only `docs/audit/RECURRING-BILLING-001.md` in that commit, no unintended files
+- Unintended files committed: NO
+- Secret committed: NO
+- DATABASE_URL exposed only in local terminal output, never committed/pushed
+
+---
+
 **FINAL VERDICT**:
-RECURRING-BILLING-001 PHASE A PLAN APPROVED FOR IMPLEMENTATION
+RECURRING-BILLING-001 PHASE A IMPLEMENTED
+READY FOR RELEASE GATE
