@@ -123,6 +123,49 @@ export function SelectedChildDashboard({ child }: { child: FamilyChildDashboardD
           </section>
         </div>
 
+        {/* Beasiswa Preview */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#4B21A2]" /> Beasiswa
+            </h3>
+            <Link
+              href={buildParentChildHref('/orang-tua/beasiswa', child.student_id)}
+              className="text-xs font-bold text-[#4B21A2] hover:text-[#3a1880] flex items-center gap-0.5"
+            >
+              Lihat Detail <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          
+          {!child.scholarship.available ? (
+            <p className="text-sm text-red-500 italic bg-red-50 p-4 rounded-xl border border-red-100">Data beasiswa sementara tidak tersedia</p>
+          ) : !child.scholarship.record ? (
+            <p className="text-sm text-gray-500 italic bg-gray-50 p-4 rounded-xl border border-gray-100">Belum ada program beasiswa aktif</p>
+          ) : (
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 sm:p-5 rounded-xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-base font-bold text-[#18085A] break-words leading-snug">
+                  {child.scholarship.record.programName}
+                </div>
+                <div className="text-sm text-gray-700 mt-1.5 flex flex-col sm:flex-row gap-1 sm:gap-4">
+                  <span className="font-semibold text-indigo-700">
+                    {child.scholarship.record.calculationType === 'FULL' ? 'Penuh (100%)' :
+                     child.scholarship.record.calculationType === 'PERCENTAGE' ? `Diskon ${child.scholarship.record.percentageBasisPoints! / 100}%` :
+                     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(BigInt(child.scholarship.record.fixedAmount || 0))}
+                  </span>
+                  <span className="hidden sm:inline text-gray-300">•</span>
+                  <span>
+                    Periode: {new Date(child.scholarship.record.startDate).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })} – {child.scholarship.record.endDate ? new Date(child.scholarship.record.endDate).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }) : 'Seterusnya'}
+                  </span>
+                </div>
+              </div>
+              <span className="px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-bold rounded-full whitespace-nowrap self-start sm:self-auto shadow-sm">
+                AKTIF
+              </span>
+            </div>
+          )}
+        </section>
+
         {/* Report Preview */}
         <section>
           <div className="flex items-center justify-between mb-4">

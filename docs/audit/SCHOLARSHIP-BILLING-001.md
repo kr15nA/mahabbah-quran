@@ -449,8 +449,30 @@ A rogue `npx drizzle-kit push` was executed during the Phase A hardening workflo
 - **Phase B integration**: PASS
 - **Full Scholarship**: PASS
 - **Responsive**: 
-  - 375: PASS
-  - 430: PASS
   - 768: PASS
   - 1024: PASS
   - 1280: PASS
+
+## O. PHASE D IMPLEMENTATION
+
+**LIVE BILLING INTEGRATION**: ENABLED
+**Parent Finance**: FULLY IMPLEMENTED
+**Santri Portal**: FULLY IMPLEMENTED
+**Admin Reporting**: FULLY IMPLEMENTED
+
+### Parent Scholarship Surfaces
+- **SelectedChildDashboard**: Added a compact scholarship card displaying active scholarships securely scoped to the parent's contextual child.
+- **Dedicated Beasiswa Page (`/orang-tua/beasiswa`)**: Displays Active and Historical Beasiswa records dynamically filtered via robust child context verification (IDOR protection).
+- **Invoice Detail (`/orang-tua/tagihan/[id]`)**: Displays rigorous Gross/Scholarship/Net/Paid/Outstanding breakdown. Introduces "Ditanggung Beasiswa Penuh" logic where a 100% scholarship zeroes out the Net Payable and explicitly suppresses "Cash Paid".
+
+### Santri Scholarship Surfaces
+- **Santri Portal (`/santri`)**: Enhanced with "Beasiswa Saya" segment ensuring strict self-learner scope, presenting dynamic Active program snapshots (Program, Benefit, Year, Period, Status).
+
+### Admin Reporting
+- **Query Aggregations**: Implemented `getScholarshipInvoiceHistory` and `getScholarshipReportingSummary` leveraging pure lateral/scalar DB subqueries and pre-aggregated logic to accurately sum scholarship and payment allocations, explicitly eliminating row multiplication and N+1 conditions.
+- **Laporan Tab (`/admin/keuangan/beasiswa?tab=report`)**: Delivers exhaustive multi-tenant level filtering (Academic Year, Period, Program, Fee Type).
+- **KPI Metrics**: Displays active Programs and Recipients against derived Total Gross, Beasiswa, Net Payable, Paid, and Outstanding balances securely. Historical integrity is maintained by utilizing `program_name_snapshot` and invariant historical records.
+
+### Tests
+- Validated rigorous Parent context IDOR (`resolveParentChildContext`) protection preventing multi-tenant data leaks.
+- Validated server-side zeroing logic in `getScholarshipReportingSummary` ensuring correct math and DB types parsing via integration testing.

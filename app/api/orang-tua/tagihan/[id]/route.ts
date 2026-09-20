@@ -28,6 +28,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     amount: serializeAmountForApi(invoice.amount),
     paidAmount: serializeAmountForApi(invoice.paidAmount),
     outstandingAmount: serializeAmountForApi(invoice.outstandingAmount),
+    scholarshipAmount: invoice.scholarshipAmount ? serializeAmountForApi(invoice.scholarshipAmount) : '0',
+    netPayable: serializeAmountForApi(invoice.netPayable),
     payments: invoice.payments.map((p: any) => ({
       ...p,
       amount: serializeAmountForApi(p.amount),

@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { Receipt, CheckCircle2, History, ChevronRight } from 'lucide-react'
+import { Receipt, CheckCircle2, History, ChevronRight, Sparkles } from 'lucide-react'
 import TopBar from '@/components/layout/TopBar'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -34,14 +34,16 @@ export default function ParentInvoiceDetail({ params }: { params: Promise<{ id: 
     }
   }
 
-  const formatCurrency = (amount: string) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(amount))
+  const formatCurrency = (amount: bigint | number | string) => {
+    if (amount === undefined || amount === null) return 'Rp 0'
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(typeof amount === 'bigint' ? amount : BigInt(amount))
   }
 
   if (isLoading) return <div className="p-8 text-center text-gray-500 text-sm">Memuat detail...</div>
   if (!invoice) return <div className="p-8 text-center text-red-500 text-sm">Tagihan tidak ditemukan</div>
 
   const isPaid = invoice.status === 'PAID'
+  const isFullyCovered = isPaid && BigInt(invoice.amount) > BigInt(0) && BigInt(invoice.scholarshipAmount) === BigInt(invoice.amount) && BigInt(invoice.paidAmount) === BigInt(0)
 
   return (
     <div className="pb-24 bg-gray-50 min-h-screen">
@@ -49,11 +51,19 @@ export default function ParentInvoiceDetail({ params }: { params: Promise<{ id: 
       
       <div className="p-4 space-y-4">
         {isPaid ? (
-          <div className="bg-green-600 text-white p-6 rounded-2xl flex flex-col items-center text-center shadow-sm">
-            <CheckCircle2 className="w-12 h-12 mb-3 text-green-100" />
-            <div className="font-bold text-lg mb-1">Tagihan Lunas</div>
-            <div className="text-green-100 text-sm">Terima kasih telah menyelesaikan pembayaran ini.</div>
-          </div>
+          isFullyCovered ? (
+            <div className="bg-indigo-600 text-white p-6 rounded-2xl flex flex-col items-center text-center shadow-sm">
+              <Sparkles className="w-12 h-12 mb-3 text-indigo-100" />
+              <div className="font-bold text-lg mb-1">Ditanggung Beasiswa Penuh</div>
+              <div className="text-indigo-100 text-sm">Tagihan ini telah dilunasi sepenuhnya oleh program beasiswa.</div>
+            </div>
+          ) : (
+            <div className="bg-green-600 text-white p-6 rounded-2xl flex flex-col items-center text-center shadow-sm">
+              <CheckCircle2 className="w-12 h-12 mb-3 text-green-100" />
+              <div className="font-bold text-lg mb-1">Tagihan Lunas</div>
+              <div className="text-green-100 text-sm">Terima kasih telah menyelesaikan pembayaran ini.</div>
+            </div>
+          )
         ) : (
           <div className="bg-gradient-to-br from-[#18085A] to-[#2B1B75] text-white p-6 rounded-2xl shadow-md">
             <div className="flex justify-between items-start mb-6">
@@ -90,12 +100,31 @@ export default function ParentInvoiceDetail({ params }: { params: Promise<{ id: 
             
             <div className="pt-3 border-t border-gray-100 space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-500">Nilai Tagihan</span>
+                <span className="text-gray-500">Tagihan Bruto</span>
                 <span className="font-mono text-gray-900">{formatCurrency(invoice.amount)}</span>
               </div>
+              {BigInt(invoice.scholarshipAmount) > BigInt(0) && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Beasiswa</span>
+                  <span className="font-mono text-indigo-600">-{formatCurrency(invoice.scholarshipAmount)}</span>
+                </div>
+              )}
+              {BigInt(invoice.scholarshipAmount) > BigInt(0) && invoice.netPayable === BigInt(0) && (
+                <div className="mt-2 mb-2 p-2 bg-green-50 text-green-700 text-xs font-semibold rounded border border-green-100 flex items-center justify-center">
+                  Ditanggung Beasiswa Penuh
+                </div>
+              )}
+              <div className="flex justify-between font-medium">
+                <span className="text-gray-700">Tagihan Bersih</span>
+                <span className="font-mono text-gray-900">{formatCurrency(invoice.netPayable)}</span>
+              </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Sudah Dibayar</span>
+                <span className="text-gray-500">Sudah Dibayar (Cash)</span>
                 <span className="font-mono text-green-600">{formatCurrency(invoice.paidAmount)}</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-gray-100 font-bold">
+                <span className="text-gray-900">Sisa Tagihan</span>
+                <span className="font-mono text-[#18085A]">{formatCurrency(invoice.outstandingAmount)}</span>
               </div>
             </div>
           </div>
