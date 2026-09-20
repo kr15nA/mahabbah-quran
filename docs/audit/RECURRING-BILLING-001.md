@@ -284,19 +284,23 @@
 ---
 
 **PHASE A STATUS**:
-RELEASE CANDIDATE
+RELEASED
 
-- Runtime/schema candidate SHA: `b68586dac6e2f64da3c8dda10d6e764d26326faa`
-- Feature release SHA: `2fa73a15cf28e52adc4fdc1fbf241718f2a68d2d`
+- Runtime/schema candidate: `b68586dac6e2f64da3c8dda10d6e764d26326faa`
+- Main runtime release SHA: `3bba154e1a322bb1ae6bcee0d5e1b6fe4eeb6deb`
+- Safety remediation SHA: `d359ba4b610d548bb15b22c917bd0846ae94a6da`
+- Incident documentation SHA: `6eebbffa93cca83d799a4cc177d02b7d44566079`
+- Current main SHA before final docs: `6eebbffa93cca83d799a4cc177d02b7d44566079`
 - Migration: `0021_free_forgotten_one`
-- Migration SHA-256: `c2acb7bd09e3f518b925580ee803bf5128b6563da70f98d870d6d2cb5972f448`
-- Migration structure: 4 CREATE TABLE, 0 DROP, 0 unrelated ALTER
-- DEV/QA migration: PASS
-- Recurring Phase A: 26 PASS / 0 FAIL
-- Scholarship A-D: PASS
-- Typecheck: PASS
-- Build: PASS
-- Production migration: NOT YET APPLIED
-- Production status: NOT YET RELEASED
+- Migration checksum: `c2acb7bd09e3f518b925580ee803bf5128b6563da70f98d870d6d2cb5972f448`
+- Production migration: APPLIED
+- Migration timeline: APPLIED EARLIER DURING PHASE A VERIFICATION
+- Production fixture incident: REMEDIATED
+- Legitimate Production data removed: NO
+- Development branch: ISOLATED
+- Preview DB: DEVELOPMENT
+- Production DB: MAIN
+- Tag: `recurring-billing-phase-a-v1.0.0`
+- Phase B: NOT STARTED
 
-*Note: test-idempotency follow-up commit changed only `scripts/test-recurring-billing-phase-a.ts`. Runtime/schema diff from tested candidate is NONE.*
+*Note: test-idempotency follow-up and safety remediation commits changed only scripts/docs. Runtime/schema diff from tested candidate is NONE.*
