@@ -10,15 +10,8 @@
 // ─────────────────────────────────────────────
 // SAFETY GATE
 // ─────────────────────────────────────────────
-if (process.env.ALLOW_MUTATING_DB_TESTS !== 'true') {
-  console.error('[BLOCKED] Tests require ALLOW_MUTATING_DB_TESTS=true')
-  process.exit(1)
-}
-const dbUrl = process.env.DATABASE_URL ?? ''
-if (!dbUrl || dbUrl.includes('prod')) {
-  console.error('[BLOCKED] Refusing to run tests against production database')
-  process.exit(1)
-}
+import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test'
+assertSafeMutatingDbTestEnvironment()
 
 import { db } from '../lib/db/client'
 import { createOrUpdateRecurringConfig, assignStudentFee, voidStudentFeeAssignment } from '../lib/finance/recurring'
@@ -66,12 +59,7 @@ async function assertThrows(fn: () => Promise<any>, label: string) {
   }
 }
 
-// ─────────────────────────────────────────────
-// SETUP
-// ─────────────────────────────────────────────
-async function setup() {
-  // Pre-cleanup: delete any stale RECTEST fixtures from previous runs
-  // Neon HTTP driver requires each statement as a separate execute call
+async function cleanup() {
   await db.execute(sql`DELETE FROM finance_billing_run_items WHERE run_id IN (SELECT id FROM finance_billing_runs WHERE fee_type_id IN (SELECT id FROM finance_fee_types WHERE code LIKE 'RECTEST_%'))`)
   await db.execute(sql`DELETE FROM finance_billing_runs WHERE fee_type_id IN (SELECT id FROM finance_fee_types WHERE code LIKE 'RECTEST_%')`)
   await db.execute(sql`DELETE FROM finance_recurring_billing_configs WHERE fee_type_id IN (SELECT id FROM finance_fee_types WHERE code LIKE 'RECTEST_%')`)
@@ -84,6 +72,13 @@ async function setup() {
   await db.execute(sql`DELETE FROM classes WHERE name = 'RecTest Class'`)
   await db.execute(sql`DELETE FROM programs WHERE name = 'RecTest Program'`)
   await db.execute(sql`DELETE FROM academic_years WHERE name LIKE '% RecTest'`)
+}
+
+// ─────────────────────────────────────────────
+// SETUP
+// ─────────────────────────────────────────────
+async function setup() {
+  
 
   // financeCategories needs: code, name, type, domain
   const [category] = await db.insert(financeCategories).values({
@@ -168,6 +163,7 @@ async function setup() {
 async function runTests() {
   console.log('=== RECURRING BILLING PHASE A TESTS ===\n')
 
+  await cleanup()
   const initialInvoiceCount = (await db.select({ c: sql<number>`count(*)::int` }).from(financeInvoices))[0].c
   const initialJournalCount = (await db.select({ c: sql<number>`count(*)::int` }).from(financeJournalEntries))[0].c
   const initialPaymentCount = (await db.select({ c: sql<number>`count(*)::int` }).from(financePayments))[0].c
@@ -370,4 +366,10 @@ async function runTests() {
   if (failed > 0) process.exit(1)
 }
 
-runTests().catch((e) => { console.error('FATAL:', e); process.exit(1) })
+
+runTests().then(() => cleanup()).catch(async (e) => { 
+  console.error('FATAL:', e); 
+  await cleanup().catch(() => {});
+  process.exit(1); 
+})
+

@@ -7,6 +7,10 @@
  *   scripts/test-scholarship-billing-phase-a.ts
  */
 
+import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test'
+assertSafeMutatingDbTestEnvironment()
+
+
 import { calculateScholarshipBenefit } from '../lib/finance/scholarships/calculator'
 import { datesOverlapTest } from '../lib/finance/scholarships/overlap-test-helper'
 import { financeDb } from '../lib/finance/tx'
@@ -31,16 +35,8 @@ import { eq, like, and } from 'drizzle-orm'
 // ─────────────────────────────────────────────
 // SAFETY GATE
 // ─────────────────────────────────────────────
-if (process.env.ALLOW_MUTATING_DB_TESTS !== 'true') {
-  console.error('[BLOCKED] Tests require ALLOW_MUTATING_DB_TESTS=true')
-  process.exit(1)
-}
 
-const dbUrl = process.env.DATABASE_URL ?? ''
-if (!dbUrl || dbUrl.includes('prod')) {
-  console.error('[BLOCKED] Refusing to run tests against production database')
-  process.exit(1)
-}
+
 
 // ─────────────────────────────────────────────
 // HELPERS

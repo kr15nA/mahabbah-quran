@@ -1,16 +1,11 @@
+import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test'
+assertSafeMutatingDbTestEnvironment()
+
 import { getScholarshipReportingSummary, getScholarshipInvoiceHistory } from '../lib/finance/scholarships/queries'
 import { resolveParentChildContext } from '../lib/guardians/parent-context'
 import { canAccessStudentFinance } from '../lib/finance/authorization'
-if (process.env.ALLOW_MUTATING_DB_TESTS !== 'true') {
-  console.error('[BLOCKED] Tests require ALLOW_MUTATING_DB_TESTS=true')
-  process.exit(1)
-}
 
-const dbUrl = process.env.DATABASE_URL ?? ''
-if (!dbUrl || dbUrl.includes('prod')) {
-  console.error('[BLOCKED] Refusing to run tests against production database')
-  process.exit(1)
-}
+
 
 async function runTests() {
   console.log('--- TEST 1: KPI Summary ---')
