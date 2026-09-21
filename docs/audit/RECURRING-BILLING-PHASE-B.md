@@ -147,5 +147,21 @@ DEV-only integration testing must cover:
 
 ---
 
-**FINAL VERDICT**: PHASE B IMPLEMENTED & TESTED
-All 32 test assertions passed successfully against the DEV environment using `test-recurring-billing-phase-b.ts`. No test fixture leakage was detected. Zero schema mutations occurred. Build succeeded.
+STATUS: RELEASE CANDIDATE
+
+Candidate SHA: 3715c50a840090fc4f7be1a8bde6c986ad4010e8
+Schema change: NO
+Migration change: NO
+Dry-run: READ-ONLY PASS
+Recurring B: 32 PASS / 0 FAIL
+Scholarship A-D: PASS
+Recurring A: PASS
+Typecheck: PASS
+Build: PASS
+Production: NOT YET RELEASED
+Phase C: NOT STARTED
+
+**Crash-Gap Semantics:**
+- invoice + run-item atomic: NO
+- recovery: canonical invoice lookup on retry
+- final reconciled status: SKIPPED_EXISTING when provenance cannot be proven
