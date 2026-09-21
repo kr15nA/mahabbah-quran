@@ -147,21 +147,22 @@ DEV-only integration testing must cover:
 
 ---
 
-STATUS: RELEASE CANDIDATE
+STATUS: RELEASED
 
+Baseline SHA: 41ff3f9277c0a405dcc0b7646c55122d667ed1b4
 Candidate SHA: 3715c50a840090fc4f7be1a8bde6c986ad4010e8
+Feature Release SHA: 17cafb28c7a1a7de6cd491e2d52e6805cb987314
+Main Runtime Release SHA: fb26f2a8184ea6b370e51c57f53e528441c361a3
+Production Runtime SHA: fb26f2a8184ea6b370e51c57f53e528441c361a3
+Tag: recurring-billing-phase-b-v1.0.0
 Schema change: NO
 Migration change: NO
-Dry-run: READ-ONLY PASS
+Production migration: NOT REQUIRED
+Dry-run purity: PASS
+Generator: PASS
+Crash-gap recovery: PASS
+Scholarship integration: PASS
 Recurring B: 32 PASS / 0 FAIL
-Scholarship A-D: PASS
-Recurring A: PASS
-Typecheck: PASS
-Build: PASS
-Production: NOT YET RELEASED
+Production mutation test: NO
+Production fixture leakage: NO
 Phase C: NOT STARTED
-
-**Crash-Gap Semantics:**
-- invoice + run-item atomic: NO
-- recovery: canonical invoice lookup on retry
-- final reconciled status: SKIPPED_EXISTING when provenance cannot be proven
