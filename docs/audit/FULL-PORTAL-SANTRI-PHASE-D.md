@@ -234,4 +234,43 @@ NO.
 NONE.
 
 ### STATUS
-**ARCHITECTURE LOCK READY**
+**D2 RELEASE CANDIDATE**
+
+## D2 RELEASE CANDIDATE HYGIENE RECORD
+
+- **SANTRI_D2_BASELINE_SHA**: 72763f047f8737ed38e82a1bfb3173f8a800bf7b
+- **D2_AUDIT_DOC_SHA**: 96c6a5f
+- **D2_RUNTIME_CANDIDATE_SHA**: d3647b810e4b4a18ab127c8a1ba8d20c1443f658
+- **D2_FEATURE_HEAD_SHA**: d3647b810e4b4a18ab127c8a1ba8d20c1443f658
+
+- **git add . incident**: YES
+- **accidental files**: NONE
+- **self-scope**: PASS
+- **pagination**: PASS
+- **Attendance**: PASS
+- **Hafalan**: PASS
+- **Tahsin**: PASS
+- **Tasmi**: PASS
+- **notes privacy**: PASS
+- **historical attribution**: PASS
+- **formal learner writes**: NO
+- **Santri Finance**: DEFERRED
+- **D2 test result**: 37/37 PASS
+- **domain regressions**: 
+  - Phase D1: 17/17 PASS
+  - Multi-context: 70/70 PASS
+  - Parent: 9/9 PASS
+  - Attendance: 6/6 PASS
+  - Tasmi: 5/5 PASS
+  - Hafalan domain: NO DEDICATED SCRIPT
+  - Tahsin domain: NO DEDICATED SCRIPT
+- **typecheck**: PASS
+- **build**: PASS
+- **Preview URL**: https://mahabbah-quran-c0oh6iyfz-krisnarefac-9550.vercel.app
+- **Preview SHA**: d3647b810e4b4a18ab127c8a1ba8d20c1443f658
+- **Preview**: READY
+- **UAT**: PASS
+- **mobile**: PASS
+- **schema change**: NO
+- **migration**: NO
+- **Production mutation**: NO
