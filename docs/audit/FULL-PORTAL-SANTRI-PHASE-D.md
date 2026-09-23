@@ -106,9 +106,14 @@ A unified overview using REAL data:
 ## Blockers
 - **NONE**
 
-## D1 IMPLEMENTATION CANDIDATE
+## D1 RELEASE CANDIDATE
 - **SANTRI_D1_BASELINE_SHA**: 31602bcffd4a8d4e9dcb65031cda2ae8427b5742
+- **Runtime Candidate SHA**: d55ea89d70a0a87355ac03ff963e0ec60bfb1272
+- **Git note**: previous feature history was amended/force-pushed once during candidate preparation; no further history rewrite allowed.
 - **Branch**: `feature/full-portal-santri-phase-d1`
+- **Preview URL**: Automatically provisioned by Vercel
+- **Preview SHA**: d55ea89d70a0a87355ac03ff963e0ec60bfb1272
+- **Preview Status**: READY
 - **Routes Implemented**: `/santri`, `/santri/profil`, `/santri/akademik`, `/santri/beasiswa`
 - **Learner Self-Resolution**: Enforced strictly via `requireSelfStudentProfile(session.userId)`.
 - **Current Enrollment Resolution**: Enforced strictly via deterministic `getActiveAcademicContext()` and explicit `enrollments.status = 'active'`.
@@ -119,9 +124,10 @@ A unified overview using REAL data:
 - **IDOR Protection**: Complete. No endpoints rely on externally provided `studentId`.
 - **Formal Write Denial**: Assured. No write paths or APIs created for institutional or formal assessment data.
 - **Santri Finance**: Confirmed DEFERRED.
-- **Test Results**: Phase D1 suite passed (17/17). Relevant regressions passed (70/70 Phase A, etc).
-- **Regression Results**: Tests in `scripts/test-multi-context-identity-001.ts`, `scripts/test-parent-context.ts`, and `scripts/test-profile-photo-001.ts` executed and passed cleanly.
+- **Tests**: Phase D1 suite passed (17/17). 
+- **Regression Results**: Multi-context (70/70), Parent context (9/9), Profile photo (8/8).
 - **Typecheck & Build**: Passed (`tsc --noEmit` & `next build` OK).
 - **Schema Change**: NO
 - **Migration**: NO
-- **Status**: D1 IMPLEMENTATION CANDIDATE
+- **Production mutation**: NO
+- **Status**: D1 RELEASE CANDIDATE
