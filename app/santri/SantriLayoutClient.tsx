@@ -1,10 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Home, BookOpen, LogOut } from 'lucide-react'
+import { Home, BookOpen, Sparkles, User, LogOut } from 'lucide-react'
 
 const NAV = [
-  { href: '/santri', label: 'Portal Santri', icon: Home },
+  { href: '/santri', label: 'Dashboard', icon: Home },
+  { href: '/santri/profil', label: 'Profil Saya', icon: User },
+  { href: '/santri/akademik', label: 'Akademik', icon: BookOpen },
+  { href: '/santri/beasiswa', label: 'Beasiswa', icon: Sparkles },
 ]
 
 import AppShell from '@/components/layout/AppShell'
