@@ -175,3 +175,22 @@
 
 ## Blockers
 - **Blockers**: NONE. Phase C UI/UX Architecture Lock is READY for implementation.
+
+## Implementation Candidate (Phase C)
+- **Status**: IMPLEMENTATION CANDIDATE
+- **Baseline SHA**: `2a05d4d`
+- **Candidate SHA**: `028285e`
+- **Route**: `/admin/keuangan/tagihan/berulang` (PASS)
+- **Files added**: `actions.ts`, `page.tsx`, tabs (`config-tab.tsx`, `assignment-tab.tsx`, `generate-tab.tsx`, `history-tab.tsx`), `runs/[id]/page.tsx`, `recurring-billing-generator-ui-errors.ts`, `test-recurring-billing-phase-c.ts`, `queries/recurring-billing.ts`.
+- **Permission Matrix & RBAC**: Fully enforced via `requirePermission` (`finance.billing.manage` for all mutations, `finance.billing.view` for read-only access). (PASS)
+- **Config**: Editable: `isActive`, `dueDayOfMonth`. Validates invalid inputs. (PASS)
+- **Assignment**: Single assignment enforced via canonical `assignStudentFee`, bulk capped at 50 with per-student results (CREATED, INVALID, OVERLAP_CONFLICT, FAILED). (PASS)
+- **Dry-Run & Generate**: Dry-run strictly read-only and displays summary. Generate revalidates independently via `processChunkAction`. Client has no amount/due date authority. Preview effectively invalidates upon selector change. Creates DRAFT invoices (no journals, no payments). (PASS)
+- **Chunking**: Fixed size (50) per request. UI displays "Lanjutkan" instead of recursive processing. (PASS)
+- **Run History / Detail**: Server pagination (20/page). Accurate status mappings and invoice links. (PASS)
+- **Safe Errors**: Translated to Indonesian UI gracefully. Raw SQL/secrets never exposed. (PASS)
+- **Tests & Full Regression**: Passed completely without fixture leakage. (PASS)
+- **Schema & Migration**: NO CHANGES.
+- **Production Mutation**: NONE.
+- **Preview URL/SHA**: Pending Vercel Deployment.
+- **Manual UAT**: Pending client validation on Neon development.
