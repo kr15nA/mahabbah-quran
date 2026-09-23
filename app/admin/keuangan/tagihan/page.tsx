@@ -49,10 +49,12 @@ export default function InvoicesPage() {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-900">Tagihan Santri</h2>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => alert('Bulk generate not implemented in this skeleton')}>
-            <Layers className="w-4 h-4 mr-2" />
-            Buat Massal
-          </Button>
+          <Link href="/admin/keuangan/tagihan/berulang">
+            <Button variant="outline">
+              <Layers className="w-4 h-4 mr-2" />
+              Buat Massal/Berulang
+            </Button>
+          </Link>
           <Button onClick={() => alert('Add single invoice modal not implemented in this skeleton')}>
             <Plus className="w-4 h-4 mr-2" />
             Buat Tagihan

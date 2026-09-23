@@ -2,11 +2,12 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, Receipt, Settings2, Wallet, HandCoins, Activity } from 'lucide-react'
+import { LayoutDashboard, Receipt, Settings2, Wallet, HandCoins, Activity, Layers } from 'lucide-react'
 
 const FINANCE_TABS = [
   { href: '/admin/keuangan/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/keuangan/tagihan', label: 'Tagihan', icon: Receipt },
+  { href: '/admin/keuangan/tagihan/berulang', label: 'Tagihan Berulang', icon: Layers },
   { href: '/admin/keuangan/jenis-tagihan', label: 'Jenis Tagihan', icon: Settings2 },
   { href: '/admin/keuangan/beasiswa', label: 'Beasiswa', icon: Wallet },
   { href: '/admin/keuangan/pembayaran', label: 'Pembayaran', icon: Wallet },
