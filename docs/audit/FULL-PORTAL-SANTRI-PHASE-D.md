@@ -135,3 +135,103 @@ A unified overview using REAL data:
 - **D2**: NOT STARTED
 - **D3**: NOT STARTED
 - **Status**: RELEASED
+
+## PHASE D2 — SANTRI ACADEMIC READ-ONLY MINI AUDIT
+
+### BASELINE SHA
+`72763f047f8737ed38e82a1bfb3173f8a800bf7b`
+
+### ATTENDANCE DOMAIN
+- **Table**: `attendance`
+- **Student linkage**: `studentId`
+- **Status enum**: `'hadir' | 'izin' | 'sakit' | 'alfa'`
+- **Date/time fields**: `attendanceDate`, `createdAt`, `updatedAt`
+- **Teacher/actor**: `teacherId`
+- **Notes**: `notes`
+- **Soft delete**: NO soft delete; records are physically removed or upserted.
+- **Existing helpers**: `getAttendanceSummaryByStudent`, `getAttendanceByStudentMonth` (perfectly aligned with safe month/summary views).
+- **Attendance Self View**: READY. The month-based summary is safely scoped.
+
+### HAFALAN DOMAIN
+- **Table**: `hafalanRecords`
+- **Student linkage**: `studentId`
+- **Fields**: `surahId`, `ayahStart`, `ayahEnd`, `type`, `score`, `sessionDate`, `teacherId`
+- **Teacher**: Stored natively on the record.
+- **Soft delete**: NO soft delete.
+- **Hafalan Self View**: READY. Progress summaries (`getLastHafalanByStudent`) and paginated list (`getHafalanByStudent`) are directly usable.
+
+### TAHSIN DOMAIN
+- **Table**: `tahsinRecords`
+- **Student linkage**: `studentId`
+- **Fields**: `sessionDate`, `makhrajScore`, `tajwidScore`, `kelancaranScore`, `ghunnahScore`, `teacherId`
+- **Soft delete**: NO soft delete.
+- **Tahsin Self View**: READY. `getTahsinByStudent` exists.
+
+### TASMI DOMAIN
+- **Table**: `tasmiSessions`
+- **Student linkage**: `studentId`
+- **Fields**: `mode`, `surahId`, `startJuz`, `endJuz`, `sessionDate`, `score`, `status`, `examinerId`, `notes`
+- **Soft delete**: Physically deleted/upserted.
+- **Tasmi Self View**: READY. Queries exist in `lib/tasmi/queries.ts` and `lib/tasmi/list.ts`.
+
+### SELF-SCOPE ARCHITECTURE
+D1 identity resolution foundation remains locked:
+`studentId` is resolved via `requireSelfStudentProfile(session.userId)`.
+No client-provided `studentId` will be used anywhere in the `/santri` namespace.
+
+### CLIENT STUDENT ID AUTHORITY
+NO. Client-provided ID is never trusted.
+
+### FORMAL SELF-ASSESSMENT
+DENIED. No write paths (create/edit/delete/approve) are introduced.
+
+### NOTES PRIVACY
+- **Attendance notes**: Excluded (classified as `UNCLEAR` / `INTERNAL_ONLY`).
+- **Hafalan notes**: Does not exist in schema.
+- **Tahsin notes**: Does not exist in schema.
+- **Tasmi notes**: Excluded (classified as `INTERNAL_ONLY` / `UNCLEAR`).
+By default, notes are excluded to prevent accidental exposure of internal teacher remarks.
+
+### PAGINATION
+Server-side pagination will be enforced. Standard 20 items per page limit applies.
+
+### DASHBOARD SUMMARIES
+Dashboard integration is safely feasible for:
+- Attendance: Current month summary (`getAttendanceSummaryByStudent`).
+- Hafalan: Latest progress (`getLastHafalanByStudent`).
+- Tahsin: Latest assessment or average.
+No fake percentage charts will be used. Only real queries mapping to existing structures.
+
+### NAVIGATION
+The following will be added to the Santri sidebar/nav:
+- Kehadiran
+- Hafalan
+- Tahsin
+- Tasmi
+
+### IDOR PLAN
+All queries will receive the safely resolved `studentId`. Any route with a `[studentId]` parameter or body payload attempting to specify it will be rejected.
+
+### MULTI-CONTEXT
+Adheres to the strict boundaries defined in D1. Guru/Admin accessing `/santri` only sees their *own* learner formal records (if they are also a registered student). Privileges do not bleed.
+
+### TEST MATRIX
+**Count**: 25 (Includes tests for Attendance summary/history, Hafalan correctness, Tahsin rules, Tasmi mode checks, IDOR, Multi-context boundaries, and write path denial).
+
+### PERFORMANCE / INDEXES
+Existing indexes (`idx_tasmi_student_date`, `attendance_unique_per_day`) provide adequate performance. No new indexes required.
+
+### SCHEMA CHANGE REQUIRED
+NO.
+
+### MIGRATION REQUIRED
+NO.
+
+### RECOMMENDED IMPLEMENTATION SPLIT
+**ONE D2**. Since all four modules (Attendance, Hafalan, Tahsin, Tasmi) share identical read-only and self-scoping architectural patterns without requiring schema changes or complex states, they can be implemented as a single coherent Phase D2 slice.
+
+### BLOCKERS
+NONE.
+
+### STATUS
+**ARCHITECTURE LOCK READY**
