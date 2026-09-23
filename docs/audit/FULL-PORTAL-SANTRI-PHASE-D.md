@@ -99,21 +99,23 @@ A unified overview using REAL data:
 - **Migration required**: NO
 
 ## Recommended Implementation Split
-- **Phase D1**: Portal shell + Identity + Dashboard + Profile + Academic Context
+- **Phase D1 (IMPLEMENTED/RELEASED)**: Portal shell + Identity + Dashboard (Identity, Current Academic Context, Current Teachers, Scholarship Summary) + Profile + Academic Context
 - **Phase D2**: Attendance + Hafalan + Tahsin + Tasmi read-only views
 - **Phase D3**: UX hardening + Mobile polish
 
 ## Blockers
 - **NONE**
 
-## D1 RELEASE CANDIDATE
+## D1 RELEASED
 - **SANTRI_D1_BASELINE_SHA**: 31602bcffd4a8d4e9dcb65031cda2ae8427b5742
 - **Runtime Candidate SHA**: d55ea89d70a0a87355ac03ff963e0ec60bfb1272
-- **Git note**: previous feature history was amended/force-pushed once during candidate preparation; no further history rewrite allowed.
-- **Branch**: `feature/full-portal-santri-phase-d1`
+- **Feature Candidate SHA**: a2e9e664f7bbaf198f20fdec82e0a916f58d8d2e
+- **Main Runtime Release SHA**: c1fbb97b939a40a1debc15932ae5fc286ce2dc3f
+- **Production SHA**: c1fbb97b939a40a1debc15932ae5fc286ce2dc3f
+- **Tag**: full-portal-santri-phase-d1-v1.0.0
 - **Preview URL**: Automatically provisioned by Vercel
-- **Preview SHA**: d55ea89d70a0a87355ac03ff963e0ec60bfb1272
-- **Preview Status**: READY
+- **Git note**: previous feature history was amended/force-pushed once during candidate preparation; no further history rewrite allowed.
+- **Branch**: `main`
 - **Routes Implemented**: `/santri`, `/santri/profil`, `/santri/akademik`, `/santri/beasiswa`
 - **Learner Self-Resolution**: Enforced strictly via `requireSelfStudentProfile(session.userId)`.
 - **Current Enrollment Resolution**: Enforced strictly via deterministic `getActiveAcademicContext()` and explicit `enrollments.status = 'active'`.
@@ -130,4 +132,6 @@ A unified overview using REAL data:
 - **Schema Change**: NO
 - **Migration**: NO
 - **Production mutation**: NO
-- **Status**: D1 RELEASE CANDIDATE
+- **D2**: NOT STARTED
+- **D3**: NOT STARTED
+- **Status**: RELEASED
