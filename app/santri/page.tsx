@@ -2,7 +2,12 @@ export const dynamic = 'force-dynamic'
 
 import { requireAuth } from '@/lib/auth/rbac'
 import { getMyAcademicProfile, getMyCurrentTeachers, getMyScholarships } from '@/lib/student-portal/queries'
-import { Sparkles, Users, BookOpen, GraduationCap } from 'lucide-react'
+import { getMyAttendanceSummary } from '@/lib/student-portal/attendance'
+import { getMyLatestHafalan } from '@/lib/student-portal/hafalan'
+import { getMyLatestTahsin } from '@/lib/student-portal/tahsin'
+import { getMyLatestTasmi } from '@/lib/student-portal/tasmi'
+import { Sparkles, Users, BookOpen, GraduationCap, Calendar, Bookmark, Star, Mic, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function SantriDashboard() {
   const { session } = await requireAuth()
@@ -11,6 +16,12 @@ export default async function SantriDashboard() {
   const profile = await getMyAcademicProfile(session.userId)
   const teachers = await getMyCurrentTeachers(session.userId)
   const scholarships = await getMyScholarships(session.userId)
+
+  const currentMonth = new Date().toISOString().substring(0, 7)
+  const attendance = await getMyAttendanceSummary(session.userId, currentMonth)
+  const latestHafalan = await getMyLatestHafalan(session.userId)
+  const latestTahsin = await getMyLatestTahsin(session.userId)
+  const latestTasmi = await getMyLatestTasmi(session.userId)
 
   // Derive active scholarship
   const activeScholarship = scholarships.find(s => {
@@ -115,19 +126,93 @@ export default async function SantriDashboard() {
         </div>
       </div>
 
-      <div className="rounded-md bg-blue-50 p-4 border border-blue-100">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <BookOpen className="h-5 w-5 text-blue-400" />
-          </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800">Catatan Belajar</h3>
-            <div className="mt-2 text-sm text-blue-700">
-              <p>
-                Fitur perkembangan Hafalan, Tahsin, Tasmi, dan Kehadiran akan tersedia pada tahap berikutnya (Phase D2).
-              </p>
+      {/* Academic Summaries D2 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Kehadiran */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-5 h-5 text-indigo-500" />
+              <h3 className="font-semibold text-gray-900">Kehadiran</h3>
+            </div>
+            <p className="text-xs text-gray-500 mb-2">Bulan Ini</p>
+            <div className="flex gap-2">
+              <span className="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">{attendance.hadir} Hadir</span>
+              <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">{attendance.izin} Izin</span>
             </div>
           </div>
+          <Link href="/santri/kehadiran" className="mt-4 text-sm font-medium text-indigo-600 flex items-center gap-1 hover:text-indigo-700">
+            Lihat detail <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {/* Hafalan */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Bookmark className="w-5 h-5 text-emerald-500" />
+              <h3 className="font-semibold text-gray-900">Hafalan Terakhir</h3>
+            </div>
+            {latestHafalan ? (
+              <div>
+                <p className="font-medium text-gray-900">{latestHafalan.surah_name_latin}</p>
+                <p className="text-sm text-gray-500">Ayat {latestHafalan.ayah_start}-{latestHafalan.ayah_end}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 italic">Belum ada catatan hafalan</p>
+            )}
+          </div>
+          <Link href="/santri/hafalan" className="mt-4 text-sm font-medium text-emerald-600 flex items-center gap-1 hover:text-emerald-700">
+            Lihat riwayat <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {/* Tahsin */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Star className="w-5 h-5 text-amber-500" />
+              <h3 className="font-semibold text-gray-900">Tahsin Terakhir</h3>
+            </div>
+            {latestTahsin ? (
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><span className="text-gray-500">Makhraj:</span> <span className="font-medium">{latestTahsin.makhraj_score || '-'}</span></div>
+                <div><span className="text-gray-500">Tajwid:</span> <span className="font-medium">{latestTahsin.tajwid_score || '-'}</span></div>
+                <div><span className="text-gray-500">Lancar:</span> <span className="font-medium">{latestTahsin.kelancaran_score || '-'}</span></div>
+                <div><span className="text-gray-500">Ghunnah:</span> <span className="font-medium">{latestTahsin.ghunnah_score || '-'}</span></div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 italic">Belum ada catatan tahsin</p>
+            )}
+          </div>
+          <Link href="/santri/tahsin" className="mt-4 text-sm font-medium text-amber-600 flex items-center gap-1 hover:text-amber-700">
+            Lihat riwayat <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {/* Tasmi */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Mic className="w-5 h-5 text-rose-500" />
+              <h3 className="font-semibold text-gray-900">Tasmi Terakhir</h3>
+            </div>
+            {latestTasmi ? (
+              <div>
+                <p className="font-medium text-gray-900">
+                  {latestTasmi.mode === 'SURAH' ? latestTasmi.surahNameLatin : `Juz ${latestTasmi.startJuz}-${latestTasmi.endJuz}`}
+                </p>
+                <p className={`text-xs font-medium mt-1 ${latestTasmi.status === 'PASSED' ? 'text-green-600' : 'text-orange-600'}`}>
+                  {latestTasmi.status === 'PASSED' ? 'Lulus' : 'Perlu Ditinjau'}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 italic">Belum ada riwayat tasmi</p>
+            )}
+          </div>
+          <Link href="/santri/tasmi" className="mt-4 text-sm font-medium text-rose-600 flex items-center gap-1 hover:text-rose-700">
+            Lihat riwayat <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
       </div>
     </div>
