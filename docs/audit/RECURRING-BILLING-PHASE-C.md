@@ -176,23 +176,27 @@
 ## Blockers
 - **Blockers**: NONE. Phase C UI/UX Architecture Lock is READY for implementation.
 
-## Implementation Candidate (Phase C)
-- **Status**: IMPLEMENTATION CANDIDATE
-- **PHASE_C_RUNTIME_CANDIDATE_SHA**: `028285e`
-- **PHASE_C_FEATURE_HEAD_SHA**: `6473566`
-- **Preview URL**: `https://mahabbah-quran-otmg77nfc-krisnarefac-9550.vercel.app`
-- **Preview SHA**: `6473566`
-- **Preview READY**: YES
-- **Permission UAT**: PASS
-- **Config UAT**: PASS
-- **Single Assignment UAT**: PASS
-- **Bulk UAT**: PASS
-- **Dry-Run UAT**: PASS
-- **Preview Invalidation UAT**: PASS
-- **Generate UAT**: PASS
-- **Chunk UAT**: PASS
-- **History/Detail UAT**: PASS
-- **Responsive UAT**: PASS
-- **Safe-Error UAT**: PASS
-- **Fixture Cleanup**: PASS
-- **Production Mutation**: NO
+## Release Record (Phase C)
+- **Status**: RELEASED
+- **Phase C Baseline SHA**: `2a05d4d`
+- **Runtime Candidate SHA**: `028285e6e0299ac88d7d33baac60dd4c03e7b99b`
+- **Final Candidate SHA**: `8938f4badc65b84831ce9c758a25d5c2a2c1cf28`
+- **Main Runtime Release SHA**: `753f98d19050e1b352aeeb9d879380ad884f0eb4`
+- **Production Runtime SHA**: `753f98d19050e1b352aeeb9d879380ad884f0eb4`
+- **Tag**: `recurring-billing-phase-c-v1.0.0`
+- **Permissions**: PASS
+- **Config UI**: PASS
+- **Assignment**: PASS
+- **Bulk**: PASS
+- **Dry-run**: PASS
+- **Preview invalidation**: PASS
+- **Generate server revalidation**: PASS
+- **Chunk UX**: PASS
+- **Run History**: PASS
+- **Run Detail**: PASS
+- **Preview UAT**: PASS
+- **Production smoke**: PASS
+- **Production mutation**: NO
+- **Schema change**: NO
+- **Migration**: NOT REQUIRED
+- **Phase D**: NOT STARTED
