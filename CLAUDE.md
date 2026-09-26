@@ -1,9 +1,20 @@
 # CLAUDE.md
 ## Mahabbah Qur'an — AI Agent Operating Manual
 
-This file is read by every Claude agent working on this repository.
-It is the single source of truth for how to write code here.
-When instructions here conflict with general best practices, **this file wins**.
+**BEFORE WRITING CODE:** Ensure you have executed the Mandatory Cold-Start Sequence defined in `docs/MAHABBAH_AGENT_PROTOCOL.md`.
+
+`MAHABBAH_AGENT_PROTOCOL.md` is authoritative for:
+- task authority
+- workflow
+- security governance
+- git discipline
+- roadmap continuity
+
+`CLAUDE.md` is authoritative only for coding conventions that are consistent with:
+- current repository implementation
+- `ARCHITECTURE.md`
+- `SECURITY-BASELINE.md`
+- approved Task ID
 
 ---
 
@@ -26,12 +37,12 @@ You are not a scaffolding tool. Every file you produce is either deployed or it 
 | Migrations | `drizzle-kit` | CLI only — never in app code |
 | Auth | JWT in httpOnly cookie | `jose` library, verified in Edge Middleware |
 | Storage | Vercel Blob | All binary assets — avatars, PDFs |
-| AI | Anthropic Claude API | `claude-sonnet-4-6`, server-side only |
+| AI | None | (Currently no AI library installed in package.json) |
 | Styling | Tailwind CSS v4 | Utility classes, design tokens in `tailwind.config.ts` |
 | Charts | `recharts` | Client Components only |
 | Drag-Drop | `@dnd-kit/core` + `@dnd-kit/sortable` | Client Components only |
 | Rich Text | `@tiptap/react` + `starter-kit` | Teacher notes, AI report editing |
-| PDF | `@sparticuz/chromium` + `puppeteer-core` | Server-side only |
+| PDF | `pdfmake` | Server-side PDF generation |
 | Excel | `xlsx` | Admin export, server-side generation |
 | Validation | `zod` | All API route input validation |
 | Dates | `date-fns` | Indonesian locale (`id`) |
@@ -53,16 +64,9 @@ const rows = await getStudentsByTeacher(session.userId)
 const rows = await sql`SELECT * FROM students WHERE teacher_id = ${id}`
 ```
 
-### 2. Drizzle is for migrations only
+### 2. Drizzle ORM Usage
 
-If you find yourself typing `drizzle` or `db.select` anywhere outside `drizzle/`, stop. You are in the wrong file.
-
-```ts
-// ❌ NEVER DO THIS IN APP CODE
-import { db } from '@/drizzle/client'
-import { students } from '@/drizzle/schema'
-const s = await db.select().from(students)
-```
+Drizzle ORM (`db.select()`, `db.insert()`, etc.) is actively used by the current query architecture throughout the codebase (`lib/`, `app/api/`, etc.). Follow the established patterns found in the repository. Avoid raw SQL where Drizzle query builder is sufficient and already in use.
 
 ### 3. Pages are RSC — "use client" at the leaf only
 
@@ -107,7 +111,9 @@ const parsed = schema.safeParse(body)
 if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
 ```
 
-### 6. Auth check is the first line of every API route
+### 6. API Route Authorization
+
+Every protected API route must establish authoritative server-side authentication/authorization before protected data access or mutation. Intentional public endpoints are exempt but must be explicitly public and apply their own protection model where relevant.
 
 ```ts
 const session = await getSession(req)
@@ -144,8 +150,7 @@ Before submitting any file, verify:
 
 - [ ] Page file has no `"use client"`
 - [ ] No SQL outside `lib/db/queries/`
-- [ ] No Drizzle imports outside `drizzle/`
-- [ ] API route has auth check as first operation
+- [ ] API route enforces server-side authorization before data access
 - [ ] API route has zod validation before touching DB
 - [ ] Query function has named input type and named return type
 - [ ] No `any` type
@@ -383,7 +388,7 @@ Code identifiers (variables, functions, columns) use the English equivalents abo
 
 ## When You're Unsure
 
-1. Check `trd.md` — it has the canonical file structure, query pattern, and API pattern.
-2. Check `erd.md` — it has the exact table names, column names, and FK relationships.
-3. Check `prd.md` — it defines what the feature should do from the user's perspective.
+1. Check `docs/ARCHITECTURE.md` — it has the canonical architecture pattern.
+2. Check `drizzle/schema.ts` — it has the exact table names, column names, and FK relationships.
+3. Check `docs/ROADMAP.md` — it defines what the feature should do from the user's perspective.
 4. If still unsure: ask before writing, not after.
