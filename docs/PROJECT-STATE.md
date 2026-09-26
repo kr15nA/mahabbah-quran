@@ -7,7 +7,7 @@ REPOSITORY:
 mahabbah-quran
 
 LAST VERIFIED APPLICATION BASELINE:
-4ccdb88 (feat(auth): implement login rate limiting (SEC-PLATFORM-001))
+SEC-PLATFORM-001 — Login Rate Limiting
 
 CANONICAL DOCUMENTATION:
 ROADMAP-RECONCILIATION-001
