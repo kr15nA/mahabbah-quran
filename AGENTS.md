@@ -49,14 +49,16 @@ Wait for approval before applying the schema change.
 ## PR Review Checklist
 
 Every PR is checked against `CLAUDE.md` iron rules before merge:
-- [ ] No SQL outside `lib/db/queries/`
-- [ ] No Drizzle ORM imports in app code
-- [ ] No `"use client"` on page files
-- [ ] Auth check first in every API route
-- [ ] Zod validation in every POST/PATCH route
-- [ ] No `any` types
+- [ ] follow established database access patterns for the affected domain
+- [ ] do not introduce ad-hoc SQL in UI/components
+- [ ] protected API routes must establish authoritative server-side authorization before protected data access/mutation
+- [ ] intentional public routes must be explicitly designed as public
+- [ ] use current canonical RBAC/auth helpers
+- [ ] validate applicable request input with Zod
+- [ ] no `"use client"` on page files unless absolutely required
+- [ ] no `any` types
 - [ ] Design tokens only (no arbitrary Tailwind hex outside defined tokens)
-- [ ] No hardcoded secrets
+- [ ] no hardcoded secrets
 
 ---
 
@@ -83,9 +85,10 @@ This note is the handoff. The next agent reads it, then reads the files, then st
 If an agent encounters a situation where:
 - The schema doesn't have a needed column
 - The requirements are ambiguous about behaviour
-- Two rules in `CLAUDE.md` conflict for this case
+- There is a conflict between Agent Protocol, PROJECT-STATE, ROADMAP, ARCHITECTURE, SECURITY-BASELINE, AGENTS.md, CLAUDE.md, or current repository implementation.
 
 The agent **stops**, writes an **Issue Report**, and waits:
+STOP -> REPORT -> CLASSIFY -> WAIT
 
 ```
 ISSUE REPORT
