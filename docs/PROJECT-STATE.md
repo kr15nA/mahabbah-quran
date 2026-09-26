@@ -7,7 +7,7 @@ REPOSITORY:
 mahabbah-quran
 
 LAST VERIFIED APPLICATION BASELINE:
-SEC-PLATFORM-001 — Login Rate Limiting
+SEC-AUTH-002 — Login Credential Enumeration Hardening
 
 CANONICAL DOCUMENTATION:
 ROADMAP-RECONCILIATION-001
@@ -38,7 +38,7 @@ CURRENT ARCHITECTURAL BASELINE:
 - **Parent Portal**: Mobile-first optimized read-only multi-child dashboard.
 - **Guru Portal**: Primary mutation boundary for academic assessments (Hafalan, Tahsin, Tasmi, Absensi).
 - **Admin Portal**: Fully functional generic CRUD interfaces and analytics.
-- **Platform Security**: Identifier-based login rate limiting enforced via database atomicity to throttle consecutive failures (5 allowed, 6th blocked) on a rolling 15-minute window.
+- **Platform Security**: Identifier-based login rate limiting enforced via database atomicity (5 failures per 15m). Hardened authentication route returns generic 401 contract for all credential failures (nonexistent, wrong password, inactive) and uses dummy bcrypt hashing to mitigate timing enumeration.
 
 CURRENT KNOWN LIMITATIONS:
 - **Non-Atomic Audit Log**: Current business mutations and audit log insertions execute sequentially and are not currently composed into one DB transaction. This remains a known consistency limitation.

@@ -50,11 +50,11 @@
 - **TASK ID:** SEC-AUTH-002
 - **TITLE:** Login Credential Enumeration Hardening
 - **DOMAIN:** Security / Auth
-- **STATUS:** PLANNED
+- **STATUS:** PASS
 - **DEPENDENCIES:** SEC-PLATFORM-001
-- **EVIDENCE:** Rate limiting handles some enumeration risk, but credential probing still returns distinct errors (e.g. 401 Pengguna tidak ditemukan vs Password salah).
-- **OUTSTANDING WORK:** Normalize externally visible authentication failure semantics to prevent credential enumeration.
-- **NEXT ACTION:** DEFERRED
+- **EVIDENCE:** `app/api/auth/login/route.ts`, `scripts/test-login-enumeration.ts`
+- **OUTSTANDING WORK:** None. (Note: Residual DB-query timing differences exist, but the major bcrypt timing difference is mitigated by a dummy hash. Inactive accounts remain blocked and share the same generic 401 contract).
+- **NEXT ACTION:** None
 
 - **TASK ID:** SEC-PLATFORM-002
 - **TITLE:** Environment Validation
