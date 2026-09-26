@@ -1,11 +1,12 @@
 import { neon } from '@neondatabase/serverless'
 import bcrypt from 'bcryptjs'
 import * as dotenv from 'dotenv'
+import { getDatabaseUrl } from '../lib/config/env'
 
 dotenv.config({ path: '.env.local' })
 dotenv.config()
 
-const sql = neon(process.env.DATABASE_URL!)
+const sql = neon(getDatabaseUrl())
 
 async function seed() {
   console.log('🌱 Starting seed process...')
