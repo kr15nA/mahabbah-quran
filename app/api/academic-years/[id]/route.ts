@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, AuthError } from '@/lib/auth/rbac'
-import { updateAcademicYear } from '@/lib/db/queries/academic-years'
+import { updateAcademicYear, getAcademicYearById } from '@/lib/db/queries/academic-years'
 import { z } from 'zod'
+import { createAuditLog } from '@/lib/audit/logger'
+import { AuditAction, AuditEntityType } from '@/lib/audit/types'
 
 const updateSchema = z.object({
   name: z.string().min(1).max(50),
@@ -17,7 +19,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { role } = await requireAuth()
+    const { session, role } = await requireAuth()
     if (role !== 'SUPER_ADMIN') throw new AuthError(403, 'Forbidden')
     const id = parseInt((await params).id, 10)
     if (isNaN(id)) {
@@ -27,6 +29,11 @@ export async function PATCH(
     const body = await req.json()
     const parsed = updateSchema.parse(body)
 
+    const oldData = await getAcademicYearById(id)
+    if (!oldData) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+
     const updated = await updateAcademicYear(id, {
       name: parsed.name,
       startDate: parsed.startDate,
@@ -34,8 +41,17 @@ export async function PATCH(
     })
 
     if (!updated) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
     }
+
+    await createAuditLog({
+      actorUserId: session.userId,
+      action: AuditAction.UPDATE,
+      entityType: AuditEntityType.ACADEMIC_YEAR,
+      entityId: id,
+      oldValues: { name: oldData.name, startDate: oldData.startDate, endDate: oldData.endDate },
+      newValues: { name: updated.name, startDate: updated.startDate, endDate: updated.endDate },
+    })
 
     return NextResponse.json(updated)
   } catch (error) {

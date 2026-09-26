@@ -34,7 +34,7 @@ Neon HTTP (the database driver in use) does not natively support interactive mul
 ## Implemented Integrations
 - **Teacher Assignment**: Audit logs capture historical and active teacher assignments (`action: CREATE/UPDATE`).
 - **User Management (Guru)**: Captures user creation, update, activation, and archiving (`action: CREATE/UPDATE/ACTIVATE/DEACTIVATE/ARCHIVE`). Note: "User Management" currently tracks Guru management only. Operations on other user types are not instrumented yet.
-- **Academic Year**: Captures year creation and activation (`action: CREATE/ACTIVATE`). When a year is activated, it also logs `DEACTIVATE` for the previously active year.
+- **Academic Year**: Captures year creation, update, and activation (`action: CREATE/UPDATE/ACTIVATE/DEACTIVATE`). When a year is activated, it also logs `DEACTIVATE` for the previously active year.
 - **Enrollment**: Captures student enrollment changes (`action: CREATE/UPDATE`).
 
 ## Read API

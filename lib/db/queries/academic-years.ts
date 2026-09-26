@@ -16,6 +16,14 @@ export async function getAcademicYears(): Promise<AcademicYear[]> {
 }
 
 /**
+ * Get an academic year by its ID.
+ */
+export async function getAcademicYearById(id: number): Promise<AcademicYear | null> {
+  const [target] = await db.select().from(academicYears).where(eq(academicYears.id, id)).limit(1)
+  return target || null
+}
+
+/**
  * Get the currently active academic year.
  */
 export async function getActiveAcademicYear(): Promise<AcademicYear | null> {
