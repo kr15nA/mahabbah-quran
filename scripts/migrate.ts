@@ -5,16 +5,14 @@ import * as dotenv from 'dotenv'
 
 dotenv.config({ path: '.env.local' })
 
+import { getDatabaseUrl } from '../lib/config/env'
+
 neonConfig.fetchConnectionCache = true
 
 async function runMigrate() {
   console.log('--- RUNNING DRIZZLE MIGRATIONS ---')
-  if (!process.env.DATABASE_URL) {
-    console.error('DATABASE_URL is not set')
-    process.exit(1)
-  }
-
-  const sql = neon(process.env.DATABASE_URL)
+  const dbUrl = getDatabaseUrl()
+  const sql = neon(dbUrl)
   const db = drizzle(sql)
 
   try {

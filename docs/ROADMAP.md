@@ -59,11 +59,11 @@
 - **TASK ID:** SEC-PLATFORM-002
 - **TITLE:** Environment Validation
 - **DOMAIN:** Security / Auth
-- **STATUS:** DEFERRED
+- **STATUS:** PASS
 - **DEPENDENCIES:** None
-- **EVIDENCE:** No Zod `.env` schema parsing found.
-- **OUTSTANDING WORK:** Implement strict boot-time environment schema verification.
-- **NEXT ACTION:** Create `env.ts` with Zod.
+- **EVIDENCE:** `lib/config/env.ts` implementing Zod schemas with lazy accessors.
+- **OUTSTANDING WORK:** None
+- **NEXT ACTION:** None
 
 - **TASK ID:** SEC-PLATFORM-003
 - **TITLE:** Security Regression Coverage

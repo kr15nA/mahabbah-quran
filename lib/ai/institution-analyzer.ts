@@ -1,3 +1,5 @@
+import { getAnthropicApiKey } from '../config/env'
+
 export async function analyzeInstitution(
   question: string,
   context: {
@@ -7,7 +9,7 @@ export async function analyzeInstitution(
     atRiskStudents: { name: string; class_name?: string; class?: string; issue: string }[]
   }
 ): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = getAnthropicApiKey()
 
   const presetAnswers: Record<string, string> = {
     'Santri mana yang perlu perhatian khusus bulan ini?': `Berdasarkan data September 2026, terdapat **3 santri** yang memerlukan perhatian:

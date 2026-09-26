@@ -17,6 +17,7 @@
 - **Login Rate Limiting:** Enforced via `login_rate_limits` using HMAC-SHA256 identifier hashing. Allows 5 failed attempts per 15-minute fixed window before blocking with a generic 429 response and Retry-After header. Success login resets the counter. No raw PII or IP-trust is involved.
 - **Login Credential Enumeration Hardening:** Externally visible credential failures (nonexistent user, wrong password, inactive account) share the exact same generic 401 contract. Bcrypt timing enumeration is mitigated by comparing a dummy hash for nonexistent accounts, though it is not perfectly constant-time due to residual DB-query execution differences.
 
+- **Environment Validation:** `DATABASE_URL` is validated at the DB/config boundary. `JWT_SECRET` is validated through the canonical auth accessor. Optional integration secrets (AI, Media) are validated safely only on feature use. No secret values are exposed in validation errors.
+
 ## Pending Security Work (Not Implemented)
-- **Environment Validation:** Strict schema validation (e.g. Zod) enforcing the presence of critical `process.env` secrets at boot time.
 - **Centralized Regression Coverage:** A unified, automated security script continuously probing the test endpoints for IDOR and RBAC evasion. (Currently partial, spread across domain unit tests).

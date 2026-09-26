@@ -1,4 +1,5 @@
 import { LearningReportRow } from '@/lib/db/queries/learning-reports'
+import { getAnthropicApiKey } from '../config/env'
 
 export type AIReportResult = {
   reportText: string
@@ -6,7 +7,7 @@ export type AIReportResult = {
 }
 
 export async function generateAIReport(report: LearningReportRow): Promise<AIReportResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = getAnthropicApiKey()
 
   const prompt = `
 Anda adalah asisten AI guru Al-Qur'an di Rumah Tahfizh Mahabbah Qur'an.
@@ -29,13 +30,6 @@ Hasilkan respon HANYA dalam format JSON valid:
 }
 `
 
-  if (!apiKey) {
-    // Return structured default text if API key is not present
-    return {
-      reportText: `Alhamdulillah, ${report.student_name} telah mengikuti kegiatan tahfizh pada ${report.report_date} dengan status ${report.attendance_status}. Menyelesaikan setoran QS. ${report.surah_name_latin ?? 'An-Naba'} ayat ${report.ayah_start ?? 1}-${report.ayah_end ?? 10} dengan nilai ${report.hafalan_score ?? 85}/100. ${report.teacher_notes || ''}`,
-      parentAdvice: `Mohon dampingi ${report.student_name} untuk melakukan muraja'ah mandiri selama 15 menit setiap malam setelah sholat Maghrib.`,
-    }
-  }
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
