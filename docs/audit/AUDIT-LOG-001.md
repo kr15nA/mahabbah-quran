@@ -22,7 +22,7 @@ Establish a server-side, append-only audit trail foundation that records adminis
 3. **Immutability**: The `audit_logs` table is strictly append-only. This is enforced at the application/API layer (there is no API exposed to modify or delete logs). No database-level triggers are used.
 4. **Actor Survival**: The `actor_user_id` FK is configured with `ON DELETE SET NULL`, meaning audit records will survive if a user is hard-deleted or soft-deleted.
 
-Neon HTTP (the database driver in use) does not natively support interactive multi-statement transactions. Because of this architectural limitation, the business mutation and audit write are NOT atomic. 
+Current business mutations and audit log insertions execute sequentially and are not currently composed into one DB transaction. This remains a known consistency limitation. 
 
 **KNOWN CONSISTENCY RISK**: Audit delivery is non-atomic with the business mutation in current integrations. If the server crashes after the business mutation succeeds but before `createAuditLog` executes, the business data changes but the audit log is permanently lost. This is not fully transactional.
 
@@ -34,7 +34,7 @@ Neon HTTP (the database driver in use) does not natively support interactive mul
 ## Implemented Integrations
 - **Teacher Assignment**: Audit logs capture historical and active teacher assignments (`action: CREATE/UPDATE`).
 - **User Management (Guru)**: Captures user creation, update, activation, and archiving (`action: CREATE/UPDATE/ACTIVATE/DEACTIVATE/ARCHIVE`). Note: "User Management" currently tracks Guru management only. Operations on other user types are not instrumented yet.
-- **Academic Year**: Captures year creation and activation (`action: CREATE/ACTIVATE`). When a year is activated, it also logs `DEACTIVATE` for the previously active year.
+- **Academic Year**: Captures year creation, update, and activation (`action: CREATE/UPDATE/ACTIVATE/DEACTIVATE`). When a year is activated, it also logs `DEACTIVATE` for the previously active year.
 - **Enrollment**: Captures student enrollment changes (`action: CREATE/UPDATE`).
 
 ## Read API

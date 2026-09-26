@@ -41,7 +41,7 @@ async function runTests() {
 
   const adminCookie = `mq_session=${await generateToken({ userId: 4, role: 'admin', fullName: 'Admin' })}`
   const guruCookie  = `mq_session=${await generateToken({ userId: 2, role: 'guru',  fullName: 'Guru'  })}`
-  
+
   let testYearId: number | undefined
   let testGuruId: number | undefined
   let activeYearId: number | undefined
@@ -82,6 +82,17 @@ async function runTests() {
     assert.strictEqual(createAudit.entityType, 'ACADEMIC_YEAR')
     console.log('✅ Authorized mutation creates correct audit record and rejects client spoofing')
 
+    console.log('\n--- SUCCESSFUL UPDATE & AUDIT ---')
+    const updateYearRes = await patch(`${HOST}/api/academic-years/${testYearId}`, { name: 'Audit Test Year Updated', startDate: '2029-02-01', endDate: '2029-11-30' }, adminCookie)
+    assert.strictEqual(updateYearRes.status, 200)
+
+    const [updateAudit] = await db.select().from(auditLogs).where(and(eq(auditLogs.entityId, testYearId!), eq(auditLogs.action, 'UPDATE'))).orderBy(desc(auditLogs.createdAt)).limit(1)
+    assert.ok(updateAudit, 'Audit row created for UPDATE')
+    assert.strictEqual(updateAudit.actorUserId, 4, 'Actor ID is 4')
+    assert.strictEqual((updateAudit.oldValues as any).name, 'Audit Test Year')
+    assert.strictEqual((updateAudit.newValues as any).name, 'Audit Test Year Updated')
+    console.log('✅ Authorized update creates correct audit record')
+
     // ─── 5. APPEND-ONLY GUARANTEE ─────────────────────────────────────────
     // Note: Append-only behavior is guaranteed at the application/API layer.
     // There are no PATCH/DELETE endpoints for audit-logs, nor any application logic to update them.
@@ -118,7 +129,7 @@ async function runTests() {
     assert.ok(stripped.nested.safeNested === 'ok')
     assert.ok(!('secret' in stripped.arrayTest[0]))
     assert.ok(stripped.arrayTest[1].ok === 'fine')
-    
+
     // Create Guru to test sensitive strip
     const createGuruRes = await post(`${HOST}/api/guru`, {
       full_name: 'Audit Test Guru',
@@ -149,7 +160,7 @@ async function runTests() {
     assert.ok([200, 201].includes(taRes.status))
 
     const [taAudit] = await db.select().from(auditLogs).where(and(eq(auditLogs.entityType, 'TEACHER_ASSIGNMENT'))).orderBy(desc(auditLogs.createdAt)).limit(1)
-    
+
     assert.ok(taAudit)
     assert.strictEqual((taAudit.newValues as any).teacherId, testGuruId)
     if (taRes.status === 200) {
@@ -194,7 +205,7 @@ async function runTests() {
     const logs2 = await readRes2.json()
     assert.strictEqual(logs2.length, 2)
     assert.strictEqual(logs1[0].id, logs2[0].id, 'Newest first order respected')
-    
+
     // Filters test
     const readRes3 = await get(`${HOST}/api/audit-logs?entityType=USER`, adminCookie)
     const logs3 = await readRes3.json()
@@ -202,7 +213,7 @@ async function runTests() {
 
     const readResGuru = await get(`${HOST}/api/audit-logs`, guruCookie)
     assert.strictEqual(readResGuru.status, 403, 'Guru denied access to audit logs')
-    
+
     console.log('✅ Audit reads are filtered and paginated correctly')
 
     // ─── 12. ACADEMIC YEAR ACTIVATION (DUAL AUDIT) ──────────────────────
@@ -213,7 +224,7 @@ async function runTests() {
 
     const [deactivateAudit] = await db.select().from(auditLogs).where(and(eq(auditLogs.entityId, activeYearId!), eq(auditLogs.action, 'DEACTIVATE'))).orderBy(desc(auditLogs.createdAt)).limit(1)
     const [activateAudit] = await db.select().from(auditLogs).where(and(eq(auditLogs.entityId, testYearId!), eq(auditLogs.action, 'ACTIVATE'))).orderBy(desc(auditLogs.createdAt)).limit(1)
-    
+
     assert.ok(deactivateAudit, 'DEACTIVATE audit log created for the previously active year')
     assert.ok(activateAudit, 'ACTIVATE audit log created for the newly active year')
     assert.strictEqual(deactivateAudit.actorUserId, 4)
