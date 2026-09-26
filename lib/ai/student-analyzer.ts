@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { getAnthropicApiKey } from '../config/env'
 
 export const StudentAnalysisSchema = z.object({
   summary: z.string(),
@@ -42,11 +43,7 @@ export type AcademicContextData = {
 export async function analyzeStudentAcademicData(
   context: AcademicContextData
 ): Promise<StudentAnalysisResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-
-  if (!apiKey) {
-    throw new Error('Konfigurasi AI (ANTHROPIC_API_KEY) tidak ditemukan. Hubungi administrator.')
-  }
+  const apiKey = getAnthropicApiKey()
 
   // System Prompt strictly separates instructions from data to prevent prompt injection.
   const systemInstruction = `Anda adalah asisten AI akademik di Rumah Tahfizh Mahabbah Qur'an.
