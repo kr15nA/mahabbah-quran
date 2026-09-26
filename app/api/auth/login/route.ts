@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getUserByEmail, getUserByPhone, updateLastLogin } from '@/lib/db/queries/users'
 import { createSession } from '@/lib/auth/session'
+import { consumeLoginAttempt, resetLoginAttempt } from '@/lib/auth/rate-limit'
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +11,21 @@ export async function POST(req: NextRequest) {
 
     if (!identifier || !password) {
       return NextResponse.json({ error: 'Email/HP dan password wajib diisi' }, { status: 400 })
+    }
+
+    const rateLimit = await consumeLoginAttempt(identifier)
+    if (rateLimit.attemptCount > 5) {
+      const expiresDate = new Date(rateLimit.expiresAt)
+      const retryAfter = Math.max(0, Math.ceil((expiresDate.getTime() - Date.now()) / 1000))
+      return NextResponse.json(
+        { error: 'Terlalu banyak percobaan masuk. Silakan coba lagi nanti.' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(retryAfter)
+          }
+        }
+      )
     }
 
     let user = await getUserByEmail(identifier)
@@ -31,6 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     await updateLastLogin(user.id)
+    await resetLoginAttempt(identifier)
 
     await createSession({
       userId: user.id,
@@ -42,6 +59,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, role: user.role, redirect: '/auth/landing' })
   } catch (error) {
     console.error('Login error:', error)
+    if (error instanceof Error) {
+      console.error(error.stack)
+    }
     return NextResponse.json({ error: 'Terjadi kesalahan pada server' }, { status: 500 })
   }
 }

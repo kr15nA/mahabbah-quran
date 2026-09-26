@@ -748,3 +748,16 @@ export const financeInvoiceScholarships = pgTable('finance_invoice_scholarships'
   // Prevent double-application of the same award to one invoice
   uniqInvoiceAward: uniqueIndex('idx_finance_invoice_scholarships_uniq').on(table.invoiceId, table.studentScholarshipId),
 }))
+
+// ==========================================
+// SECURITY & RATE LIMITS
+// ==========================================
+
+export const loginRateLimits = pgTable('login_rate_limits', {
+  keyHash: varchar('key_hash', { length: 64 }).primaryKey(),
+  attemptCount: integer('attempt_count').notNull().default(1),
+  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'string' }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
+}, (table) => ({
+  expiresAtIdx: index('idx_login_rate_limits_expires_at').on(table.expiresAt),
+}))

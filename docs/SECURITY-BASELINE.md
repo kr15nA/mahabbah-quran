@@ -14,8 +14,8 @@
 - **JWT / Session Rules:** Short-lived tokens. HTTP-only securely transported cookies. Secrets managed natively via Vercel env.
 - **Role / Permission Architecture:** Generic baseline roles exist (`guru`, `orang_tua`, `admin`), supplemented by granular array-based permissions to allow extensibility without fracturing the core namespace isolation.
 
-## Pending Security Work (Not Implemented)
+- **Login Rate Limiting:** Enforced via `login_rate_limits` using HMAC-SHA256 identifier hashing. Allows 5 failed attempts per 15-minute fixed window before blocking with a generic 429 response and Retry-After header. Success login resets the counter. No raw PII or IP-trust is involved.
 
-- **Rate Limiting:** IP-based rate limiting on the `/api/auth/login` endpoint to prevent brute-forcing.
+## Pending Security Work (Not Implemented)
 - **Environment Validation:** Strict schema validation (e.g. Zod) enforcing the presence of critical `process.env` secrets at boot time.
 - **Centralized Regression Coverage:** A unified, automated security script continuously probing the test endpoints for IDOR and RBAC evasion. (Currently partial, spread across domain unit tests).

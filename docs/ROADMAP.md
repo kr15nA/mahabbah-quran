@@ -41,11 +41,20 @@
 - **TASK ID:** SEC-PLATFORM-001
 - **TITLE:** Login Rate Limiting
 - **DOMAIN:** Security / Auth
-- **STATUS:** DEFERRED
+- **STATUS:** PASS
 - **DEPENDENCIES:** None
-- **EVIDENCE:** Missing in `app/api/auth/`
-- **OUTSTANDING WORK:** Add basic IP-based rate limiting for authentication.
-- **NEXT ACTION:** Schedule implementation before GA.
+- **EVIDENCE:** `lib/auth/rate-limit.ts`, `app/api/auth/login/route.ts`
+- **OUTSTANDING WORK:** None
+- **NEXT ACTION:** None
+
+- **TASK ID:** SEC-AUTH-002
+- **TITLE:** Login Credential Enumeration Hardening
+- **DOMAIN:** Security / Auth
+- **STATUS:** PLANNED
+- **DEPENDENCIES:** SEC-PLATFORM-001
+- **EVIDENCE:** Rate limiting handles some enumeration risk, but credential probing still returns distinct errors (e.g. 401 Pengguna tidak ditemukan vs Password salah).
+- **OUTSTANDING WORK:** Normalize externally visible authentication failure semantics to prevent credential enumeration.
+- **NEXT ACTION:** DEFERRED
 
 - **TASK ID:** SEC-PLATFORM-002
 - **TITLE:** Environment Validation
