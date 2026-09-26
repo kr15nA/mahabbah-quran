@@ -4,6 +4,9 @@ import { getUserByEmail, getUserByPhone, updateLastLogin } from '@/lib/db/querie
 import { createSession } from '@/lib/auth/session'
 import { consumeLoginAttempt, resetLoginAttempt } from '@/lib/auth/rate-limit'
 
+// Dummy hash (cost=10) to mitigate timing attacks for nonexistent users
+const DUMMY_PASSWORD_HASH = '$2a$10$bQ.GJAoeRvE9mBcyqDi4E.BsKxakHXEIpdBh3UBRAens6fMRY13QK'
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -33,17 +36,11 @@ export async function POST(req: NextRequest) {
       user = await getUserByPhone(identifier)
     }
 
-    if (!user) {
-      return NextResponse.json({ error: 'Pengguna tidak ditemukan' }, { status: 401 })
-    }
+    const comparisonHash = user ? user.password_hash : DUMMY_PASSWORD_HASH
+    const isPasswordValid = await bcrypt.compare(password, comparisonHash)
 
-    if (!user.is_active) {
-      return NextResponse.json({ error: 'Akun telah dinonaktifkan' }, { status: 403 })
-    }
-
-    const isValid = await bcrypt.compare(password, user.password_hash)
-    if (!isValid) {
-      return NextResponse.json({ error: 'Password salah' }, { status: 401 })
+    if (!user || !user.is_active || !isPasswordValid) {
+      return NextResponse.json({ error: 'Email/HP atau password tidak valid' }, { status: 401 })
     }
 
     await updateLastLogin(user.id)
