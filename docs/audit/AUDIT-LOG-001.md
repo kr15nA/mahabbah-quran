@@ -22,7 +22,7 @@ Establish a server-side, append-only audit trail foundation that records adminis
 3. **Immutability**: The `audit_logs` table is strictly append-only. This is enforced at the application/API layer (there is no API exposed to modify or delete logs). No database-level triggers are used.
 4. **Actor Survival**: The `actor_user_id` FK is configured with `ON DELETE SET NULL`, meaning audit records will survive if a user is hard-deleted or soft-deleted.
 
-Neon HTTP (the database driver in use) does not natively support interactive multi-statement transactions. Because of this architectural limitation, the business mutation and audit write are NOT atomic. 
+Current business mutations and audit log insertions execute sequentially and are not currently composed into one DB transaction. This remains a known consistency limitation. 
 
 **KNOWN CONSISTENCY RISK**: Audit delivery is non-atomic with the business mutation in current integrations. If the server crashes after the business mutation succeeds but before `createAuditLog` executes, the business data changes but the audit log is permanently lost. This is not fully transactional.
 

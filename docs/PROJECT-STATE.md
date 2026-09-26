@@ -40,6 +40,7 @@ CURRENT ARCHITECTURAL BASELINE:
 - **Admin Portal**: Fully functional generic CRUD interfaces and analytics.
 
 CURRENT KNOWN LIMITATIONS:
+- **Audit Coverage**: Academic Year UPDATE audit instrumentation implemented; DB-backed verification pending.
 - **Non-Atomic Audit Log**: Current business mutations and audit log insertions execute sequentially and are not currently composed into one DB transaction. This remains a known consistency limitation.
 - **Soft-Delete Consistency**: The `deleted_at` field exists, but exclusion logic is manually distributed across query functions rather than enforced globally.
 - **Reporting**: Visual print QA for generated PDFs has not been comprehensively verified on physical devices.
