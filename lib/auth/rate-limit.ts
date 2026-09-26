@@ -2,12 +2,10 @@ import crypto from 'crypto'
 import { db } from '@/lib/db/client'
 import { loginRateLimits } from '@/drizzle/schema'
 import { eq, lt, sql } from 'drizzle-orm'
+import { getJwtSecretKey } from '@/lib/auth/session'
 
 export function deriveLoginRateLimitKey(identifier: string): string {
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    throw new Error('JWT_SECRET is not defined in environment variables')
-  }
+  const secret = getJwtSecretKey()
   
   const normalized = identifier.trim().toLowerCase()
   const payload = `login-rate-limit:v1:${normalized}`

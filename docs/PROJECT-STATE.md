@@ -7,7 +7,7 @@ REPOSITORY:
 mahabbah-quran
 
 LAST VERIFIED APPLICATION BASELINE:
-7893f9a (merge: add full portal santri phase D2 academic views)
+4ccdb88 (feat(auth): implement login rate limiting (SEC-PLATFORM-001))
 
 CANONICAL DOCUMENTATION:
 ROADMAP-RECONCILIATION-001
@@ -38,6 +38,7 @@ CURRENT ARCHITECTURAL BASELINE:
 - **Parent Portal**: Mobile-first optimized read-only multi-child dashboard.
 - **Guru Portal**: Primary mutation boundary for academic assessments (Hafalan, Tahsin, Tasmi, Absensi).
 - **Admin Portal**: Fully functional generic CRUD interfaces and analytics.
+- **Platform Security**: Identifier-based login rate limiting enforced via database atomicity to throttle consecutive failures (5 allowed, 6th blocked) on a rolling 15-minute window.
 
 CURRENT KNOWN LIMITATIONS:
 - **Non-Atomic Audit Log**: Current business mutations and audit log insertions execute sequentially and are not currently composed into one DB transaction. This remains a known consistency limitation.
