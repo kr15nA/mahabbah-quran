@@ -13,10 +13,10 @@
 - **TASK ID:** AGENT-PROTOCOL-001
 - **TITLE:** Mahabbah System Agent Continuity Protocol
 - **DOMAIN:** Governance
-- **STATUS:** PLANNED
+- **STATUS:** PASS
 - **DEPENDENCIES:** ROADMAP-RECONCILIATION-001
-- **EVIDENCE:** Proposed rules for AGENTS.md update.
-- **OUTSTANDING WORK:** Write MAHABBAH_AGENT_PROTOCOL.md or update AGENTS.md.
+- **EVIDENCE:** `docs/MAHABBAH_AGENT_PROTOCOL.md`, `AGENTS.md`
+- **OUTSTANDING WORK:** None
 - **NEXT ACTION:** None
 
 ## B. SECURITY / AUTH

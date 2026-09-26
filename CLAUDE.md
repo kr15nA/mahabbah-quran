@@ -1,9 +1,20 @@
 # CLAUDE.md
 ## Mahabbah Qur'an — AI Agent Operating Manual
 
-This file is read by every Claude agent working on this repository.
-It is the single source of truth for how to write code here.
-When instructions here conflict with general best practices, **this file wins**.
+**BEFORE WRITING CODE:** Ensure you have executed the Mandatory Cold-Start Sequence defined in `docs/MAHABBAH_AGENT_PROTOCOL.md`.
+
+`MAHABBAH_AGENT_PROTOCOL.md` is authoritative for:
+- task authority
+- workflow
+- security governance
+- git discipline
+- roadmap continuity
+
+`CLAUDE.md` is authoritative only for coding conventions that are consistent with:
+- current repository implementation
+- `ARCHITECTURE.md`
+- `SECURITY-BASELINE.md`
+- approved Task ID
 
 ---
 
@@ -21,17 +32,17 @@ You are not a scaffolding tool. Every file you produce is either deployed or it 
 |-------|-----------|-------|
 | Framework | Next.js 15 App Router | SSR first, RSC default |
 | Runtime | Node.js (Vercel Functions) | Edge only for middleware |
-| Database | Neon PostgreSQL Serverless | Raw SQL via tagged templates |
-| DB client | `@neondatabase/serverless` | `neon()` singleton in `lib/db/client.ts` |
-| Migrations | `drizzle-kit` | CLI only — never in app code |
+| Database | Neon PostgreSQL Serverless | Actively uses Drizzle ORM; tagged/raw SQL may exist where established |
+| DB client | `@neondatabase/serverless` | `db` and `neon()` singleton in `lib/db/client.ts` |
+| Migrations | `drizzle-kit` | Migration tooling |
 | Auth | JWT in httpOnly cookie | `jose` library, verified in Edge Middleware |
 | Storage | Vercel Blob | All binary assets — avatars, PDFs |
-| AI | Anthropic Claude API | `claude-sonnet-4-6`, server-side only |
+| AI | None | (Currently no AI library installed in package.json) |
 | Styling | Tailwind CSS v4 | Utility classes, design tokens in `tailwind.config.ts` |
 | Charts | `recharts` | Client Components only |
 | Drag-Drop | `@dnd-kit/core` + `@dnd-kit/sortable` | Client Components only |
 | Rich Text | `@tiptap/react` + `starter-kit` | Teacher notes, AI report editing |
-| PDF | `@sparticuz/chromium` + `puppeteer-core` | Server-side only |
+| PDF | `pdfmake` | Server-side PDF generation |
 | Excel | `xlsx` | Admin export, server-side generation |
 | Validation | `zod` | All API route input validation |
 | Dates | `date-fns` | Indonesian locale (`id`) |
@@ -40,29 +51,22 @@ You are not a scaffolding tool. Every file you produce is either deployed or it 
 
 ## Hard Rules — Never Violate
 
-### 1. No SQL in components or API routes
+### 1. No ad-hoc DB access in UI/components
 
-SQL lives in `lib/db/queries/{model}.ts`. Nowhere else. Period.
+Database access (whether Drizzle ORM or raw SQL) must follow the established pattern for the domain, typically encapsulated in query files or services. Do not introduce raw SQL into UI components or directly into route handlers.
 
 ```ts
 // ✅ CORRECT — route delegates to query function
 import { getStudentsByTeacher } from '@/lib/db/queries/students'
 const rows = await getStudentsByTeacher(session.userId)
 
-// ❌ WRONG — SQL in route handler
+// ❌ WRONG — ad-hoc SQL in route handler
 const rows = await sql`SELECT * FROM students WHERE teacher_id = ${id}`
 ```
 
-### 2. Drizzle is for migrations only
+### 2. Drizzle ORM Usage
 
-If you find yourself typing `drizzle` or `db.select` anywhere outside `drizzle/`, stop. You are in the wrong file.
-
-```ts
-// ❌ NEVER DO THIS IN APP CODE
-import { db } from '@/drizzle/client'
-import { students } from '@/drizzle/schema'
-const s = await db.select().from(students)
-```
+Drizzle ORM (`db.select()`, `db.insert()`, etc.) is actively used by the current query architecture throughout the codebase (`lib/`, `app/api/`, etc.). Follow the established patterns found in the repository. Avoid raw SQL where Drizzle query builder is sufficient and already in use.
 
 ### 3. Pages are RSC — "use client" at the leaf only
 
@@ -107,7 +111,9 @@ const parsed = schema.safeParse(body)
 if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
 ```
 
-### 6. Auth check is the first line of every API route
+### 6. API Route Authorization
+
+Every protected API route must establish authoritative server-side authentication/authorization before protected data access or mutation. Intentional public endpoints are exempt but must be explicitly public and apply their own protection model where relevant.
 
 ```ts
 const session = await getSession(req)
@@ -143,9 +149,8 @@ Use proper TypeScript types. If you receive `unknown` from a DB query, type-asse
 Before submitting any file, verify:
 
 - [ ] Page file has no `"use client"`
-- [ ] No SQL outside `lib/db/queries/`
-- [ ] No Drizzle imports outside `drizzle/`
-- [ ] API route has auth check as first operation
+- [ ] follow established database access patterns for the affected domain
+- [ ] protected API routes must establish authoritative server-side authorization before protected data access/mutation
 - [ ] API route has zod validation before touching DB
 - [ ] Query function has named input type and named return type
 - [ ] No `any` type
@@ -187,6 +192,8 @@ When given a task, answer these four questions before writing a single line:
 ---
 
 ## Query Function Template
+
+*This template is illustrative, not architectural authority. Inspect the existing domain first. Continue the established Drizzle or tagged-SQL pattern for that domain. Do not migrate query style merely to match this example.*
 
 ```ts
 // lib/db/queries/{model}.ts
@@ -237,6 +244,8 @@ export async function update{Model}(
 ---
 
 ## API Route Template
+
+*Authorization snippets are illustrative. Use the repository's current canonical auth/RBAC helpers. Do not introduce ad-hoc role-array authorization where established permission helpers exist. Keep the protected/public distinction already documented.*
 
 ```ts
 // app/api/{model}/route.ts
@@ -349,7 +358,7 @@ export function {ComponentName}({ ... }: Props) {
 | Returning raw DB errors in API response | Catch, log server-side, return generic 500 |
 | Using `Date` objects in RSC props passed to Client | Serialise to ISO string first |
 | Storing images as base64 in DB | Upload to Vercel Blob, store URL only |
-| Using Drizzle's `db.insert()` in app code | Write raw SQL in `lib/db/queries/` |
+| Introducing a DB access pattern without checking the existing domain | Inspect the current domain implementation and continue its established Drizzle/query/service pattern |
 | Skipping zod validation on PATCH routes | Always validate — even partial updates |
 | Using `router.push()` to reload data | Use `router.refresh()` to re-run RSC fetches |
 
@@ -383,7 +392,7 @@ Code identifiers (variables, functions, columns) use the English equivalents abo
 
 ## When You're Unsure
 
-1. Check `trd.md` — it has the canonical file structure, query pattern, and API pattern.
-2. Check `erd.md` — it has the exact table names, column names, and FK relationships.
-3. Check `prd.md` — it defines what the feature should do from the user's perspective.
+1. Check `docs/ARCHITECTURE.md` — it has the canonical architecture pattern.
+2. Check `drizzle/schema.ts` — it has the exact table names, column names, and FK relationships.
+3. Check `docs/ROADMAP.md` — it defines what the feature should do from the user's perspective.
 4. If still unsure: ask before writing, not after.
