@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "tsx scripts/migrate.ts"
+    "db:migrate": "tsx scripts/migrate.ts",
+    "security:test": "tsx scripts/run-security-suite.ts",
+    "security:test:fast": "tsx scripts/run-security-suite.ts --fast"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

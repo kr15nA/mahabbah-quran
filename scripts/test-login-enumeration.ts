@@ -3,7 +3,7 @@ import { db } from '../lib/db/client'
 import { users } from '../drizzle/schema'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
-
+import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test'
 const HOST = 'http://localhost:3000'
 
 async function login(identifier: string, password?: string, bodyOverrides?: object) {
@@ -15,6 +15,7 @@ async function login(identifier: string, password?: string, bodyOverrides?: obje
 }
 
 async function runTests() {
+  assertSafeMutatingDbTestEnvironment()
   console.log('=== SEC-AUTH-002 Login Enumeration Tests ===\n')
 
   const testPassword = 'Password123!'

@@ -4,7 +4,7 @@ import { users } from '../drizzle/schema'
 import { loginRateLimits } from '../drizzle/schema'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
-
+import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test'
 const HOST = 'http://localhost:3000'
 
 async function login(identifier: string, password?: string, bodyOverrides?: object) {
@@ -16,6 +16,7 @@ async function login(identifier: string, password?: string, bodyOverrides?: obje
 }
 
 async function runTests() {
+  assertSafeMutatingDbTestEnvironment()
   console.log('=== SEC-PLATFORM-001 Login Rate Limit Tests ===\n')
 
   const testEmail = 'ratelimit.test@example.com'

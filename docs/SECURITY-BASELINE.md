@@ -18,6 +18,7 @@
 - **Login Credential Enumeration Hardening:** Externally visible credential failures (nonexistent user, wrong password, inactive account) share the exact same generic 401 contract. Bcrypt timing enumeration is mitigated by comparing a dummy hash for nonexistent accounts, though it is not perfectly constant-time due to residual DB-query execution differences.
 
 - **Environment Validation:** `DATABASE_URL` is validated at the DB/config boundary. `JWT_SECRET` is validated through the canonical auth accessor. Optional integration secrets (AI, Media) are validated safely only on feature use. No secret values are exposed in validation errors.
+- **Security Regression Suite:** The DEV/QA-only `npm run security:test` command orchestrates security testing covering Env, Rate Limit, Enumeration, and Audit/AuthZ invariants.
 
 ## Pending Security Work (Not Implemented)
-- **Centralized Regression Coverage:** A unified, automated security script continuously probing the test endpoints for IDOR and RBAC evasion. (Currently partial, spread across domain unit tests).
+- **Comprehensive IDOR / Authorization Regression:** Security regressions for deep authorization limits (e.g. Report Share Tokens, Session/JWT spoofing boundaries, Blob Media IDORs) are documented as coverage gaps requiring future coverage.

@@ -4,7 +4,7 @@ import { auditLogs, academicYears, classes, users, teacherAssignments } from '..
 import { eq, and, desc } from 'drizzle-orm'
 import { _stripSensitiveForTesting } from '../lib/audit/logger'
 import assert from 'assert'
-
+import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test'
 const HOST = 'http://localhost:3000'
 
 async function generateToken(payload: Record<string, unknown>) {
@@ -37,6 +37,7 @@ async function get(url: string, cookie: string) {
 }
 
 async function runTests() {
+  assertSafeMutatingDbTestEnvironment()
   console.log('=== AUDIT-LOG-001 Tests ===\n')
 
   const adminCookie = `mq_session=${await generateToken({ userId: 4, role: 'admin', fullName: 'Admin' })}`

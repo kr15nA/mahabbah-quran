@@ -68,11 +68,11 @@
 - **TASK ID:** SEC-PLATFORM-003
 - **TITLE:** Security Regression Coverage
 - **DOMAIN:** Security / Auth
-- **STATUS:** DEFERRED
+- **STATUS:** PASS
 - **DEPENDENCIES:** None
-- **EVIDENCE:** Domain-specific checks exist, but no centralized regression suite.
-- **OUTSTANDING WORK:** Unified script to continuously test IDOR and RBAC evasion.
-- **NEXT ACTION:** DEFERRED
+- **EVIDENCE:** `scripts/run-security-suite.ts` and `npm run security:test` DEV/QA-only runner.
+- **OUTSTANDING WORK:** Outstanding coverage gaps exist for Session Boundary, Report Share, Media/Blob, and comprehensive IDOR.
+- **NEXT ACTION:** None
 
 ## C. IDENTITY / USERS
 - **TASK ID:** ID-USER-001

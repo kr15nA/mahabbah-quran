@@ -7,7 +7,7 @@ REPOSITORY:
 mahabbah-quran
 
 LAST VERIFIED APPLICATION BASELINE:
-SEC-PLATFORM-002 — Environment Validation
+SEC-PLATFORM-003 — Centralized Security Regression
 
 CANONICAL DOCUMENTATION:
 ROADMAP-RECONCILIATION-001
@@ -40,6 +40,7 @@ CURRENT ARCHITECTURAL BASELINE:
 - **Admin Portal**: Fully functional generic CRUD interfaces and analytics.
 - **Platform Security**: Identifier-based login rate limiting enforced via database atomicity (5 failures per 15m). Hardened authentication route returns generic 401 contract for all credential failures (nonexistent, wrong password, inactive) and uses dummy bcrypt hashing to mitigate timing enumeration.
 - **Configuration Management**: Core application environment (DB, JWT) validated lazily at boundary execution using centralized Zod primitives without leaking secret values on failure. Optional feature integrations (AI, Media) enforce feature-scoped validation to prevent unrelated subsystem collapse.
+- **Security Regression**: A unified regression test runner (`npm run security:test`) orchestrated in TypeScript validates environment configuration, login authentication contracts, API rate limiting, and centralized auditing on DEV/QA environments.
 
 CURRENT KNOWN LIMITATIONS:
 - **Non-Atomic Audit Log**: Current business mutations and audit log insertions execute sequentially and are not currently composed into one DB transaction. This remains a known consistency limitation.
