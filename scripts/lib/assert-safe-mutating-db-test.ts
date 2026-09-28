@@ -21,4 +21,14 @@ export function assertSafeMutatingDbTestEnvironment() {
     console.error('[BLOCKED] Tests require MUTATING_DB_TEST_ENV=development or qa');
     process.exit(1);
   }
+  // 4. Require EXPECTED_DB_BRANCH positive identity match
+  const expectedBranch = process.env.EXPECTED_DB_BRANCH;
+  if (!expectedBranch) {
+    console.error('[BLOCKED] Tests require EXPECTED_DB_BRANCH to positively identify the target');
+    process.exit(1);
+  }
+  if (!dbUrl.includes(expectedBranch)) {
+    console.error('[BLOCKED] DATABASE_URL does not positively match EXPECTED_DB_BRANCH identity');
+    process.exit(1);
+  }
 }

@@ -1,5 +1,6 @@
 import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test'
+import net from 'net'
 
 const FAST_SUITE = [
   'scripts/test-env-validation.ts'
@@ -13,6 +14,30 @@ const AUTH_SUITE = [
 const AUTHZ_SUITE = [
   'scripts/test-audit-log.ts'
 ]
+
+async function isPortOccupied(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = new net.Socket()
+    socket.setTimeout(500)
+    socket.on('connect', () => {
+      socket.destroy()
+      resolve(true)
+    })
+    socket.on('timeout', () => {
+      socket.destroy()
+      resolve(true)
+    })
+    socket.on('error', (err: any) => {
+      socket.destroy()
+      if (err.code === 'ECONNREFUSED') {
+        resolve(false)
+      } else {
+        resolve(true)
+      }
+    })
+    socket.connect(port, '127.0.0.1')
+  })
+}
 
 async function waitForServer(url: string, timeoutMs: number = 30000): Promise<boolean> {
   const start = Date.now()
@@ -96,13 +121,14 @@ async function run() {
 
   console.log('\n[SERVER] Starting Next.js Dev Server on port 3000...')
   
-  // check if something is already on port 3000
-  if (await waitForServer('http://localhost:3000', 500)) {
+  // check if something is already on port 3000 using TCP (not HTTP)
+  if (await isPortOccupied(3000)) {
     console.error('❌ Port 3000 is already occupied. Please stop existing servers before running the security suite.')
     process.exit(1)
   }
 
   let serverProcess: ChildProcess | null = null
+  let finalExitCode = 0
   
   try {
     // start server
@@ -144,8 +170,7 @@ async function run() {
     }
 
   } catch (e: any) {
-    printSummary(results)
-    process.exit(1)
+    finalExitCode = 1
   } finally {
     if (serverProcess && serverProcess.pid) {
       console.log('\n[SERVER] Stopping Next.js Dev Server...')
@@ -158,6 +183,9 @@ async function run() {
   }
 
   printSummary(results)
+  if (finalExitCode !== 0) {
+    process.exitCode = finalExitCode
+  }
 }
 
 function printSummary(results: { script: string, status: 'PASS' | 'FAIL', duration: number }[]) {

@@ -4,6 +4,7 @@ import { users } from '../drizzle/schema'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test'
+import { resetLoginAttempt } from '../lib/auth/rate-limit'
 const HOST = 'http://localhost:3000'
 
 async function login(identifier: string, password?: string, bodyOverrides?: object) {
@@ -21,6 +22,10 @@ async function runTests() {
   const testPassword = 'Password123!'
   let testUserId: number | undefined
   let testInactiveUserId: number | undefined
+  let activeEmail: string | undefined
+  let inactiveEmail: string | undefined
+  let rateLimitEmail: string | undefined
+  const nonexistentEmail = 'this.does.not.exist.12345@example.com'
 
   try {
     const passwordHash = await bcrypt.hash(testPassword, 10)
@@ -34,6 +39,7 @@ async function runTests() {
       isActive: true,
     }).returning({ id: users.id, email: users.email })
     testUserId = user.id
+    activeEmail = user.email!
 
     // Create inactive user
     const [inactiveUser] = await db.insert(users).values({
@@ -44,12 +50,13 @@ async function runTests() {
       isActive: false,
     }).returning({ id: users.id, email: users.email })
     testInactiveUserId = inactiveUser.id
+    inactiveEmail = inactiveUser.email!
 
     const expectedError = 'Email/HP atau password tidak valid'
 
     // A. NONEXISTENT ACCOUNT
     console.log('--- A. NONEXISTENT ACCOUNT ---')
-    const resA = await login('this.does.not.exist.12345@example.com', 'wrongpassword')
+    const resA = await login(nonexistentEmail, 'wrongpassword')
     assert.strictEqual(resA.status, 401, 'Nonexistent account should return 401')
     const bodyA = await resA.json()
     assert.strictEqual(bodyA.error, expectedError)
@@ -95,7 +102,7 @@ async function runTests() {
 
     // F. RATE LIMIT REGRESSION
     console.log('\n--- F. RATE LIMIT REGRESSION ---')
-    const rateLimitEmail = `enum.ratelimit.${Date.now()}@example.com`
+    rateLimitEmail = `enum.ratelimit.${Date.now()}@example.com`
     for (let i = 1; i <= 5; i++) {
       await login(rateLimitEmail, 'wrong')
     }
@@ -119,6 +126,12 @@ async function runTests() {
     if (testInactiveUserId) {
       await db.delete(users).where(eq(users.id, testInactiveUserId))
     }
+    
+    // Clean up rate limit states
+    if (nonexistentEmail) await resetLoginAttempt(nonexistentEmail)
+    if (activeEmail) await resetLoginAttempt(activeEmail)
+    if (inactiveEmail) await resetLoginAttempt(inactiveEmail)
+    if (rateLimitEmail) await resetLoginAttempt(rateLimitEmail)
   }
 }
 
