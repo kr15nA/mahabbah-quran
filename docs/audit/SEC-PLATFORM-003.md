@@ -1,7 +1,7 @@
 # SEC-PLATFORM-003: Centralized Security Regression Coverage
 
 ## Overview
-Implemented a centralized security regression suite to orchestrate the existing security integration tests, ensuring their automated execution in DEV/QA environments.
+Implemented a centralized security regression suite to orchestrate the existing security integration tests, ensuring their automated execution in DEV/QA environments safely. The suite scope is explicitly LOCAL / DEV-QA ONLY.
 
 ## Test Matrix
 The regression suite runs the following tests using Node's `child_process` and `tsx`, orchestrated by `scripts/run-security-suite.ts`:
@@ -10,18 +10,29 @@ The regression suite runs the following tests using Node's `child_process` and `
 - **Login Rate Limit:** `scripts/test-login-ratelimit.ts` (Requires DB/Server)
 - **Audit Log / AuthZ:** `scripts/test-audit-log.ts` (Requires DB/Server)
 
-## DB Mutation Safeguards
-- All mutating scripts are guarded with `assertSafeMutatingDbTestEnvironment()` which validates that the active database is safe for destructive actions (i.e. `ALLOW_MUTATING_DB_TESTS=true` and `DATABASE_URL` is not pointing to the canonical production cluster).
-- The central runner executes a safety preflight before launching any DB mutating operations or the Next.js dev server.
+## Safety Architecture
 
-## Server Lifecycle Behavior
-- The Next.js dev server is initiated once by the central runner (spawning `npm run dev`) and gracefully torn down at the completion of all API-dependent tests.
-- Uses HTTP readiness polling (checking `http://localhost:3000`) instead of hard-coded sleeps.
-- Enforces deterministic single-port ownership (halts if port 3000 is already occupied before test).
+### A. DB Test Safety
+Mutating tests independently guard their execution. They require:
+- Explicit human opt-in via `ALLOW_MUTATING_DB_TESTS=true`
+- An explicitly approved DEV/QA marker via `MUTATING_DB_TEST_ENV`
+- An exact expected Neon endpoint identity via `EXPECTED_DB_BRANCH` (parsed from `DATABASE_URL` via URL parsing, not weak substring/prefix matching)
+- Production deny defense-in-depth (hard deny for known production cluster ID)
 
-## Pass Evidence
-`npm run security:test` ran successfully with `ALLOW_MUTATING_DB_TESTS=true`. 
-The negative safety test (missing env vars) successfully blocked test execution cleanly without printing secrets.
+### B. Server Safety
+- **Port Availability Preflight:** Uses a strict Node `net.createServer().listen()` bind-based check on port 3000 to halt if the port is already occupied before the suite begins.
+- **Server Launch:** The central runner spawns exactly one Next.js dev server.
+- **Readiness:** Uses bounded HTTP readiness polling to wait for server initialization.
+- **Teardown:** The runner executes process-group teardown strictly in a `finally` block, ensuring no `process.exit` paths bypass the shutdown.
+
+### C. Fixture Safety
+- **Login Enumeration & Rate-Limiting:** Test-generated user fixtures and tracking/limiter keys are strictly cleaned up within `finally` blocks using app-standard utilities (`resetLoginAttempt`).
+- **Audit Integration:** Creates strictly isolated academic year and guru fixtures. Modifies no real shared records intentionally (e.g. refrains from toggling the real active academic year).
+
+## Audit Coverage Specifics
+- **Academic Year:** CREATE and UPDATE remain validated through real integration tests. ACTIVATE and DEACTIVATE are verified via **structural regression only** within this suite, because toggling the active year state modifies real shared DB constraints.
+- **Historical Evidence:** The prior `AUDIT-BASE-001` real integration evidence for Academic Year ACTIVATE/DEACTIVATE on staging databases remains documented as valid and is preserved historically.
+- **Guru:** ACTIVATE and DEACTIVATE are fully validated through real integration tests on test-owned Guru fixtures.
 
 ## Remaining Gaps
 The following security invariant regression checks were excluded because they lack explicit test files or safe coverage primitives. They represent outstanding coverage requirements:

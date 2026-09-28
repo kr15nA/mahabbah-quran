@@ -171,7 +171,7 @@ async function runTests() {
     console.log('\n--- ACTOR SURVIVAL ---')
     // Simulate actor deletion (soft delete in users table)
     await db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, 4))
-    const [survivedAudit] = await db.select().from(auditLogs).where(eq(auditLogs.entityId, testYearId!)).limit(1)
+    const [survivedAudit] = await db.select().from(auditLogs).where(and(eq(auditLogs.entityId, testYearId!), eq(auditLogs.entityType, 'ACADEMIC_YEAR'))).orderBy(desc(auditLogs.createdAt)).limit(1)
     assert.ok(survivedAudit)
     assert.strictEqual(survivedAudit.actorUserId, 4)
     // Restore actor
@@ -222,6 +222,15 @@ async function runTests() {
     assert.strictEqual((activateAudit.newValues as any).is_active, true)
     
     console.log('✅ ACTIVATE and DEACTIVATE correctly generates audit logs on Guru')
+
+    // ─── 13. ACADEMIC YEAR ACTIVATE / DEACTIVATE (STRUCTURAL REGRESSION) ───
+    console.log('\n--- ACADEMIC YEAR ACTIVATE / DEACTIVATE (STRUCTURAL REGRESSION) ---')
+    const fs = await import('fs')
+    const path = await import('path')
+    const routeCode = fs.readFileSync(path.join(process.cwd(), 'app/api/academic-years/[id]/activate/route.ts'), 'utf-8')
+    assert.ok(routeCode.includes('AuditAction.ACTIVATE'), 'Academic year activate route contains AuditAction.ACTIVATE instrumentation')
+    assert.ok(routeCode.includes('AuditAction.DEACTIVATE'), 'Academic year activate route contains AuditAction.DEACTIVATE instrumentation')
+    console.log('✅ STRUCTURAL REGRESSION: Academic year activate route retains audit instrumentation for ACTIVATE/DEACTIVATE')
 
     console.log('\n🎉 ALL AUDIT LOG TESTS PASSED.')
 

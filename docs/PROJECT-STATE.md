@@ -7,7 +7,7 @@ REPOSITORY:
 mahabbah-quran
 
 LAST VERIFIED APPLICATION BASELINE:
-SEC-PLATFORM-003 — Centralized Security Regression
+SEC-PLATFORM-003 — Centralized Security Regression (Safe execution via parsed DB identity binding and process-group isolation)
 
 CANONICAL DOCUMENTATION:
 ROADMAP-RECONCILIATION-001

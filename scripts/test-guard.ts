@@ -1,47 +1,85 @@
-import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test';
+import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test'
 
-const cases = [
-  { allow: undefined, env: undefined, dbUrl: 'fake', expected: 'DENIED' },
-  { allow: 'true', env: undefined, dbUrl: 'fake', expected: 'DENIED' },
-  { allow: 'true', env: '', dbUrl: 'fake', expected: 'DENIED' },
-  { allow: 'true', env: 'invalid', dbUrl: 'fake', expected: 'DENIED' },
-  { allow: 'true', env: 'development', dbUrl: 'ep-flat-waterfall-b3uvjas7-pooler', expected: 'DENIED' },
-  { allow: 'true', env: 'development', dbUrl: 'ep-safe-dev', expected: 'ALLOWED' },
-  { allow: 'true', env: 'qa', dbUrl: 'ep-safe-qa', expected: 'ALLOWED' },
-];
+function setupPass() {
+  process.env.ALLOW_MUTATING_DB_TESTS = 'true'
+  process.env.MUTATING_DB_TEST_ENV = 'development'
+  process.env.EXPECTED_DB_BRANCH = 'ep-bitter-salad-b39vhlkp'
+}
 
-let failed = 0;
-
-for (const c of cases) {
-  process.env.ALLOW_MUTATING_DB_TESTS = c.allow;
-  process.env.MUTATING_DB_TEST_ENV = c.env;
-  process.env.DATABASE_URL = c.dbUrl;
-
-  let result = 'ALLOWED';
-  const originalExit = process.exit;
-  const originalError = console.error;
-  
+function expectError(description: string, setup: () => void) {
+  const oldEnv = { ...process.env }
+  setupPass()
+  setup()
   try {
-    process.exit = (() => { throw new Error('EXITED'); }) as any;
-    console.error = () => {}; // suppress
-    assertSafeMutatingDbTestEnvironment();
-  } catch (e: any) {
-    if (e.message === 'EXITED') result = 'DENIED';
+    const originalError = console.error
+    const originalExit = process.exit
+    let exited = false
+    console.error = () => {}
+    ;(process as any).exit = () => { exited = true; throw new Error('EXIT') }
+    try {
+      assertSafeMutatingDbTestEnvironment()
+    } catch (e: any) {
+      if (e.message !== 'EXIT') throw e
+    } finally {
+      console.error = originalError
+      process.exit = originalExit
+    }
+    if (!exited) throw new Error(`${description} did not exit`)
+    console.log(`✅ ${description} blocked as expected`)
   } finally {
-    process.exit = originalExit;
-    console.error = originalError;
-  }
-
-  if (result !== c.expected) {
-    console.error(`FAIL: ${JSON.stringify(c)} -> got ${result}`);
-    failed++;
-  } else {
-    console.log(`PASS: ${JSON.stringify(c)} -> ${result}`);
+    process.env = oldEnv
   }
 }
 
-if (failed === 0) {
-  console.log('ALL GUARD TESTS PASS');
-} else {
-  process.exit(1);
+function expectPass(description: string, setup: () => void) {
+  const oldEnv = { ...process.env }
+  setupPass()
+  setup()
+  try {
+    assertSafeMutatingDbTestEnvironment()
+    console.log(`✅ ${description} passed as expected`)
+  } catch (e: any) {
+    throw new Error(`${description} threw unexpectedly`)
+  } finally {
+    process.env = oldEnv
+  }
 }
+
+console.log('=== GUARD REGRESSION ===')
+
+expectError('missing ALLOW_MUTATING_DB_TESTS', () => {
+  delete process.env.ALLOW_MUTATING_DB_TESTS
+})
+
+expectError('wrong ALLOW_MUTATING_DB_TESTS', () => {
+  process.env.ALLOW_MUTATING_DB_TESTS = 'false'
+})
+
+expectError('missing MUTATING_DB_TEST_ENV', () => {
+  delete process.env.MUTATING_DB_TEST_ENV
+})
+
+expectError('invalid MUTATING_DB_TEST_ENV', () => {
+  process.env.MUTATING_DB_TEST_ENV = 'production'
+})
+
+expectError('missing EXPECTED_DB_BRANCH', () => {
+  delete process.env.EXPECTED_DB_BRANCH
+})
+
+expectError('partial expected identifier', () => {
+  process.env.EXPECTED_DB_BRANCH = 'ep-bitter'
+})
+
+expectError('wrong exact endpoint identifier', () => {
+  process.env.EXPECTED_DB_BRANCH = 'ep-wrong-endpoint-1234'
+})
+
+expectPass('correct exact endpoint identifier', () => {
+  process.env.EXPECTED_DB_BRANCH = 'ep-bitter-salad-b39vhlkp'
+})
+
+expectError('known production endpoint', () => {
+  process.env.DATABASE_URL = 'postgres://user:pass@ep-flat-waterfall-b3uvjas7-pooler.ap-southeast-1.neon.tech/neondb'
+  process.env.EXPECTED_DB_BRANCH = 'ep-flat-waterfall-b3uvjas7'
+})

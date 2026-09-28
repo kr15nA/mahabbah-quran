@@ -70,7 +70,7 @@
 - **DOMAIN:** Security / Auth
 - **STATUS:** PASS
 - **DEPENDENCIES:** None
-- **EVIDENCE:** `scripts/run-security-suite.ts` and `npm run security:test` DEV/QA-only runner.
+- **EVIDENCE:** `scripts/run-security-suite.ts` and `npm run security:test` DEV/QA-only runner with parsed URL identity binding and safe structural regression.
 - **OUTSTANDING WORK:** Outstanding coverage gaps exist for Session Boundary, Report Share, Media/Blob, and comprehensive IDOR.
 - **NEXT ACTION:** None
 

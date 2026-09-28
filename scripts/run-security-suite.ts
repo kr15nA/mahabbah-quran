@@ -3,7 +3,8 @@ import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-
 import net from 'net'
 
 const FAST_SUITE = [
-  'scripts/test-env-validation.ts'
+  'scripts/test-env-validation.ts',
+  'scripts/test-guard.ts'
 ]
 
 const AUTH_SUITE = [
@@ -17,25 +18,21 @@ const AUTHZ_SUITE = [
 
 async function isPortOccupied(port: number): Promise<boolean> {
   return new Promise((resolve) => {
-    const socket = new net.Socket()
-    socket.setTimeout(500)
-    socket.on('connect', () => {
-      socket.destroy()
-      resolve(true)
-    })
-    socket.on('timeout', () => {
-      socket.destroy()
-      resolve(true)
-    })
-    socket.on('error', (err: any) => {
-      socket.destroy()
-      if (err.code === 'ECONNREFUSED') {
-        resolve(false)
+    const server = net.createServer()
+    server.once('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(true)
       } else {
+        // FAIL SAFE for unexpected network errors
         resolve(true)
       }
     })
-    socket.connect(port, '127.0.0.1')
+    server.once('listening', () => {
+      server.close(() => {
+        resolve(false)
+      })
+    })
+    server.listen(port, '127.0.0.1')
   })
 }
 
