@@ -4,7 +4,8 @@ import { users } from '../drizzle/schema'
 import { loginRateLimits } from '../drizzle/schema'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
-
+import { assertSafeMutatingDbTestEnvironment } from './lib/assert-safe-mutating-db-test'
+import { resetLoginAttempt } from '../lib/auth/rate-limit'
 const HOST = 'http://localhost:3000'
 
 async function login(identifier: string, password?: string, bodyOverrides?: object) {
@@ -16,11 +17,17 @@ async function login(identifier: string, password?: string, bodyOverrides?: obje
 }
 
 async function runTests() {
+  assertSafeMutatingDbTestEnvironment()
   console.log('=== SEC-PLATFORM-001 Login Rate Limit Tests ===\n')
 
   const testEmail = 'ratelimit.test@example.com'
   const testPassword = 'Password123!'
   let testUserId: number | undefined
+  let uniqueEmail: string | undefined
+  let fakeEmail: string | undefined
+  let resetTestEmail: string | undefined
+  let malformedEmail: string | undefined
+  let concurrentEmail: string | undefined
 
   try {
     // 1. Create a test user directly in DB
@@ -38,7 +45,7 @@ async function runTests() {
     // We don't have the hash here, so we just clear the whole table for safety if it's a dev DB
     // Actually better to just use the new endpoint since we can't easily import deriveLoginRateLimitKey here because of process.env setup?
     // Let's just use a unique email to ensure no conflict:
-    const uniqueEmail = `ratelimit.test.${Date.now()}@example.com`
+    uniqueEmail = `ratelimit.test.${Date.now()}@example.com`
     await db.update(users).set({ email: uniqueEmail }).where(eq(users.id, testUserId))
 
     // A. BASIC FAILURE SEQUENCE
@@ -61,7 +68,7 @@ async function runTests() {
 
     // B. NONEXISTENT IDENTIFIER
     console.log('\n--- B. NONEXISTENT IDENTIFIER ---')
-    const fakeEmail = `nonexistent.${Date.now()}@example.com`
+    fakeEmail = `nonexistent.${Date.now()}@example.com`
     for (let i = 1; i <= 5; i++) {
       const res = await login(fakeEmail, 'anypassword')
       assert.strictEqual(res.status, 401, `Fake email attempt ${i} should return 401`)
@@ -72,7 +79,7 @@ async function runTests() {
 
     // C. SUCCESS RESET
     console.log('\n--- C. SUCCESS RESET ---')
-    const resetTestEmail = `reset.test.${Date.now()}@example.com`
+    resetTestEmail = `reset.test.${Date.now()}@example.com`
     await db.update(users).set({ email: resetTestEmail }).where(eq(users.id, testUserId))
     
     // Fail 3 times
@@ -95,7 +102,7 @@ async function runTests() {
 
     // D. MALFORMED / MISSING INPUT
     console.log('\n--- D. MALFORMED / MISSING INPUT ---')
-    const malformedEmail = `malformed.${Date.now()}@example.com`
+    malformedEmail = `malformed.${Date.now()}@example.com`
     // Attempt 10 times without password
     for (let i = 1; i <= 10; i++) {
       const res = await login(malformedEmail, undefined)
@@ -108,7 +115,7 @@ async function runTests() {
 
     // E. CONCURRENCY
     console.log('\n--- E. CONCURRENCY ---')
-    const concurrentEmail = `concurrent.${Date.now()}@example.com`
+    concurrentEmail = `concurrent.${Date.now()}@example.com`
     // Send 10 concurrent requests
     const promises = []
     for (let i = 0; i < 10; i++) {
@@ -143,8 +150,13 @@ async function runTests() {
     if (testUserId) {
       await db.delete(users).where(eq(users.id, testUserId))
     }
-    // We can't easily delete rate limits by email hash without duplicating logic, 
-    // but the DB handles cleanup opportunistically or by expiry anyway.
+    
+    // Clean up rate limits strictly for generated identifiers
+    if (uniqueEmail) await resetLoginAttempt(uniqueEmail)
+    if (fakeEmail) await resetLoginAttempt(fakeEmail)
+    if (resetTestEmail) await resetLoginAttempt(resetTestEmail)
+    if (malformedEmail) await resetLoginAttempt(malformedEmail)
+    if (concurrentEmail) await resetLoginAttempt(concurrentEmail)
   }
 }
 

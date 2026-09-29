@@ -21,4 +21,28 @@ export function assertSafeMutatingDbTestEnvironment() {
     console.error('[BLOCKED] Tests require MUTATING_DB_TEST_ENV=development or qa');
     process.exit(1);
   }
+  // 4. Require EXPECTED_DB_BRANCH positive identity match
+  const expectedBranch = process.env.EXPECTED_DB_BRANCH;
+  if (!expectedBranch) {
+    console.error('[BLOCKED] Tests require EXPECTED_DB_BRANCH to positively identify the target');
+    process.exit(1);
+  }
+
+  let actualEndpointIdentity = '';
+  try {
+    const url = new URL(dbUrl);
+    const hostname = url.hostname;
+    const firstLabel = hostname.split('.')[0] || '';
+    actualEndpointIdentity = firstLabel.endsWith('-pooler')
+      ? firstLabel.slice(0, -7)
+      : firstLabel;
+  } catch (e) {
+    console.error('[BLOCKED] DATABASE_URL is invalid or missing');
+    process.exit(1);
+  }
+
+  if (expectedBranch !== actualEndpointIdentity) {
+    console.error(`[BLOCKED] DATABASE_URL endpoint identity does not exactly match EXPECTED_DB_BRANCH (${expectedBranch})`);
+    process.exit(1);
+  }
 }
