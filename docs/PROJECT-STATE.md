@@ -14,7 +14,7 @@ TAHFIZ-FOUNDATION — Core Tahfiz Data Structures (PASS)
 - Scope: Coverage projection, goal targeting schema, and transaction logic established. Migration 0023 applied Production.
 - Evidence: Target service implemented, authorization/RBAC implemented, backfill verified on Production (31 records to 11 projections), and dedicated tests successfully run. Production application deployment still pending merge at the moment of documentation closeout.
 
-TAHFIZ-GURU — Guru Tahfiz Experience (IMPLEMENTED)
+TAHFIZ-GURU — Guru Tahfiz Experience (PASS)
 - Scope: Upgraded the existing `/guru/hafalan` page into a comprehensive Tahfiz tracking dashboard for teachers.
 - Evidence: Coverage visualization and target management UI built with Server Actions. Reused Hafalan entry API, fully regression tested, typechecked, and UI responsive-checked.
 AUDIT-BASE-001 — Audit Log Foundation (PASS)
