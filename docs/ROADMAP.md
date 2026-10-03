@@ -473,7 +473,7 @@
 - **TASK ID:** TAHFIZ-PARENT
 - **TITLE:** Parent Tahfiz Visibility
 - **DOMAIN:** Mahabbah Tahfiz
-- **STATUS:** IMPLEMENTED
+- **STATUS:** PASS
 - **DEPENDENCIES:** TAHFIZ-FOUNDATION, PORTAL-PARENT-001
 - **EVIDENCE:** Future Roadmap requirement.
 - **OUTSTANDING WORK:** Progress tracking, home murojaah visibility.
