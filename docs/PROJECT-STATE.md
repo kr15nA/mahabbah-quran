@@ -38,7 +38,7 @@ AI-RATE-LIMIT-FOUNDATION-001 — Generic PostgreSQL Rate Limit Foundation (PASS)
 - Scope: Implemented serverless-safe fixed-window rate limiter utilizing atomic upsert with PostgreSQL NOW().
 - Evidence: Fully parameterized. Passed strict sequential and 10-concurrent race tests.
 
-AI-TAHFIZ — Guru Tahfiz Grounded AI Advisory V1 (IMPLEMENTED)
+AI-TAHFIZ — Guru Tahfiz Grounded AI Advisory V1 (PASS)
 - Scope: On-demand AI advisory for Guru using Vercel AI SDK Gateway (gemini-3-flash).
 - Evidence: Strict fact-pack grounding, no PII, no persistence, bound output, rate limited 5/60s. Tests mock provider.
 
