@@ -25,6 +25,10 @@ TAHFIZ-TASMI-INTEGRATION — Tasmi Integration (PASS)
 TAHFIZ-PARENT — Parent Tahfiz Read-Only Experience (PASS)
 - Scope: Created a dedicated Parent read-only Tahfiz page.
 - Evidence: UI implemented at `/orang-tua/tahfiz` using `resolveParentChildContext`. Safely exposes active target, coverage, recent hafalan, and PASSED tasmi. No mutations. Typechecked and verified.
+
+TAHFIZ-SANTRI — Santri Tahfiz Self-Service Experience (PASS)
+- Scope: Created a dedicated Santri read-only Tahfiz page.
+- Evidence: UI implemented at `/santri/tahfiz` using `requireSelfStudentProfile`. Safely exposes active target, coverage, recent hafalan, and Tasmi (PASSED + NEEDS_REVIEW). Shared UI components with Parent. Typechecked and verified.
 AUDIT-BASE-001 — Audit Log Foundation (PASS)
 - Scope: Centralized audit logging for core academic/user entities.
 - Evidence: Full coverage on CREATE/UPDATE/ACTIVATE/DEACTIVATE.

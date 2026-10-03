@@ -8,9 +8,8 @@ const NAV = [
   { href: '/santri/profil', label: 'Profil Saya', icon: User },
   { href: '/santri/akademik', label: 'Akademik', icon: BookOpen },
   { href: '/santri/kehadiran', label: 'Kehadiran', icon: Calendar },
-  { href: '/santri/hafalan', label: 'Hafalan', icon: Bookmark },
+  { href: '/santri/tahfiz', label: 'Tahfiz', icon: Bookmark },
   { href: '/santri/tahsin', label: 'Tahsin', icon: Star },
-  { href: '/santri/tasmi', label: 'Tasmi', icon: Mic },
   { href: '/santri/beasiswa', label: 'Beasiswa', icon: Sparkles },
 ]
 
