@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getParentTahfizOverviewAction } from './actions'
+import { getParentTahfizOverviewAction, getParentSmartInsightsAction } from './actions'
 import { ChildDashboardSelector } from '@/components/orang-tua/ChildDashboardSelector'
 import { User, AlertCircle } from 'lucide-react'
 import { TargetCard } from '@/app/_components/tahfiz/TargetCard'
 import { CoverageCard } from '@/app/_components/tahfiz/CoverageCard'
 import { HafalanHistoryCard } from '@/app/_components/tahfiz/HafalanHistoryCard'
 import { TasmiCard } from '@/app/_components/tahfiz/TasmiCard'
+import SmartInsightCard, { SmartInsightData } from '@/app/_components/tahfiz/SmartInsightCard'
+
 export default function ParentTahfizClient({ initialChildId }: { initialChildId?: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -16,12 +18,16 @@ export default function ParentTahfizClient({ initialChildId }: { initialChildId?
 
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<any>(null)
+  const [smartInsights, setSmartInsights] = useState<SmartInsightData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const loadData = useCallback(async (id?: string) => {
     setLoading(true)
     setError(null)
-    const result = await getParentTahfizOverviewAction(id)
+    const [result, smartResult] = await Promise.all([
+      getParentTahfizOverviewAction(id),
+      getParentSmartInsightsAction(id)
+    ])
     if (result?.error) {
       setError(result.error)
       setData(null)
@@ -38,6 +44,9 @@ export default function ParentTahfizClient({ initialChildId }: { initialChildId?
           router.replace(`/orang-tua/tahfiz?child_id=${result.child.student_id}`)
         }
         setData(result)
+        if (smartResult && smartResult.success && smartResult.data) {
+          setSmartInsights(smartResult.data as SmartInsightData)
+        }
       }
     } else {
       setError('Terjadi kesalahan yang tidak diketahui')
@@ -112,8 +121,17 @@ export default function ParentTahfizClient({ initialChildId }: { initialChildId?
 
       <ChildDashboardSelector childrenList={children} selectedChildId={child.student_id} />
 
+      {smartInsights && (
+        <SmartInsightCard
+          title="Ringkasan Perkembangan"
+          data={smartInsights}
+          showNextFocus={false}
+          showStalled={false}
+        />
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Left Column: Target & Coverage */}
         <div className="space-y-6">
           <TargetCard target={target} targetProgress={targetProgress} />
@@ -125,7 +143,7 @@ export default function ParentTahfizClient({ initialChildId }: { initialChildId?
           <HafalanHistoryCard hafalanHistory={hafalanHistory} />
           <TasmiCard tasmiAchievements={tasmiAchievements} />
         </div>
-        
+
       </div>
     </div>
   )

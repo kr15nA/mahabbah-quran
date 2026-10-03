@@ -72,7 +72,7 @@ export async function getParentTahfizOverviewAction(childId?: string) {
     let targetDetails = null
     if (target) {
       targetProgress = calculateTargetProgress(target, allSurahs, coverage)
-      
+
       targetDetails = {
         ...target,
         startSurahName: allSurahs.find((s: any) => s.id === target.startSurahId)?.nameLatin || '',
@@ -97,5 +97,41 @@ export async function getParentTahfizOverviewAction(childId?: string) {
   } catch (e) {
     console.error('getParentTahfizOverviewAction error:', e)
     return { error: 'Gagal memuat data Tahfiz' }
+  }
+}
+
+import { getSmartTahfizInsights } from '@/lib/tahfiz/smart-service'
+
+export async function getParentSmartInsightsAction(childId?: string) {
+  try {
+    const session = await getSession()
+    if (!session || session.role !== 'orang_tua') {
+      return { success: false, error: 'Sesi tidak valid' }
+    }
+
+    const resolution = await resolveParentChildContext({
+      userId: session.userId,
+      requestedChildId: childId,
+    })
+
+    if (resolution.status !== 'AUTHORIZED') {
+      return { success: false, error: 'Tidak ada akses' }
+    }
+
+    const dbStudentId = studentIdToDbNumber(resolution.childId)
+    const insights = await getSmartTahfizInsights(dbStudentId)
+
+    // Parent receives the most minimal insight. No nextFocus, no stalled target.
+    return {
+      success: true,
+      data: {
+        hasActiveTarget: insights.hasActiveTarget,
+        remainingAyahs: insights.remainingAyahs,
+        activity30d: insights.activity30d,
+        murajaahRecency: insights.murajaahRecency
+      }
+    }
+  } catch (error: any) {
+    return { success: false, error: 'Gagal memuat insight' }
   }
 }

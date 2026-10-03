@@ -26,6 +26,7 @@ export async function getActiveTahfizTargetQuery(studentId: number) {
     startAyah: tahfizTargets.startAyah,
     endSurahId: tahfizTargets.endSurahId,
     endAyah: tahfizTargets.endAyah,
+    createdAt: tahfizTargets.createdAt,
     academicYearId: tahfizTargets.academicYearId,
   })
   .from(tahfizTargets)

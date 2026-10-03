@@ -12,7 +12,7 @@ import { studentIdToDbNumber } from '@/lib/guardians/parent-context'
 export async function getSantriTahfizOverviewAction() {
   try {
     const { session, role } = await requireAuth()
-    
+
     // Authorization: Must have a linked learner profile
     const student = await requireSelfStudentProfile(session.userId)
     const dbStudentId = studentIdToDbNumber(student.id)
@@ -63,7 +63,7 @@ export async function getSantriTahfizOverviewAction() {
     let targetDetails = null
     if (target) {
       targetProgress = calculateTargetProgress(target, allSurahs, coverage)
-      
+
       targetDetails = {
         ...target,
         startSurahName: allSurahs.find((s: any) => s.id === target.startSurahId)?.nameLatin || '',
@@ -92,5 +92,32 @@ export async function getSantriTahfizOverviewAction() {
       return { success: false, error: 'NO_LEARNER_PROFILE' }
     }
     return { success: false, error: 'Gagal memuat data Tahfiz' }
+  }
+}
+
+import { getSmartTahfizInsights } from '@/lib/tahfiz/smart-service'
+
+export async function getSantriSmartInsightsAction() {
+  try {
+    const { session } = await requireAuth()
+    const student = await requireSelfStudentProfile(session.userId)
+    const dbStudentId = studentIdToDbNumber(student.id)
+
+    const insights = await getSmartTahfizInsights(dbStudentId)
+
+    // Parent/Santri does not need to see stalled target flags, but Santri sees nextFocus
+    return {
+      success: true,
+      data: {
+        hasActiveTarget: insights.hasActiveTarget,
+        remainingAyahs: insights.remainingAyahs,
+        nextFocus: insights.nextFocus,
+        activity30d: insights.activity30d,
+        murajaahRecency: insights.murajaahRecency
+        // stalled deliberately omitted for Santri payload
+      }
+    }
+  } catch (error: any) {
+    return { success: false, error: 'Gagal memuat insight' }
   }
 }

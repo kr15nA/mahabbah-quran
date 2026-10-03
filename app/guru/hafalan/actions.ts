@@ -114,3 +114,19 @@ export async function getTasmiSummaryAction(studentId: number) {
     return { success: false, authorized: false, error: 'Gagal mengambil ringkasan Tasmi' }
   }
 }
+
+import { getSmartTahfizInsights } from '@/lib/tahfiz/smart-service'
+
+export async function getGuruSmartInsightsAction(studentId: number) {
+  try {
+    const auth = await requireAuth()
+    await requireStudentAccess(studentId)
+
+    const insights = await getSmartTahfizInsights(studentId)
+
+    // Guru gets everything including stalled and nextFocus
+    return { success: true, data: insights }
+  } catch (error: any) {
+    return { success: false, error: 'Gagal memuat insight' }
+  }
+}
