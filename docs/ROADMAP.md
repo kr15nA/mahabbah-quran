@@ -518,11 +518,11 @@
 - **TASK ID:** AI-TAHFIZ
 - **TITLE:** AI Tahfiz Assistant
 - **DOMAIN:** Mahabbah Tahfiz
-- **STATUS:** BLOCKED (awaiting foundation PASS)
+- **STATUS:** IMPLEMENTED
 - **DEPENDENCIES:** SMART-TAHFIZ, AI-RATE-LIMIT-FOUNDATION-001
-- **EVIDENCE:** Future Roadmap requirement.
-- **OUTSTANDING WORK:** Assisted transcription, error analysis (augmenting teacher authority).
-- **NEXT ACTION:** BLOCKED
+- **EVIDENCE:** Guru UI integration with Vercel AI SDK Gateway (gemini-3-flash) via /guru/hafalan. Strict fact-pack grounding, no PII, timeout enforced.
+- **OUTSTANDING WORK:** Final human review.
+- **NEXT ACTION:** AWAITING HUMAN APPROVAL
 
 
 ## HISTORICAL TASK REGISTRY

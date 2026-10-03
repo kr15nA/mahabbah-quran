@@ -116,6 +116,8 @@ export async function getTasmiSummaryAction(studentId: number) {
 }
 
 import { getSmartTahfizInsights } from '@/lib/tahfiz/smart-service'
+import { consumeRateLimit } from '@/lib/security/rate-limit'
+import { generateTahfizAdvisory } from '@/lib/ai/tahfiz'
 
 export async function getGuruSmartInsightsAction(studentId: number) {
   try {
@@ -128,5 +130,40 @@ export async function getGuruSmartInsightsAction(studentId: number) {
     return { success: true, data: insights }
   } catch (error: any) {
     return { success: false, error: 'Gagal memuat insight' }
+  }
+}
+
+export async function generateGuruTahfizAiSummaryAction(studentId: number) {
+  try {
+    const auth = await requireAuth()
+    await requireStudentAccess(studentId)
+
+    const subject = String(auth.session.userId)
+    const rateLimit = await consumeRateLimit({
+      namespace: 'AI_TAHFIZ',
+      subject: subject,
+      limit: 5,
+      windowSeconds: 60
+    })
+
+    if (!rateLimit.allowed) {
+      return {
+        success: false,
+        rateLimited: true,
+        retryAfterSeconds: rateLimit.retryAfterSeconds,
+        error: 'Terlalu banyak permintaan. Coba lagi dalam beberapa saat.'
+      }
+    }
+
+    const insights = await getSmartTahfizInsights(studentId)
+    const facts = { ...insights, stalled: insights.isStalled }
+    const aiResult = await generateTahfizAdvisory(facts)
+
+    return { success: true, data: aiResult }
+  } catch (error: any) {
+    if (error.message && error.message.includes('Terlalu banyak permintaan')) {
+      return { success: false, error: error.message, rateLimited: true }
+    }
+    return { success: false, error: 'Gagal membuat ringkasan AI: ' + (error.message || 'Error internal') }
   }
 }

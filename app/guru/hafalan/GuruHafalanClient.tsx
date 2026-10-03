@@ -9,6 +9,7 @@ import type { HafalanRow } from '@/lib/db/queries/hafalan'
 import SurahSelector from '@/components/quran/SurahSelector'
 import TahfizTargetModal from './TahfizTargetModal'
 import SmartInsightCard, { SmartInsightData } from '@/app/_components/tahfiz/SmartInsightCard'
+import GuruTahfizAiCard from './GuruTahfizAiCard'
 import { calculateTargetProgress, aggregateSurahCoverage } from '@/lib/tahfiz/progress'
 import Link from 'next/link'
 import {
@@ -254,6 +255,9 @@ export default function GuruHafalanClient({
 
           {/* Left Column: Target & Coverage */}
           <div className="lg:col-span-7 space-y-4">
+
+            {/* AI Summary Card */}
+            <GuruTahfizAiCard studentId={selectedStudentId} />
 
             {/* Active Target Card */}
             <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
