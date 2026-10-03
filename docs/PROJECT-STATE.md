@@ -21,6 +21,10 @@ TAHFIZ-GURU — Guru Tahfiz Experience (PASS)
 TAHFIZ-TASMI-INTEGRATION — Tasmi Integration (PASS)
 - Scope: Integrated read-only context of recent Tasmi certifications into the Guru Tahfiz workspace, enforcing domain independence (no cross-mutations).
 - Evidence: UI implemented to show recent Tasmi in `/guru/hafalan` using Server Actions and secure student scope checks, with navigation links to `/guru/tasmi`. Typechecked and verified.
+
+TAHFIZ-PARENT — Parent Tahfiz Read-Only Experience (IMPLEMENTED)
+- Scope: Created a dedicated Parent read-only Tahfiz page.
+- Evidence: UI implemented at `/orang-tua/tahfiz` using `resolveParentChildContext`. Safely exposes active target, coverage, recent hafalan, and PASSED tasmi. No mutations. Typechecked and verified.
 AUDIT-BASE-001 — Audit Log Foundation (PASS)
 - Scope: Centralized audit logging for core academic/user entities.
 - Evidence: Full coverage on CREATE/UPDATE/ACTIVATE/DEACTIVATE.
