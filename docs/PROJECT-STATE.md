@@ -39,7 +39,7 @@ AI-RATE-LIMIT-FOUNDATION-001 — Generic PostgreSQL Rate Limit Foundation (PASS)
 - Evidence: Fully parameterized. Passed strict sequential and 10-concurrent race tests.
 
 AI-TAHFIZ — Guru Tahfiz Grounded AI Advisory V1 (IMPLEMENTED)
-- Scope: On-demand AI advisory for Guru using Anthropic.
+- Scope: On-demand AI advisory for Guru using Vercel AI SDK Gateway (gemini-3-flash).
 - Evidence: Strict fact-pack grounding, no PII, no persistence, bound output, rate limited 5/60s. Tests mock provider.
 
 AUDIT-BASE-001 — Audit Log Foundation (PASS)

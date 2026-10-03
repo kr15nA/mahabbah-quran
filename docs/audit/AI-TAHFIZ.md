@@ -11,10 +11,11 @@ Guru Tahfiz Grounded AI Advisory V1
 ## Architectural Decisions & Constraints
 - **ROLE:** Guru only
 - **GENERATION:** On demand only (triggered by user button click)
-- **PROVIDER:** Anthropic
-- **MODEL:** claude-sonnet-4-6
-- **PREVIOUS MODEL:** claude-3-5-sonnet-20241022
-- **MIGRATION REASON:** previous model retired; official recommended replacement selected
+- **PROVIDER:** Vercel AI Gateway
+- **MODEL:** google/gemini-3-flash
+- **PREVIOUS MODEL:** claude-sonnet-4-6
+- **SECRET:** AI_GATEWAY_API_KEY
+- **STRUCTURED GENERATION:** Vercel AI SDK generateText + Output.object
 - **PROMPT VERSION:** v1 (Hardcoded server side)
 - **FACT PACK:** Anonymous payload containing quantitative Smart Tahfiz state.
 - **PII SENT:** None (no names, IDs, or raw notes)
@@ -26,7 +27,7 @@ Guru Tahfiz Grounded AI Advisory V1
   - observations = max 3
   - focusDiscussion = max 300 chars
   - teacherDraft = max 500 chars
-- **PROVIDER OUTPUT:** max 300 tokens
+- **PROVIDER OUTPUT:** max 300 tokens (maxOutputTokens)
 - **TIMEOUT:** 10 seconds enforced via AbortController
 - **RETRY:** 0
 - **RATE LIMIT:** AI_TAHFIZ / 5 req / 60 sec using PostgreSQL foundation

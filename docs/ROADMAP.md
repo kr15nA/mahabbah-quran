@@ -520,7 +520,7 @@
 - **DOMAIN:** Mahabbah Tahfiz
 - **STATUS:** IMPLEMENTED
 - **DEPENDENCIES:** SMART-TAHFIZ, AI-RATE-LIMIT-FOUNDATION-001
-- **EVIDENCE:** Guru UI integration with Anthropic via /guru/hafalan. Strict fact-pack grounding, no PII, timeout enforced.
+- **EVIDENCE:** Guru UI integration with Vercel AI SDK Gateway (gemini-3-flash) via /guru/hafalan. Strict fact-pack grounding, no PII, timeout enforced.
 - **OUTSTANDING WORK:** Final human review.
 - **NEXT ACTION:** AWAITING HUMAN APPROVAL
 
