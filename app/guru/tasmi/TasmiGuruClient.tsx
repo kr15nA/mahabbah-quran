@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, useCallback, useTransition, useEffect } from 'react'
-import { Search, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Plus, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import { TasmiHistoryTable } from '@/components/tasmi/TasmiHistoryTable'
 import type { TasmiHistoryRow } from '@/lib/tasmi/list'
 import { TasmiForm, type TasmiFormData } from '@/components/tasmi/TasmiForm'
@@ -26,6 +27,7 @@ interface TasmiGuruClientProps {
   surahs: SurahRow[]
   authorizedStudents: AuthorizedStudent[]
   canManage: boolean
+  initialStudentId?: number
 }
 
 export function TasmiGuruClient({
@@ -38,7 +40,8 @@ export function TasmiGuruClient({
   status: initialStatus,
   surahs,
   authorizedStudents,
-  canManage
+  canManage,
+  initialStudentId
 }: TasmiGuruClientProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -53,7 +56,11 @@ export function TasmiGuruClient({
   const [formSaving, setFormSaving] = useState(false)
   const [editingRow, setEditingRow] = useState<TasmiHistoryRow | null>(null)
   
-  const [selectedStudentId, setSelectedStudentId] = useState<number>(authorizedStudents[0]?.id || 0)
+  const defaultStudent = initialStudentId && authorizedStudents.some(s => s.id === initialStudentId)
+    ? initialStudentId
+    : (authorizedStudents[0]?.id || 0)
+
+  const [selectedStudentId, setSelectedStudentId] = useState<number>(defaultStudent)
 
   // Redirect if out of bounds
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
@@ -180,6 +187,11 @@ export function TasmiGuruClient({
 
   return (
     <div className="space-y-4 pb-10">
+      <div className="flex items-center gap-2 mb-2">
+        <Link href="/guru/hafalan" className="inline-flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Kembali ke Hafalan
+        </Link>
+      </div>
       <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
           <h3 className="font-bold text-gray-900 text-sm">Data Tasmi Santri</h3>

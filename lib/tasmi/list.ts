@@ -34,21 +34,21 @@ export async function getGlobalTasmiHistory({
   status?: string
   teacherId?: number | null
 }): Promise<{ data: TasmiHistoryRow[]; total: number }> {
-  
+
   const conditions: SQL[] = []
-  
+
   if (search) {
     conditions.push(ilike(students.fullName, `%${search}%`))
   }
-  
+
   if (mode === 'SURAH' || mode === 'JUZ_RANGE') {
     conditions.push(eq(tasmiSessions.mode, mode))
   }
-  
+
   if (status === 'PASSED' || status === 'NEEDS_REVIEW') {
     conditions.push(eq(tasmiSessions.status, status))
   }
-  
+
   // Scoping for Guru
   if (teacherId) {
     const assignedStudentsQuery = db.select({ id: students.id })
@@ -61,23 +61,23 @@ export async function getGlobalTasmiHistory({
         eq(teacherAssignments.academicYearId, academicYears.id),
         eq(teacherAssignments.teacherId, teacherId)
       ))
-      
+
     conditions.push(sql`${tasmiSessions.studentId} IN (${assignedStudentsQuery})`)
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
-  
+
   // Count
   const countRow = await db.select({ count: sql<number>`count(*)` })
     .from(tasmiSessions)
     .innerJoin(students, eq(tasmiSessions.studentId, students.id))
     .where(whereClause)
-    
+
   const total = Number(countRow[0]?.count || 0)
-  
+
   // Data
   const offset = (page - 1) * pageSize
-  
+
   // Note: For class name, we might just fetch the current class or omit it if complex.
   // We can join classes through enrollments for current active academic year if we want, or just omit if null is fine.
   // To keep it bounded and safe from duplicates, we will just use a lateral join or simple subquery for className.
@@ -112,9 +112,37 @@ export async function getGlobalTasmiHistory({
   .orderBy(desc(tasmiSessions.sessionDate), desc(tasmiSessions.id))
   .limit(pageSize)
   .offset(offset)
-  
+
   return {
     data: dataRows as TasmiHistoryRow[],
     total
   }
+}
+
+export async function getStudentTasmiSummary(studentId: number): Promise<TasmiHistoryRow[]> {
+  const dataRows = await db.select({
+    id: tasmiSessions.id,
+    student_id: tasmiSessions.studentId,
+    student_name: students.fullName,
+    class_name: sql<string>`('')`, // Not strictly needed for this summary
+    mode: tasmiSessions.mode,
+    surah_name_latin: surahs.nameLatin,
+    surah_id: tasmiSessions.surahId,
+    start_juz: tasmiSessions.startJuz,
+    end_juz: tasmiSessions.endJuz,
+    session_date: sql<string>`TO_CHAR(${tasmiSessions.sessionDate}, 'YYYY-MM-DD')`,
+    score: tasmiSessions.score,
+    status: tasmiSessions.status,
+    examiner_name: users.fullName,
+    notes: tasmiSessions.notes
+  })
+  .from(tasmiSessions)
+  .innerJoin(students, eq(tasmiSessions.studentId, students.id))
+  .leftJoin(surahs, eq(tasmiSessions.surahId, surahs.id))
+  .innerJoin(users, eq(tasmiSessions.examinerId, users.id))
+  .where(eq(tasmiSessions.studentId, studentId))
+  .orderBy(desc(tasmiSessions.sessionDate), desc(tasmiSessions.id))
+  .limit(3)
+
+  return dataRows as TasmiHistoryRow[]
 }

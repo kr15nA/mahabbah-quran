@@ -91,3 +91,26 @@ export async function cancelTahfizTargetAction(targetId: number, studentId: numb
     return { success: false, error: error.message || 'Gagal membatalkan target' }
   }
 }
+
+import { getStudentTasmiSummary } from '@/lib/tasmi/list'
+import { hasPermission } from '@/lib/auth/rbac'
+
+export async function getTasmiSummaryAction(studentId: number) {
+  try {
+    const auth = await requireAuth()
+
+    // Check tasmi permission silently
+    const canManageTasmi = await hasPermission(auth.session, 'academic.tasmi.manage')
+    if (!canManageTasmi) {
+      return { success: true, authorized: false, data: [] }
+    }
+
+    // Still need student access
+    await requireStudentAccess(studentId)
+
+    const summary = await getStudentTasmiSummary(studentId)
+    return { success: true, authorized: true, data: summary }
+  } catch (error: any) {
+    return { success: false, authorized: false, error: 'Gagal mengambil ringkasan Tasmi' }
+  }
+}
