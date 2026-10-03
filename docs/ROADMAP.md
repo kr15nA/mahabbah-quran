@@ -506,14 +506,23 @@
 - **OUTSTANDING WORK:** Runtime responsive QA deferred to SYSTEM-QA-FINAL.
 - **NEXT ACTION:** DEFERRED
 
+- **TASK ID:** AI-RATE-LIMIT-FOUNDATION-001
+- **TITLE:** Generic PostgreSQL Rate Limit Foundation
+- **DOMAIN:** Security / Infrastructure
+- **STATUS:** IMPLEMENTED
+- **DEPENDENCIES:** None
+- **EVIDENCE:** Rate limits generic table added. Tests pass.
+- **OUTSTANDING WORK:** Final review and production migration.
+- **NEXT ACTION:** READY_FOR_FINAL_IMPLEMENTATION_REVIEW
+
 - **TASK ID:** AI-TAHFIZ
 - **TITLE:** AI Tahfiz Assistant
 - **DOMAIN:** Mahabbah Tahfiz
-- **STATUS:** IMPLEMENTED
-- **DEPENDENCIES:** SMART-TAHFIZ
+- **STATUS:** BLOCKED (awaiting foundation PASS)
+- **DEPENDENCIES:** SMART-TAHFIZ, AI-RATE-LIMIT-FOUNDATION-001
 - **EVIDENCE:** Future Roadmap requirement.
 - **OUTSTANDING WORK:** Assisted transcription, error analysis (augmenting teacher authority).
-- **NEXT ACTION:** DEFERRED
+- **NEXT ACTION:** BLOCKED
 
 
 ## HISTORICAL TASK REGISTRY
