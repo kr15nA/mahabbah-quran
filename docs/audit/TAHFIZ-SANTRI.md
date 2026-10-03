@@ -1,7 +1,7 @@
 # TAHFIZ-SANTRI Audit
 
 ## Status
-IMPLEMENTED
+PASS
 
 ## Scope
 Santri Tahfiz Self-Service Experience
