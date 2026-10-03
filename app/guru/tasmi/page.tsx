@@ -51,6 +51,8 @@ export default async function GuruTasmiPage({
   ))
   .orderBy(classes.name, students.fullName)
 
+  const initialStudentId = Number(searchParams.studentId) || undefined
+
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       <TasmiGuruClient
@@ -64,6 +66,7 @@ export default async function GuruTasmiPage({
         surahs={surahs}
         authorizedStudents={authorizedRows}
         canManage={canManage}
+        initialStudentId={initialStudentId}
       />
     </div>
   )

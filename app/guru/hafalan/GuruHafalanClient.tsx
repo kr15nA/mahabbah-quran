@@ -9,13 +9,16 @@ import type { HafalanRow } from '@/lib/db/queries/hafalan'
 import SurahSelector from '@/components/quran/SurahSelector'
 import TahfizTargetModal from './TahfizTargetModal'
 import { calculateTargetProgress, aggregateSurahCoverage } from '@/lib/tahfiz/progress'
+import Link from 'next/link'
 import {
   getTahfizDataAction,
+  getTasmiSummaryAction,
   createTahfizTargetAction,
   reviseTahfizTargetAction,
   completeTahfizTargetAction,
   cancelTahfizTargetAction
 } from './actions'
+import type { TasmiHistoryRow } from '@/lib/tasmi/list'
 
 type TahfizCoverageRow = {
   surahId: number
@@ -52,6 +55,9 @@ export default function GuruHafalanClient({
   const [coverage, setCoverage] = useState<TahfizCoverageRow[]>([])
   const [activeTarget, setActiveTarget] = useState<ActiveTarget | null>(null)
 
+  const [tasmiSummary, setTasmiSummary] = useState<TasmiHistoryRow[]>([])
+  const [tasmiAuthorized, setTasmiAuthorized] = useState<boolean>(false)
+
   const [loading, setLoading] = useState(false)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -75,14 +81,16 @@ export default function GuruHafalanClient({
     setRecords([])
     setCoverage([])
     setActiveTarget(null)
+    setTasmiSummary([])
   }, [selectedClassId])
 
   const loadData = async (studentId: number) => {
     setLoading(true)
     try {
-      const [historyRes, tahfizRes] = await Promise.all([
+      const [historyRes, tahfizRes, tasmiRes] = await Promise.all([
         fetch(`/api/hafalan?student_id=${studentId}`),
-        getTahfizDataAction(studentId)
+        getTahfizDataAction(studentId),
+        getTasmiSummaryAction(studentId)
       ])
 
       if (historyRes.ok) {
@@ -93,6 +101,14 @@ export default function GuruHafalanClient({
       if (tahfizRes.success && tahfizRes.data) {
         setCoverage(tahfizRes.data.coverage || [])
         setActiveTarget(tahfizRes.data.activeTarget || null)
+      }
+
+      if (tasmiRes.success) {
+        setTasmiAuthorized(tasmiRes.authorized)
+        setTasmiSummary(tasmiRes.data || [])
+      } else {
+        setTasmiAuthorized(false)
+        setTasmiSummary([])
       }
     } catch (err) {
       console.error('Failed to load data', err)
@@ -356,8 +372,62 @@ export default function GuruHafalanClient({
 
           </div>
 
-          {/* Right Column: History & Entry */}
+          {/* Right Column: Tasmi & History */}
           <div className="lg:col-span-5 space-y-4">
+
+            {/* Tasmi Summary Card */}
+            {tasmiAuthorized && (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-[#FAFAFA]">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-sm">Tasmi Terbaru</h3>
+                  </div>
+                  <Link
+                    href={`/guru/tasmi?studentId=${selectedStudentId}`}
+                    className="text-xs font-bold text-[#4B21A2] hover:text-[#3a1880] underline"
+                  >
+                    Kelola Tasmi
+                  </Link>
+                </div>
+                <div className="p-4">
+                  {loading ? (
+                    <div className="flex justify-center py-4"><RefreshCw className="w-4 h-4 animate-spin text-gray-400" /></div>
+                  ) : tasmiSummary.length === 0 ? (
+                    <div className="text-center py-4 text-xs text-gray-500">
+                      Belum ada riwayat Tasmi.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {tasmiSummary.map(tasmi => (
+                        <div key={tasmi.id} className="flex justify-between items-center pb-3 border-b border-gray-50 last:border-0 last:pb-0">
+                          <div>
+                            <p className="font-bold text-gray-800 text-xs">
+                              {tasmi.mode === 'SURAH'
+                                ? tasmi.surah_name_latin
+                                : `Juz ${tasmi.start_juz === tasmi.end_juz ? tasmi.start_juz : `${tasmi.start_juz}-${tasmi.end_juz}`}`
+                              }
+                            </p>
+                            <p className="text-[10px] text-gray-500">
+                              {new Date(tasmi.session_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              tasmi.status === 'PASSED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {tasmi.status === 'PASSED' ? 'Lulus' : 'Perlu Pengulangan'}
+                            </span>
+                            {tasmi.score !== null && (
+                              <p className="text-[10px] font-bold text-gray-600 mt-1">Nilai: {tasmi.score}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full max-h-[600px]">
               <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-[#FAFAFA] flex-shrink-0">

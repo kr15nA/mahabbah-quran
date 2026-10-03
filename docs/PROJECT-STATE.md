@@ -16,7 +16,11 @@ TAHFIZ-FOUNDATION — Core Tahfiz Data Structures (PASS)
 
 TAHFIZ-GURU — Guru Tahfiz Experience (PASS)
 - Scope: Upgraded the existing `/guru/hafalan` page into a comprehensive Tahfiz tracking dashboard for teachers.
-- Evidence: Coverage visualization and target management UI built with Server Actions. Reused Hafalan entry API, fully regression tested, typechecked, and UI responsive-checked.
+- Evidence: Coverage visualization and target management UI built with Server Actions. Reused Hafalan entry API, fully regression tested, typechecked. Runtime responsive QA is DEFERRED TO SYSTEM-QA-FINAL.
+
+TAHFIZ-TASMI-INTEGRATION — Tasmi Integration (PASS)
+- Scope: Integrated read-only context of recent Tasmi certifications into the Guru Tahfiz workspace, enforcing domain independence (no cross-mutations).
+- Evidence: UI implemented to show recent Tasmi in `/guru/hafalan` using Server Actions and secure student scope checks, with navigation links to `/guru/tasmi`. Typechecked and verified.
 AUDIT-BASE-001 — Audit Log Foundation (PASS)
 - Scope: Centralized audit logging for core academic/user entities.
 - Evidence: Full coverage on CREATE/UPDATE/ACTIVATE/DEACTIVATE.
