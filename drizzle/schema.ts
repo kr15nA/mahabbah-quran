@@ -14,6 +14,7 @@ import {
   jsonb,
   check,
   integer,
+  primaryKey,
   AnyPgColumn,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
@@ -793,4 +794,15 @@ export const loginRateLimits = pgTable('login_rate_limits', {
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
 }, (table) => ({
   expiresAtIdx: index('idx_login_rate_limits_expires_at').on(table.expiresAt),
+}))
+
+export const rateLimits = pgTable('rate_limits', {
+  namespace: text('namespace').notNull(),
+  subjectKey: text('subject_key').notNull(),
+  requestCount: integer('request_count').notNull().default(1),
+  windowStartedAt: timestamp('window_started_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.namespace, table.subjectKey] })
 }))

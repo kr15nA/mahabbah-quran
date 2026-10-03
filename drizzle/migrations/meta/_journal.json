@@ -169,6 +169,13 @@
       "when": 1790899008168,
       "tag": "0023_fresh_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791023559824,
+      "tag": "0024_easy_swordsman",
+      "breakpoints": true
     }
   ]
 }
