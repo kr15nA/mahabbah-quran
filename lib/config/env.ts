@@ -42,3 +42,12 @@ export function getBlobToken(): string {
   }
   return result.data
 }
+
+export function getAiGatewayApiKey(): string {
+  const schema = z.string().min(1, 'Cannot be empty')
+  const result = schema.safeParse(process.env.AI_GATEWAY_API_KEY)
+  if (!result.success) {
+    throw createSanitizedError('AI_GATEWAY_API_KEY', result.error)
+  }
+  return result.data
+}

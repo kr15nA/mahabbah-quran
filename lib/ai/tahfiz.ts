@@ -1,9 +1,10 @@
 import { z } from 'zod'
-import { getAnthropicApiKey } from '../config/env'
+import { getAiGatewayApiKey } from '../config/env'
 import { buildTahfizFactPack, SmartTahfizFacts } from './tahfiz-fact-pack'
+import { createGateway, generateText, Output } from 'ai'
 
 export const AI_TAHFIZ_PROMPT_VERSION = 'v1'
-export const AI_TAHFIZ_MODEL = 'claude-sonnet-4-6'
+export const AI_TAHFIZ_MODEL = 'google/gemini-3-flash'
 
 export const GuruTahfizAiSchema = z.object({
   summary: z.string().trim().min(1).max(400).describe("2-3 concise sentences summarizing the student's progress"),
@@ -15,7 +16,7 @@ export const GuruTahfizAiSchema = z.object({
 export type GuruTahfizAiResult = z.infer<typeof GuruTahfizAiSchema>
 
 export async function generateTahfizAdvisory(facts: SmartTahfizFacts): Promise<GuruTahfizAiResult> {
-  const apiKey = getAnthropicApiKey()
+  const apiKey = getAiGatewayApiKey()
   const factPack = buildTahfizFactPack(facts)
 
   const systemInstruction = `Anda adalah asisten AI akademik khusus tahfiz untuk guru.
@@ -30,55 +31,38 @@ ATURAN WAJIB:
 6. JIKA data tidak cukup, akui bahwa data belum cukup.
 7. Guru tetap menjadi pengambil keputusan utama.
 8. Gunakan bahasa Indonesia yang ringkas, netral, objektif, suportif, dan berbasis fakta.
-9. JANGAN sertakan field lain selain yang diminta dalam JSON schema.
-
-Hasilkan HANYA JSON valid sesuai struktur berikut tanpa blok markdown/teks tambahan:
-{
-  "summary": "string (2-3 kalimat)",
-  "observations": ["string", ... (maksimal 3 item)"],
-  "focusDiscussion": "string (1-2 kalimat)",
-  "teacherDraft": "string (1 paragraf pendek)"
-}`
+9. JANGAN sertakan field lain selain yang diminta dalam JSON schema.`
 
   const abortController = new AbortController()
   const timeoutId = setTimeout(() => abortController.abort(), 10000)
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      signal: abortController.signal,
-      body: JSON.stringify({
-        model: AI_TAHFIZ_MODEL,
-        max_tokens: 300,
-        system: systemInstruction,
-        messages: [{ role: 'user', content: factPack }],
+    const gateway = createGateway({ apiKey })
+    const { output } = await generateText({
+      model: gateway(AI_TAHFIZ_MODEL),
+      output: Output.object({
+        schema: GuruTahfizAiSchema
       }),
+      system: systemInstruction,
+      prompt: factPack,
+      maxOutputTokens: 300,
+      maxRetries: 0,
+      abortSignal: abortController.signal
     })
-
-    if (!res.ok) {
-      throw new Error(`Claude API error status ${res.status}`)
-    }
-
-    const data = await res.json()
-    const responseText = data.content?.[0]?.text ?? ''
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-    
-    if (!jsonMatch) {
-      throw new Error('Respons AI tidak memiliki format JSON yang diharapkan.')
-    }
-
-    const parsed = JSON.parse(jsonMatch[0])
-    return GuruTahfizAiSchema.parse(parsed)
+    return output
   } catch (error: any) {
     if (error.name === 'AbortError') {
       throw new Error('Timeout: Layanan AI membutuhkan waktu terlalu lama.')
     }
-    if (error instanceof z.ZodError) {
+    // ai sdk might throw its own JSONParseError or TypeValidationError
+    if (
+      error.name === 'AI_NoObjectGeneratedError' ||
+      error.name === 'NoObjectGeneratedError' ||
+      error.name === 'AI_TypeValidationError' ||
+      error.name === 'TypeValidationError' ||
+      error.name === 'JSONParseError' ||
+      error instanceof z.ZodError
+    ) {
       throw new Error('Respons AI tidak valid (format data tidak sesuai skema).')
     }
     throw error
