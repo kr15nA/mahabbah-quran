@@ -8,11 +8,13 @@ import type { SurahRow } from '@/lib/db/queries/surahs'
 import type { HafalanRow } from '@/lib/db/queries/hafalan'
 import SurahSelector from '@/components/quran/SurahSelector'
 import TahfizTargetModal from './TahfizTargetModal'
+import SmartInsightCard, { SmartInsightData } from '@/app/_components/tahfiz/SmartInsightCard'
 import { calculateTargetProgress, aggregateSurahCoverage } from '@/lib/tahfiz/progress'
 import Link from 'next/link'
 import {
   getTahfizDataAction,
   getTasmiSummaryAction,
+  getGuruSmartInsightsAction,
   createTahfizTargetAction,
   reviseTahfizTargetAction,
   completeTahfizTargetAction,
@@ -56,6 +58,7 @@ export default function GuruHafalanClient({
   const [activeTarget, setActiveTarget] = useState<ActiveTarget | null>(null)
 
   const [tasmiSummary, setTasmiSummary] = useState<TasmiHistoryRow[]>([])
+  const [smartInsights, setSmartInsights] = useState<SmartInsightData | null>(null)
   const [tasmiAuthorized, setTasmiAuthorized] = useState<boolean>(false)
 
   const [loading, setLoading] = useState(false)
@@ -82,15 +85,17 @@ export default function GuruHafalanClient({
     setCoverage([])
     setActiveTarget(null)
     setTasmiSummary([])
+    setSmartInsights(null)
   }, [selectedClassId])
 
   const loadData = async (studentId: number) => {
     setLoading(true)
     try {
-      const [historyRes, tahfizRes, tasmiRes] = await Promise.all([
+      const [historyRes, tahfizRes, tasmiRes, smartRes] = await Promise.all([
         fetch(`/api/hafalan?student_id=${studentId}`),
         getTahfizDataAction(studentId),
-        getTasmiSummaryAction(studentId)
+        getTasmiSummaryAction(studentId),
+        getGuruSmartInsightsAction(studentId)
       ])
 
       if (historyRes.ok) {

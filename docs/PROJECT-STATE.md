@@ -29,6 +29,11 @@ TAHFIZ-PARENT — Parent Tahfiz Read-Only Experience (PASS)
 TAHFIZ-SANTRI — Santri Tahfiz Self-Service Experience (PASS)
 - Scope: Created a dedicated Santri read-only Tahfiz page.
 - Evidence: UI implemented at `/santri/tahfiz` using `requireSelfStudentProfile`. Safely exposes active target, coverage, recent hafalan, and Tasmi (PASSED + NEEDS_REVIEW). Shared UI components with Parent. Typechecked and verified.
+
+SMART-TAHFIZ — Smart Tahfiz Deterministic Insight V1 (PASS)
+- Scope: Implemented pure deterministic engine to calculate target progress, next focus range, 30-day activity, Murajaah recency, and Guru-only stalled targets.
+- Evidence: Dedicated unit tests pass. UI integrated into Guru, Santri, and Parent portals with role-specific payloads. No DB mutation, no AI.
+
 AUDIT-BASE-001 — Audit Log Foundation (PASS)
 - Scope: Centralized audit logging for core academic/user entities.
 - Evidence: Full coverage on CREATE/UPDATE/ACTIVATE/DEACTIVATE.
