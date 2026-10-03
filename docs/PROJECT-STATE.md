@@ -38,6 +38,10 @@ AI-RATE-LIMIT-FOUNDATION-001 — Generic PostgreSQL Rate Limit Foundation (PASS)
 - Scope: Implemented serverless-safe fixed-window rate limiter utilizing atomic upsert with PostgreSQL NOW().
 - Evidence: Fully parameterized. Passed strict sequential and 10-concurrent race tests.
 
+AI-TAHFIZ — Guru Tahfiz Grounded AI Advisory V1 (IMPLEMENTED)
+- Scope: On-demand AI advisory for Guru using Anthropic.
+- Evidence: Strict fact-pack grounding, no PII, no persistence, bound output, rate limited 5/60s. Tests mock provider.
+
 AUDIT-BASE-001 — Audit Log Foundation (PASS)
 - Scope: Centralized audit logging for core academic/user entities.
 - Evidence: Full coverage on CREATE/UPDATE/ACTIVATE/DEACTIVATE.
