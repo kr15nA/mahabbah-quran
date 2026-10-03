@@ -13,6 +13,7 @@ import {
   CoverageRange,
   HafalanRecord,
 } from './smart'
+import { calculateTargetProgress } from './progress'
 import { getBusinessDate } from './date'
 
 export async function getSmartTahfizInsights(studentId: number) {
@@ -92,7 +93,8 @@ export async function getSmartTahfizInsights(studentId: number) {
   }
 
   // Calculate pure insights
-  const remainingAyahs = getTargetRemainingAyahs(target, surahData, coverage)
+  const progress = target ? calculateTargetProgress(target, surahData, coverage) : null
+  const remainingAyahs = progress ? progress.totalTargetAyahs - progress.coveredAyahs : null
   const nextFocus = getFirstUncoveredRange(target, surahData, coverage)
   const activity30d = calculateActivity30Days(records, todayStr)
   const murajaahRecency = getMurajaahRecency(target, targetRelevantRecords, todayStr)
@@ -100,6 +102,7 @@ export async function getSmartTahfizInsights(studentId: number) {
 
   return {
     hasActiveTarget: !!target,
+    targetProgressPercent: progress ? progress.percentage : null,
     remainingAyahs,
     nextFocus,
     activity30d,
