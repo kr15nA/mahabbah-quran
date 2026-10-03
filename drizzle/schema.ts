@@ -130,6 +130,39 @@ export const hafalanRecords = pgTable('hafalan_records', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+export const tahfizSurahCoverage = pgTable('tahfiz_surah_coverage', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),
+  surahId: bigint('surah_id', { mode: 'number' }).notNull().references(() => surahs.id),
+  ayahStart: smallint('ayah_start').notNull(),
+  ayahEnd: smallint('ayah_end').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  studentSurahIdx: index('tahfiz_coverage_student_surah_idx').on(table.studentId, table.surahId),
+  ayahStartCheck: check('ayah_start_check', sql`${table.ayahStart} >= 1`),
+  ayahEndCheck: check('ayah_end_check', sql`${table.ayahEnd} >= ${table.ayahStart}`)
+}))
+
+export const tahfizTargets = pgTable('tahfiz_targets', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),
+  academicYearId: bigint('academic_year_id', { mode: 'number' }).notNull().references(() => academicYears.id),
+  startSurahId: bigint('start_surah_id', { mode: 'number' }).notNull().references(() => surahs.id),
+  startAyah: smallint('start_ayah').notNull(),
+  endSurahId: bigint('end_surah_id', { mode: 'number' }).notNull().references(() => surahs.id),
+  endAyah: smallint('end_ayah').notNull(),
+  status: varchar('status', { length: 20 }).notNull(), // 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'SUPERSEDED'
+  supersedesTargetId: bigint('supersedes_target_id', { mode: 'number' }).references((): AnyPgColumn => tahfizTargets.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  activeTargetUnique: uniqueIndex('tahfiz_targets_active_unique')
+    .on(table.studentId, table.academicYearId)
+    .where(sql`${table.status} = 'ACTIVE'`),
+  startSurahCheck: check('tahfiz_targets_start_surah_check', sql`${table.startSurahId} > 0`),
+  endSurahCheck: check('tahfiz_targets_end_surah_check', sql`${table.endSurahId} > 0`),
+}))
+
 export const tahsinRecords = pgTable('tahsin_records', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),

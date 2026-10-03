@@ -162,6 +162,13 @@
       "when": 1790393841461,
       "tag": "0022_puzzling_spiral",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790899008168,
+      "tag": "0023_fresh_stature",
+      "breakpoints": true
     }
   ]
 }
