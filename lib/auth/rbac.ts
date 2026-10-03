@@ -28,9 +28,17 @@ export async function requireAuth(): Promise<{ session: SessionPayload; role: Ca
 
 export async function requireStudentAccess(studentId: number): Promise<{ session: SessionPayload; role: CanonicalRole }> {
   const auth = await requireAuth()
+  const hasAccess = await authorizeStudentAccess(studentId, auth)
+  if (!hasAccess) {
+    throw new AuthError(403, 'Forbidden: Student not accessible')
+  }
+  return auth
+}
+
+export async function authorizeStudentAccess(studentId: number, auth: { session: SessionPayload; role: CanonicalRole }): Promise<boolean> {
   const { session, role } = auth
 
-  if (role === 'SUPER_ADMIN') return auth
+  if (role === 'SUPER_ADMIN') return true
 
   let hasAccess = false
 
@@ -54,11 +62,7 @@ export async function requireStudentAccess(studentId: number): Promise<{ session
     hasAccess = await canAccessStudentAcademic(session.userId, studentId)
   }
 
-  if (!hasAccess) {
-    throw new AuthError(403, 'Forbidden: Student not accessible')
-  }
-
-  return auth
+  return hasAccess
 }
 
 export async function requireClassStudentAccess(classId: number, studentId: number): Promise<{ session: SessionPayload; role: CanonicalRole }> {
@@ -199,9 +203,13 @@ export async function hasPermission(session: SessionPayload, permissionCode: str
 
 export async function requirePermission(permissionCode: string): Promise<{ session: SessionPayload; role: CanonicalRole }> {
   const auth = await requireAuth()
-  const ok = await hasPermission(auth.session, permissionCode)
+  const ok = await authorizePermission(permissionCode, auth)
   if (!ok) {
     throw new AuthError(403, `Forbidden: Missing permission ${permissionCode}`)
   }
   return auth
+}
+
+export async function authorizePermission(permissionCode: string, auth: { session: SessionPayload; role: CanonicalRole }): Promise<boolean> {
+  return await hasPermission(auth.session, permissionCode)
 }
