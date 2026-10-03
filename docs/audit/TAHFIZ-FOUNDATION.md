@@ -3,7 +3,7 @@
 **TASK ID:** TAHFIZ-FOUNDATION
 **BASELINE:** main @ 8167f2b
 **BRANCH:** feat/tahfiz-foundation
-**STATUS:** IMPLEMENTED
+**STATUS:** PASS
 
 ## Domain Decisions
 
@@ -19,7 +19,12 @@ The foundation for the Mahabbah Tahfiz domain standardizes the academic record f
 
 - **Schema:** Defined `tahfizSurahCoverage` and `tahfizTargets` tracking boundaries and target scopes safely.
 - **Migration 0023:** Generated `0023_fresh_stature.sql`. It has been applied safely to DEV/QA environments.
-- **Production Status:** NOT APPLIED. Production migration remains pending explicit human approval.
+- **Production Status:** APPLIED. Migration 0023 safely applied to Production endpoint.
+- **Production Closeout Evidence:**
+  - Production endpoint verified.
+  - Permission `academic.tahfiz.manage` exists (no global GURU grant).
+  - Production backfill completed successfully: 31 evidence rows into 11 projection groups (overlap=0, adjacent-unmerged=0, invalid=0).
+  - Production application deployment still pending merge at the moment of documentation closeout.
 - **Coverage Normalization:** Resolves overlapping (e.g. 1-10 and 5-15 becomes 1-15), adjacent (1-10 and 11-20 becomes 1-20), gap, containment, unordered inputs, and duplication safely.
 - **Hafalan Event Types:** Both `hafalan_baru` and `muraja_ah` constitute coverage evidence without arbitrary distinction.
 - **Score Semantics:** Score is optional quality/assessment metadata and does not exclude evidence from coverage projections.
@@ -44,7 +49,7 @@ The foundation for the Mahabbah Tahfiz domain standardizes the academic record f
 - Tasmi policy is not yet strictly enforcing cross-boundary rules.
 - No Smart Tahfiz / AI Tahfiz intelligence integrated yet.
 - No configurable `tahfiz_levels` exist yet.
-- Production migration pending explicit human approval.
+- Production application deployment pending merge.
 
 ## Process Deviations
 

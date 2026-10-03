@@ -10,9 +10,9 @@ LAST VERIFIED APPLICATION BASELINE:
 PORTAL-SANTRI-002 — Santri Portal Phase D3 (PASS)
 - Scope: Santri loading/skeleton states, error boundary, mobile UX polish, existing empty states verified, no domain/business expansion.
 - Evidence: Santri D1 & D2 tests PASS (37/37 assertions), security:test:fast PASS, typecheck/diff PASS, loading/error runtime verified, mobile verification PASS.
-TAHFIZ-FOUNDATION — Core Tahfiz Data Structures (IMPLEMENTED)
-- Scope: Coverage projection, goal targeting schema, and transaction logic established. Migration 0023 applied DEV/QA only (production not migrated).
-- Evidence: Target service implemented, authorization/RBAC implemented, backfill verified, and dedicated tests successfully run.
+TAHFIZ-FOUNDATION — Core Tahfiz Data Structures (PASS)
+- Scope: Coverage projection, goal targeting schema, and transaction logic established. Migration 0023 applied Production.
+- Evidence: Target service implemented, authorization/RBAC implemented, backfill verified on Production (31 records to 11 projections), and dedicated tests successfully run. Production application deployment still pending merge at the moment of documentation closeout.
 
 AUDIT-BASE-001 — Audit Log Foundation (PASS)
 - Scope: Centralized audit logging for core academic/user entities.
