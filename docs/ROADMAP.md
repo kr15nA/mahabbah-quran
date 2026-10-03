@@ -464,11 +464,11 @@
 - **TASK ID:** TAHFIZ-GURU
 - **TITLE:** Guru Tahfiz Experience
 - **DOMAIN:** Mahabbah Tahfiz
-- **STATUS:** PLANNED
+- **STATUS:** PASS
 - **DEPENDENCIES:** TAHFIZ-FOUNDATION, PORTAL-GURU-001
-- **EVIDENCE:** Future Roadmap requirement.
-- **OUTSTANDING WORK:** Target management, structured setoran, assessment interfaces.
-- **NEXT ACTION:** DEFERRED
+- **EVIDENCE:** /guru/hafalan upgraded with Tahfiz coverage visualization, active target management, and unified Hafalan entry via actions.
+- **OUTSTANDING WORK:** Final human review.
+- **NEXT ACTION:** AWAITING HUMAN APPROVAL
 
 - **TASK ID:** TAHFIZ-PARENT
 - **TITLE:** Parent Tahfiz Visibility
