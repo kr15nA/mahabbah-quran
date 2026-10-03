@@ -1,10 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Home, FileText, Calendar, Bell, LogOut } from 'lucide-react'
+import { Home, FileText, Calendar, Bell, BookOpen } from 'lucide-react'
 
 const NAV = [
   { href: '/orang-tua/beranda', label: 'Beranda', icon: Home },
+  { href: '/orang-tua/tahfiz', label: 'Tahfiz', icon: BookOpen },
   { href: '/orang-tua/laporan', label: 'Laporan', icon: FileText },
   { href: '/orang-tua/absensi', label: 'Absensi', icon: Calendar },
   { href: '/orang-tua/notifikasi', label: 'Notifikasi', icon: Bell },
