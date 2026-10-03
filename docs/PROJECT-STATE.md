@@ -34,7 +34,7 @@ SMART-TAHFIZ — Smart Tahfiz Deterministic Insight V1 (PASS)
 - Scope: Implemented pure deterministic engine to calculate target progress, next focus range, 30-day activity, Murajaah recency, and Guru-only stalled targets.
 - Evidence: Dedicated unit tests pass. UI integrated into Guru, Santri, and Parent portals with role-specific payloads. No DB mutation, no AI.
 
-AI-RATE-LIMIT-FOUNDATION-001 — Generic PostgreSQL Rate Limit Foundation (IMPLEMENTED)
+AI-RATE-LIMIT-FOUNDATION-001 — Generic PostgreSQL Rate Limit Foundation (PASS)
 - Scope: Implemented serverless-safe fixed-window rate limiter utilizing atomic upsert with PostgreSQL NOW().
 - Evidence: Fully parameterized. Passed strict sequential and 10-concurrent race tests.
 

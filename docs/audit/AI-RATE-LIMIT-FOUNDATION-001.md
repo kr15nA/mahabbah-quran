@@ -31,14 +31,22 @@ Implemented generic, PostgreSQL-backed, fixed-window rate limiter designed for s
 - ✅ No Production mutation (Migration 0024 applied ONLY to DEV/QA).
 - ✅ No Preview mutation.
 
+## Environment Policy
+- Production → Production DB (ep-flat-waterfall-b3uvjas7)
+- Preview → Production DB (ep-flat-waterfall-b3uvjas7)
+- Development/local → DEV/QA DB (ep-bitter-salad-b39vhlkp)
+
 ## Migrations
 - Migration: `0024_easy_swordsman.sql`
-- Status: Applied DEV/QA only. PRODUCTION/PREVIEW NOT RUN.
+- Status:
+  - Production: APPLIED / VERIFIED
+  - Preview: NOT APPLICABLE (shares Production DB)
+  - DEV/QA: APPLIED
 
 ## Process Deviations
-- **PROCESS DEVIATION 1**: Migration 0024 was invoked before final canonical database safety verification. Subsequent safe endpoint verification established the affected database as DEV/QA. Production and Preview were not migrated.
+- **PROCESS DEVIATION 1**: Migration 0024 was invoked before final canonical database safety verification. Subsequent safe endpoint verification established the affected database as DEV/QA. Production and Preview were not migrated at that time.
 - **PROCESS DEVIATION 2**: During implementation, a command printed DATABASE_URL from .env.local into tooling output. The affected environment was DEV/QA. No credential value is recorded in canonical documentation. DEV/QA credential rotation is required before PASS closeout.
 
-**DEV/QA CREDENTIAL ROTATION**: REQUIRED / NOT YET VERIFIED
+**DEV/QA CREDENTIAL ROTATION**: DEFERRED BY HUMAN DECISION
 
-**STATUS**: IMPLEMENTED
+**STATUS**: PASS
