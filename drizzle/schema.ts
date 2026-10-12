@@ -131,6 +131,28 @@ export const hafalanRecords = pgTable('hafalan_records', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+export const homeMurajaahRecords = pgTable('home_murajaah_records', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),
+  parentUserId: bigint('parent_user_id', { mode: 'number' }).notNull().references(() => users.id),
+  surahId: bigint('surah_id', { mode: 'number' }).notNull().references(() => surahs.id),
+  sessionDate: date('session_date').notNull(),
+  ayahStart: smallint('ayah_start').notNull(),
+  ayahEnd: smallint('ayah_end').notNull(),
+  notes: text('notes'),
+  status: varchar('status', { length: 20 }).notNull().default('PENDING'), // 'PENDING' | 'VERIFIED' | 'REJECTED'
+  verifiedByTeacherId: bigint('verified_by_teacher_id', { mode: 'number' }).references(() => users.id),
+  verifiedAt: timestamp('verified_at', { withTimezone: true }),
+  verificationNotes: text('verification_notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  studentDateIdx: index('home_murajaah_student_date_idx').on(table.studentId, table.sessionDate),
+  statusIdx: index('home_murajaah_status_idx').on(table.status),
+  ayahStartCheck: check('home_murajaah_ayah_start_check', sql`${table.ayahStart} >= 1`),
+  ayahEndCheck: check('home_murajaah_ayah_end_check', sql`${table.ayahEnd} >= ${table.ayahStart}`),
+}))
+
 export const tahfizSurahCoverage = pgTable('tahfiz_surah_coverage', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
   studentId: bigint('student_id', { mode: 'number' }).notNull().references(() => students.id),

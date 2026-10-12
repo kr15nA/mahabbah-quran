@@ -10,6 +10,7 @@ import { CoverageCard } from '@/app/_components/tahfiz/CoverageCard'
 import { HafalanHistoryCard } from '@/app/_components/tahfiz/HafalanHistoryCard'
 import { TasmiCard } from '@/app/_components/tahfiz/TasmiCard'
 import SmartInsightCard, { SmartInsightData } from '@/app/_components/tahfiz/SmartInsightCard'
+import HomeMurajaahSection from './HomeMurajaahSection'
 
 export default function ParentTahfizClient({ initialChildId }: { initialChildId?: string }) {
   const router = useRouter()
@@ -145,6 +146,13 @@ export default function ParentTahfizClient({ initialChildId }: { initialChildId?
         </div>
 
       </div>
+
+      {/* Muroja'ah di Rumah Section */}
+      <HomeMurajaahSection 
+        childId={child.student_id} 
+        studentId={child.id}
+        surahs={data.surahs || []} 
+      />
     </div>
   )
 }

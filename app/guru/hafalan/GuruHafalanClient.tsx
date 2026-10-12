@@ -10,6 +10,7 @@ import SurahSelector from '@/components/quran/SurahSelector'
 import TahfizTargetModal from './TahfizTargetModal'
 import SmartInsightCard, { SmartInsightData } from '@/app/_components/tahfiz/SmartInsightCard'
 import GuruTahfizAiCard from './GuruTahfizAiCard'
+import HomeMurajaahVerifySection from './HomeMurajaahVerifySection'
 import { calculateTargetProgress, aggregateSurahCoverage } from '@/lib/tahfiz/progress'
 import Link from 'next/link'
 import {
@@ -609,6 +610,11 @@ export default function GuruHafalanClient({
           </div>
         </div>
       )}
+
+      {/* Verifikasi Muroja'ah di Rumah */}
+      <div className="mt-6">
+        <HomeMurajaahVerifySection />
+      </div>
 
       {/* Mobile Sticky FAB */}
       {selectedStudentId > 0 && !isFormOpen && (
