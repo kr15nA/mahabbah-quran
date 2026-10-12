@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { db } from '@/lib/db/client'
-import { financeInvoices, studentParents } from '@/drizzle/schema'
-import { eq, inArray, and, isNull } from 'drizzle-orm'
-import { serializeAmountForApi } from '@/lib/finance/utils'
+import { studentParents } from '@/drizzle/schema'
+import { eq, and, isNull } from 'drizzle-orm'
 import { hasPermission } from '@/lib/auth/rbac'
+import { normalizeStudentId } from '@/lib/guardians/parent-context'
+import { getStudentInvoices } from '@/lib/finance/queries/parent-finance'
 
 export async function GET(req: NextRequest) {
   const session = await getSession()
@@ -15,7 +16,12 @@ export async function GET(req: NextRequest) {
   const canReadOwn = await hasPermission(session as any, 'finance.billing.read_own_children')
   if (!canReadOwn) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  // Find linked students
+  const searchParams = req.nextUrl.searchParams
+  const rawChildId = searchParams.get('child_id')
+  const academicYearIdStr = searchParams.get('academicYearId')
+  const academicYearId = academicYearIdStr ? parseInt(academicYearIdStr) : undefined
+
+  // Find linked students strictly with can_view_finance = true
   const linkedStudents = await db.select({ studentId: studentParents.studentId })
     .from(studentParents)
     .where(
@@ -31,19 +37,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json([])
   }
 
-  const studentIds = linkedStudents.map(s => s.studentId)
+  const allowedStudentIds = linkedStudents.map(s => s.studentId)
 
-  const items = await db.select()
-    .from(financeInvoices)
-    .where(inArray(financeInvoices.studentId, studentIds))
+  if (rawChildId) {
+    const normalizedChildId = normalizeStudentId(rawChildId)
+    const childIdNum = normalizedChildId ? parseInt(normalizedChildId) : null
+    
+    if (!childIdNum || !allowedStudentIds.includes(childIdNum)) {
+      return NextResponse.json({ error: 'Akses ditolak: Anda tidak memiliki akses finansial untuk santri ini.' }, { status: 403 })
+    }
 
-  // Hide DRAFT invoices from parents, they only see ISSUED, PARTIALLY_PAID, PAID, CANCELLED
-  const visible = items.filter(i => i.status !== 'DRAFT')
+    const items = await getStudentInvoices(childIdNum, academicYearId)
+    return NextResponse.json(items)
+  }
 
-  const serialized = visible.map(item => ({
-    ...item,
-    amount: serializeAmountForApi(item.amount)
-  }))
+  // All authorized children
+  const allItems = await Promise.all(
+    allowedStudentIds.map(sId => getStudentInvoices(sId, academicYearId))
+  )
+  const flattened = allItems.flat().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-  return NextResponse.json(serialized)
+  return NextResponse.json(flattened)
 }

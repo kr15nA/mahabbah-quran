@@ -94,6 +94,46 @@ export async function getAuthorizedAcademicChildren(userId: number, academicYear
   }))
 }
 
+/**
+ * Retrieves all authorized finance children for a given parent user.
+ * 
+ * Rules:
+ * - Active relationship (`isActive = true`)
+ * - Not soft-deleted (`deletedAt IS NULL`)
+ * - Finance access granted (`canViewFinance = true`)
+ * - Student not deleted (`deletedAt IS NULL`)
+ */
+export async function getAuthorizedFinanceChildren(userId: number, academicYearId?: number): Promise<SafeChildDisplay[]> {
+  const rows = await sql`
+    SELECT sp.student_id, s.full_name AS student_name, s.nickname AS student_nickname, s.photo_url AS student_photo,
+      c.name AS class_name, p.name AS program_name, u.full_name AS teacher_name
+    FROM student_parents sp
+    JOIN students s ON s.id = sp.student_id
+    LEFT JOIN academic_years ay ON ${academicYearId ? sql`ay.id = ${academicYearId}` : sql`ay.is_active = TRUE`}
+    LEFT JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = ay.id
+    LEFT JOIN classes c ON c.id = e.class_id
+    LEFT JOIN programs p ON p.id = c.program_id
+    LEFT JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.academic_year_id = ay.id
+    LEFT JOIN users u ON u.id = ta.teacher_id
+    WHERE sp.parent_id = ${userId} 
+      AND sp.is_active = TRUE 
+      AND sp.deleted_at IS NULL
+      AND sp.can_view_finance = TRUE
+      AND s.deleted_at IS NULL
+    ORDER BY s.full_name ASC
+  `
+
+  return rows.map((r: any) => ({
+    student_id: normalizeStudentId(r.student_id)!,
+    student_name: r.student_name,
+    student_nickname: r.student_nickname,
+    student_photo: r.student_photo,
+    class_name: r.class_name,
+    program_name: r.program_name,
+    teacher_name: r.teacher_name,
+  }))
+}
+
 // ---------------------------------------------------------
 // Resolver Result States
 // ---------------------------------------------------------
@@ -143,6 +183,64 @@ export async function resolveParentChildContext(params: {
 
   const activeChild = authorizedChildren.find(c => c.student_id === normalizedRequestedId)
 
+  if (!activeChild) {
+    return { status: 'FORBIDDEN_CHILD', children: authorizedChildren }
+  }
+
+  return {
+    status: 'AUTHORIZED',
+    child: activeChild,
+    children: authorizedChildren,
+    childId: activeChild.student_id
+  }
+}
+
+/**
+ * Resolves the explicit finance context state for a parent viewing child billing/payment modules.
+ * Strictly enforces `student_parents.can_view_finance = TRUE`.
+ */
+export async function resolveParentFinanceContext(params: {
+  userId: number
+  requestedChildId?: string | number | null
+  academicYearId?: number | null
+}): Promise<ContextResolutionResult> {
+  const authorizedChildren = await getAuthorizedFinanceChildren(
+    params.userId, 
+    params.academicYearId ? Number(params.academicYearId) : undefined
+  )
+
+  if (authorizedChildren.length === 0) {
+    return { status: 'NO_CHILDREN' }
+  }
+
+  // Auto-resolve for single child accounts
+  if (authorizedChildren.length === 1 && !params.requestedChildId) {
+    const singleChild = authorizedChildren[0]
+    return { 
+      status: 'AUTHORIZED', 
+      child: singleChild, 
+      children: authorizedChildren, 
+      childId: singleChild.student_id 
+    }
+  }
+
+  // Multiple children: if none requested, auto-select first child so parent immediately views dashboard with selector
+  if (!params.requestedChildId) {
+    const firstChild = authorizedChildren[0]
+    return {
+      status: 'AUTHORIZED',
+      child: firstChild,
+      children: authorizedChildren,
+      childId: firstChild.student_id
+    }
+  }
+
+  const normalizedRequestedId = normalizeStudentId(params.requestedChildId)
+  if (!normalizedRequestedId) {
+    return { status: 'INVALID_CHILD' }
+  }
+
+  const activeChild = authorizedChildren.find(c => c.student_id === normalizedRequestedId)
   if (!activeChild) {
     return { status: 'FORBIDDEN_CHILD', children: authorizedChildren }
   }
