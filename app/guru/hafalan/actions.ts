@@ -216,11 +216,20 @@ export async function verifyHomeMurajaahAction(
       return { success: false, error: 'Akses ditolak: Orang tua tidak dapat memvalidasi muroja\'ah buatannya sendiri' }
     }
 
+    // State machine rule: Only PENDING entries can be VERIFIED or REJECTED
+    if (record.status !== 'PENDING') {
+      return { success: false, error: `Catatan muroja'ah sudah berstatus ${record.status} dan tidak dapat diubah lagi.` }
+    }
+
     // Security rule: Guru can only review assigned students
     await requireStudentAccess(record.student_id)
 
     if (status !== 'VERIFIED' && status !== 'REJECTED') {
       return { success: false, error: 'Status harus VERIFIED atau REJECTED' }
+    }
+
+    if (verificationNotes && verificationNotes.length > 500) {
+      return { success: false, error: 'Catatan verifikasi tidak boleh melebihi 500 karakter' }
     }
 
     const updated = await verifyHomeMurajaahRecord(
@@ -229,6 +238,10 @@ export async function verifyHomeMurajaahAction(
       status,
       verificationNotes?.trim() || null
     )
+
+    if (!updated) {
+      return { success: false, error: 'Gagal memvalidasi: Status catatan sudah berubah atau tidak dalam status PENDING' }
+    }
 
     await createAuditLog({
       action: status === 'VERIFIED' ? AuditAction.HOME_MURAJAAH_VERIFIED : AuditAction.HOME_MURAJAAH_REJECTED,

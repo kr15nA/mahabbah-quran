@@ -133,7 +133,7 @@ export async function verifyHomeMurajaahRecord(
       verified_at = NOW(),
       verification_notes = ${verificationNotes ?? null},
       updated_at = NOW()
-    WHERE id = ${id}
+    WHERE id = ${id} AND status = 'PENDING'
     RETURNING *
   `
   return (rows[0] as HomeMurajaahRow) ?? null

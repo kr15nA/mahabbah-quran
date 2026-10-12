@@ -190,6 +190,17 @@ export async function recordHomeMurajaahAction(input: RecordHomeMurajaahInput) {
       return { success: false, error: 'Tanggal muroja\'ah tidak valid' }
     }
 
+    // Future date policy: reject future-dated home muroja'ah entries
+    const todayStr = new Date().toISOString().slice(0, 10)
+    if (input.sessionDate > todayStr) {
+      return { success: false, error: 'Tanggal muroja\'ah tidak boleh di masa depan' }
+    }
+
+    // Notes length constraint
+    if (input.notes && input.notes.trim().length > 500) {
+      return { success: false, error: 'Catatan muroja\'ah tidak boleh melebihi 500 karakter' }
+    }
+
     // Validate surah & ayah boundaries
     const surahId = Number(input.surahId)
     const surah = await getSurahById(surahId)
