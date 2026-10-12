@@ -315,3 +315,80 @@ export async function searchLaporanAdmin(params: {
     total: Number((countRows[0] as any).total)
   }
 }
+
+export type BatchClassReportItem = {
+  student_id: number
+  student_name: string
+  class_id: number
+  class_name: string
+  report_id: number | null
+  report_date: string | null
+  attendance_status: string | null
+  hafalan_record_id: number | null
+  tahsin_record_id: number | null
+  hafalan_score: number | null
+  tahsin_score: number | null
+  adab_score: number | null
+  teacher_notes: string | null
+  ai_parent_advice: string | null
+  status: string | null
+  surah_name_latin: string | null
+  ayah_start: number | null
+  ayah_end: number | null
+  hafalan_type: string | null
+  makhraj_score: number | null
+  tajwid_score: number | null
+  kelancaran_score: number | null
+  ghunnah_score: number | null
+}
+
+export async function getClassStudentReportsForBatch(params: {
+  classId: number
+  date?: string
+  academicYearId?: number
+}): Promise<BatchClassReportItem[]> {
+  const rows = await sql`
+    SELECT 
+      st.id::int AS student_id,
+      st.full_name AS student_name,
+      c.id::int AS class_id,
+      c.name AS class_name,
+      lr.id::int AS report_id,
+      lr.report_date,
+      lr.attendance_status,
+      lr.hafalan_record_id,
+      lr.tahsin_record_id,
+      lr.hafalan_score,
+      lr.tahsin_score,
+      lr.adab_score,
+      lr.teacher_notes,
+      lr.ai_parent_advice,
+      lr.status,
+      sr.name_latin AS surah_name_latin,
+      hr.ayah_start,
+      hr.ayah_end,
+      hr.type AS hafalan_type,
+      tr.makhraj_score,
+      tr.tajwid_score,
+      tr.kelancaran_score,
+      tr.ghunnah_score
+    FROM students st
+    JOIN enrollments e ON e.student_id = st.id AND e.class_id = ${params.classId}
+    JOIN classes c ON c.id = e.class_id
+    LEFT JOIN LATERAL (
+      SELECT lr2.* FROM learning_reports lr2
+      WHERE lr2.student_id = st.id
+        AND (${params.date ?? null}::date IS NULL OR lr2.report_date = ${params.date}::date)
+      ORDER BY lr2.report_date DESC, lr2.id DESC
+      LIMIT 1
+    ) lr ON TRUE
+    LEFT JOIN hafalan_records hr ON hr.id = lr.hafalan_record_id
+    LEFT JOIN surahs sr ON sr.id = hr.surah_id
+    LEFT JOIN tahsin_records tr ON tr.id = lr.tahsin_record_id
+    WHERE st.deleted_at IS NULL
+      AND (${params.academicYearId ?? null}::bigint IS NULL OR e.academic_year_id = ${params.academicYearId})
+    ORDER BY st.full_name ASC
+  `
+  return rows as BatchClassReportItem[]
+}
+

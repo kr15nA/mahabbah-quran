@@ -167,3 +167,99 @@ export async function generateGuruTahfizAiSummaryAction(studentId: number) {
     return { success: false, error: 'Gagal membuat ringkasan AI: ' + (error.message || 'Error internal') }
   }
 }
+
+import { 
+  getHomeMurajaahById, 
+  getPendingHomeMurajaahForTeacher, 
+  verifyHomeMurajaahRecord 
+} from '@/lib/db/queries/home-murajaah'
+import { createAuditLog } from '@/lib/audit/logger'
+import { AuditAction, AuditEntityType } from '@/lib/audit/types'
+
+export async function getPendingHomeMurajaahAction() {
+  try {
+    const auth = await requireAuth()
+    if (auth.role !== 'GURU' && auth.role !== 'SUPER_ADMIN') {
+      return { success: false, error: 'Akses ditolak: Hanya guru yang dapat melihat antrean verifikasi' }
+    }
+
+    const records = await getPendingHomeMurajaahForTeacher(auth.session.userId)
+    return { success: true, data: records }
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Gagal memuat antrean verifikasi muroja\'ah' }
+  }
+}
+
+export async function verifyHomeMurajaahAction(
+  recordId: number, 
+  status: 'VERIFIED' | 'REJECTED', 
+  verificationNotes?: string
+) {
+  try {
+    const auth = await requireAuth()
+    if (auth.role !== 'GURU' && auth.role !== 'SUPER_ADMIN') {
+      return { success: false, error: 'Akses ditolak: Hanya guru yang dapat memvalidasi muroja\'ah' }
+    }
+
+    const recId = Number(recordId)
+    if (!recId || isNaN(recId)) {
+      return { success: false, error: 'ID catatan tidak valid' }
+    }
+
+    const record = await getHomeMurajaahById(recId)
+    if (!record) {
+      return { success: false, error: 'Catatan muroja\'ah tidak ditemukan' }
+    }
+
+    // Security rule: Parent cannot validate own entry as Guru
+    if (record.parent_user_id === auth.session.userId) {
+      return { success: false, error: 'Akses ditolak: Orang tua tidak dapat memvalidasi muroja\'ah buatannya sendiri' }
+    }
+
+    // State machine rule: Only PENDING entries can be VERIFIED or REJECTED
+    if (record.status !== 'PENDING') {
+      return { success: false, error: `Catatan muroja'ah sudah berstatus ${record.status} dan tidak dapat diubah lagi.` }
+    }
+
+    // Security rule: Guru can only review assigned students
+    await requireStudentAccess(record.student_id)
+
+    if (status !== 'VERIFIED' && status !== 'REJECTED') {
+      return { success: false, error: 'Status harus VERIFIED atau REJECTED' }
+    }
+
+    if (verificationNotes && verificationNotes.length > 500) {
+      return { success: false, error: 'Catatan verifikasi tidak boleh melebihi 500 karakter' }
+    }
+
+    const updated = await verifyHomeMurajaahRecord(
+      recId,
+      auth.session.userId,
+      status,
+      verificationNotes?.trim() || null
+    )
+
+    if (!updated) {
+      return { success: false, error: 'Gagal memvalidasi: Status catatan sudah berubah atau tidak dalam status PENDING' }
+    }
+
+    await createAuditLog({
+      action: status === 'VERIFIED' ? AuditAction.HOME_MURAJAAH_VERIFIED : AuditAction.HOME_MURAJAAH_REJECTED,
+      entityType: AuditEntityType.HOME_MURAJAAH,
+      entityId: recId,
+      actorUserId: auth.session.userId,
+      oldValues: { status: record.status },
+      newValues: {
+        status,
+        verifiedByTeacherId: auth.session.userId,
+        verificationNotes: verificationNotes?.trim() || null,
+      },
+    })
+
+    return { success: true, data: updated }
+  } catch (error: any) {
+    console.error('verifyHomeMurajaahAction error:', error)
+    return { success: false, error: error.message || 'Gagal memvalidasi catatan muroja\'ah' }
+  }
+}
+

@@ -92,7 +92,8 @@ export async function getParentTahfizOverviewAction(childId?: string) {
       } : null,
       coverage,
       hafalanHistory: hafalanRows,
-      tasmiAchievements: tasmiRows
+      tasmiAchievements: tasmiRows,
+      surahs: allSurahs
     }
   } catch (e) {
     console.error('getParentTahfizOverviewAction error:', e)
@@ -135,3 +136,149 @@ export async function getParentSmartInsightsAction(childId?: string) {
     return { success: false, error: 'Gagal memuat insight' }
   }
 }
+
+import { getGuardianRelationship } from '@/lib/guardians/access'
+import { getSurahById } from '@/lib/db/queries/surahs'
+import { validateSurahAyahRange } from '@/lib/quran/validators'
+import { createHomeMurajaah, getHomeMurajaahByStudent } from '@/lib/db/queries/home-murajaah'
+import { createAuditLog } from '@/lib/audit/logger'
+import { AuditAction, AuditEntityType } from '@/lib/audit/types'
+
+export type RecordHomeMurajaahInput = {
+  childId?: string
+  studentId?: number
+  surahId: number
+  sessionDate: string
+  ayahStart: number
+  ayahEnd: number
+  notes?: string
+}
+
+export async function recordHomeMurajaahAction(input: RecordHomeMurajaahInput) {
+  try {
+    const session = await getSession()
+    if (!session || session.role !== 'orang_tua') {
+      return { success: false, error: 'Akses ditolak: Sesi orang tua tidak valid' }
+    }
+
+    let resolvedStudentId: number
+    if (input.childId) {
+      const resolution = await resolveParentChildContext({
+        userId: session.userId,
+        requestedChildId: input.childId,
+      })
+      if (resolution.status !== 'AUTHORIZED') {
+        return { success: false, error: 'Akses ditolak: Santri tidak terhubung dengan akun Anda' }
+      }
+      resolvedStudentId = studentIdToDbNumber(resolution.childId)
+    } else if (input.studentId) {
+      const rel = await getGuardianRelationship(session.userId, Number(input.studentId))
+      if (!rel) {
+        return { success: false, error: 'Akses ditolak: Santri tidak terhubung dengan akun Anda' }
+      }
+      resolvedStudentId = Number(input.studentId)
+    } else {
+      return { success: false, error: 'Santri wajib dipilih' }
+    }
+
+    // Validate date format & validity
+    if (!input.sessionDate || !/^\d{4}-\d{2}-\d{2}$/.test(input.sessionDate)) {
+      return { success: false, error: 'Format tanggal harus YYYY-MM-DD' }
+    }
+    const parsedDate = new Date(input.sessionDate)
+    if (isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== input.sessionDate) {
+      return { success: false, error: 'Tanggal muroja\'ah tidak valid' }
+    }
+
+    // Future date policy: reject future-dated home muroja'ah entries
+    const todayStr = new Date().toISOString().slice(0, 10)
+    if (input.sessionDate > todayStr) {
+      return { success: false, error: 'Tanggal muroja\'ah tidak boleh di masa depan' }
+    }
+
+    // Notes length constraint
+    if (input.notes && input.notes.trim().length > 500) {
+      return { success: false, error: 'Catatan muroja\'ah tidak boleh melebihi 500 karakter' }
+    }
+
+    // Validate surah & ayah boundaries
+    const surahId = Number(input.surahId)
+    const surah = await getSurahById(surahId)
+    if (!surah) {
+      return { success: false, error: 'Surah tidak ditemukan dalam database master' }
+    }
+
+    const ayahStart = Number(input.ayahStart)
+    const ayahEnd = Number(input.ayahEnd)
+    const rangeError = validateSurahAyahRange(surah, ayahStart, ayahEnd)
+    if (rangeError) {
+      return { success: false, error: rangeError }
+    }
+
+    const newId = await createHomeMurajaah({
+      studentId: resolvedStudentId,
+      parentUserId: session.userId,
+      surahId,
+      sessionDate: input.sessionDate,
+      ayahStart,
+      ayahEnd,
+      notes: input.notes?.trim() || null,
+    })
+
+    await createAuditLog({
+      action: AuditAction.HOME_MURAJAAH_CREATED,
+      entityType: AuditEntityType.HOME_MURAJAAH,
+      entityId: newId,
+      actorUserId: session.userId,
+      newValues: {
+        studentId: resolvedStudentId,
+        surahId,
+        sessionDate: input.sessionDate,
+        ayahStart,
+        ayahEnd,
+        notes: input.notes?.trim() || null,
+        status: 'PENDING',
+      },
+    })
+
+    return { success: true, id: newId }
+  } catch (error: any) {
+    console.error('recordHomeMurajaahAction error:', error)
+    return { success: false, error: error.message || 'Gagal menyimpan catatan muroja\'ah' }
+  }
+}
+
+export async function getHomeMurajaahListAction(childId?: string, studentId?: number) {
+  try {
+    const session = await getSession()
+    if (!session || session.role !== 'orang_tua') {
+      return { success: false, error: 'Sesi tidak valid' }
+    }
+
+    let resolvedStudentId: number
+    if (childId) {
+      const resolution = await resolveParentChildContext({
+        userId: session.userId,
+        requestedChildId: childId,
+      })
+      if (resolution.status !== 'AUTHORIZED') {
+        return { success: false, error: 'Tidak ada akses ke data santri ini' }
+      }
+      resolvedStudentId = studentIdToDbNumber(resolution.childId)
+    } else if (studentId) {
+      const rel = await getGuardianRelationship(session.userId, Number(studentId))
+      if (!rel) {
+        return { success: false, error: 'Tidak ada akses ke data santri ini' }
+      }
+      resolvedStudentId = Number(studentId)
+    } else {
+      return { success: false, error: 'Santri wajib ditentukan' }
+    }
+
+    const records = await getHomeMurajaahByStudent(resolvedStudentId)
+    return { success: true, data: records }
+  } catch (error: any) {
+    return { success: false, error: 'Gagal memuat riwayat muroja\'ah' }
+  }
+}
+

@@ -21,6 +21,9 @@ export const AuditAction = {
   STUDENT_USER_LINK: 'STUDENT_USER_LINK',
   STUDENT_USER_UNLINK: 'STUDENT_USER_UNLINK',
   STUDENT_USER_RELINK: 'STUDENT_USER_RELINK',
+  HOME_MURAJAAH_CREATED: 'HOME_MURAJAAH_CREATED',
+  HOME_MURAJAAH_VERIFIED: 'HOME_MURAJAAH_VERIFIED',
+  HOME_MURAJAAH_REJECTED: 'HOME_MURAJAAH_REJECTED',
 } as const
 
 export type AuditAction = typeof AuditAction[keyof typeof AuditAction]
@@ -36,6 +39,7 @@ export const AuditEntityType = {
   TEACHER_ASSIGNMENT: 'TEACHER_ASSIGNMENT',
   SYSTEM_SETTINGS:    'SYSTEM_SETTINGS',
   student_parents:    'student_parents',
+  HOME_MURAJAAH:      'HOME_MURAJAAH',
 } as const
 
 export type AuditEntityType = typeof AuditEntityType[keyof typeof AuditEntityType]

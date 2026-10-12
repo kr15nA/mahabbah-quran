@@ -4,6 +4,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, useCallback, useTransition } from 'react'
 import { Search, ChevronLeft, ChevronRight, CheckCircle, Clock, Download, Share2 } from 'lucide-react'
 import type { SearchLaporanRow } from '@/lib/db/queries/learning-reports'
+import type { ClassRow } from '@/lib/db/queries/classes'
 import ShareReportModal from '@/components/ui/ShareReportModal'
 
 function formatDate(dateStr: string | Date) {
@@ -15,13 +16,15 @@ export default function LaporanClient({
   total,
   page,
   limit,
-  search: initialSearch
+  search: initialSearch,
+  classes = [],
 }: {
   data: SearchLaporanRow[]
   total: number
   page: number
   limit: number
   search: string
+  classes?: ClassRow[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -29,6 +32,7 @@ export default function LaporanClient({
   const [isPending, startTransition] = useTransition()
   
   const [searchTerm, setSearchTerm] = useState(initialSearch)
+  const [selectedBatchClassId, setSelectedBatchClassId] = useState<number>(classes[0]?.id || 0)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [selectedReportId, setSelectedReportId] = useState<number>(0)
 
@@ -64,16 +68,43 @@ export default function LaporanClient({
           <h3 className="font-bold text-gray-900 text-sm">Laporan Pembelajaran Santri</h3>
           <p className="text-xs text-gray-500">Daftar laporan harian (Read-only)</p>
         </div>
-        <form onSubmit={handleSearch} className="relative w-full md:w-64">
-          <input
-            type="text"
-            placeholder="Cari nama santri..."
-            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#4B21A2]/20 focus:border-[#4B21A2] transition-all"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-        </form>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {classes.length > 0 && (
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5">
+              <select
+                value={selectedBatchClassId}
+                onChange={(e) => setSelectedBatchClassId(Number(e.target.value))}
+                className="bg-transparent text-xs text-gray-700 outline-none font-medium cursor-pointer"
+              >
+                <option value={0} disabled>Pilih Kelas</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {selectedBatchClassId > 0 && (
+                <a
+                  href={`/api/learning-reports/batch-export?classId=${selectedBatchClassId}`}
+                  download
+                  title="Unduh seluruh laporan santri di kelas ini (ZIP)"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Batch ZIP</span>
+                </a>
+              )}
+            </div>
+          )}
+          <form onSubmit={handleSearch} className="relative w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Cari nama santri..."
+              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#4B21A2]/20 focus:border-[#4B21A2] transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          </form>
+        </div>
       </div>
 
       {/* Summary section */}

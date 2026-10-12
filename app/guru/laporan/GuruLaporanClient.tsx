@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sparkles, Save, CheckCircle2, RefreshCw, Share2 } from 'lucide-react'
+import { Sparkles, Save, CheckCircle2, RefreshCw, Share2, Download } from 'lucide-react'
 import type { StudentRow } from '@/lib/db/queries/students'
 import type { ClassRow } from '@/lib/db/queries/classes'
 import type { SurahRow } from '@/lib/db/queries/surahs'
@@ -118,9 +118,22 @@ export default function GuruLaporanClient({
 
   return (
     <div className="space-y-5 max-w-4xl mx-auto">
-      <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
-        <h3 className="font-bold text-gray-900 text-sm">Form Input Laporan Harian</h3>
-        <p className="text-xs text-gray-500">Pilih santri, isi data hafalan & tahsin, lalu simpan laporan</p>
+      <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+        <div>
+          <h3 className="font-bold text-gray-900 text-sm">Form Input Laporan Harian</h3>
+          <p className="text-xs text-gray-500">Pilih santri, isi data hafalan & tahsin, lalu simpan laporan</p>
+        </div>
+        {selectedClassId > 0 && (
+          <a
+            href={`/api/learning-reports/batch-export?classId=${selectedClassId}`}
+            download
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl font-semibold text-xs transition self-start sm:self-auto"
+            title="Download seluruh laporan santri di kelas ini dalam file ZIP"
+          >
+            <Download className="w-4 h-4 text-emerald-600" />
+            <span>Unduh Laporan Kelas (ZIP)</span>
+          </a>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
