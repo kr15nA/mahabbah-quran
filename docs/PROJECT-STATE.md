@@ -45,8 +45,16 @@ AI-TAHFIZ — Guru Tahfiz Grounded AI Advisory V1 (PASS)
 AUDIT-BASE-001 — Audit Log Foundation (PASS)
 - Scope: Centralized audit logging for core academic/user entities.
 - Evidence: Full coverage on CREATE/UPDATE/ACTIVATE/DEACTIVATE.
+
+COVERAGE-SPRINT-01 — Core Workflow Fill (IMPLEMENTED)
+- TAHSIN-GURU-001 (IMPLEMENTED): Standalone Guru Tahsin assessment workflow at `/guru/tahsin`. Reused `tahsin_records`, `requireStudentAccess`, with 4 criteria evaluation and history.
+- AUDIT-UI-001 (IMPLEMENTED): Admin audit viewer at `/admin/audit-logs`. Filterable, paginated viewer with `old_values`/`new_values` JSON inspection.
+- ADMIN-CONFIG-001 (IMPLEMENTED): Persisted institution settings at `/admin/pengaturan`. Created table `institution_settings` (migration 0025) with audit trail logging.
+- NOTIF-GURU-SANTRI-001 (IMPLEMENTED): In-app notification inboxes at `/guru/notifikasi` and `/santri/notifikasi` with individual and bulk mark-read support.
+- PARENT-HIST-001 (IMPLEMENTED): Historical academic-year selector for parent portal on `/orang-tua/laporan` and `/orang-tua/absensi` with strict server authorization via `resolveParentChildContext`.
+
 CANONICAL DOCUMENTATION:
-ROADMAP-RECONCILIATION-001
+ROADMAP-RECONCILIATION-001, ROADMAP-RECONCILIATION-002
 
 STACK:
 - Framework: Next.js 15 (App Router)
