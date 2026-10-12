@@ -13,6 +13,7 @@ export type SessionPayload = {
   role: 'guru' | 'orang_tua' | 'admin'
   fullName: string
   email?: string | null
+  mustChangePassword?: boolean
 }
 
 export async function createSession(payload: SessionPayload): Promise<string> {

@@ -41,6 +41,17 @@ export async function middleware(req: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, getJwtSecretKey())
     const role = payload.role as string
+    const mustChangePassword = Boolean(payload.mustChangePassword)
+
+    if (mustChangePassword) {
+      if (pathname === '/ubah-password' || pathname.startsWith('/ubah-password/') || pathname.startsWith('/api/auth/')) {
+        return NextResponse.next()
+      }
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Password change required', code: 'PASSWORD_CHANGE_REQUIRED' }, { status: 403 })
+      }
+      return NextResponse.redirect(new URL('/ubah-password', req.url))
+    }
 
     const res = NextResponse.next()
     res.headers.set('x-user-id', String(payload.userId))
@@ -55,5 +66,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/(guru|orang-tua|admin|santri)/:path*', '/api/((?!auth).*)', '/pilih-konteks', '/auth/landing'],
+  matcher: ['/', '/(guru|orang-tua|admin|santri)/:path*', '/api/((?!auth).*)', '/pilih-konteks', '/auth/landing', '/ubah-password'],
 }

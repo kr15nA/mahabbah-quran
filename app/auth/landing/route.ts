@@ -9,6 +9,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
+  if (session.mustChangePassword) {
+    return NextResponse.redirect(new URL('/ubah-password', req.url))
+  }
+
   const contexts = await getAvailableUserContexts(session)
   const preferredContext = req.cookies.get('mq_last_context')?.value
 

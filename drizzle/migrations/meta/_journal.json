@@ -190,6 +190,13 @@
       "when": 1791802041760,
       "tag": "0026_home_murajaah",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791815412403,
+      "tag": "0027_mean_banshee",
+      "breakpoints": true
     }
   ]
 }
