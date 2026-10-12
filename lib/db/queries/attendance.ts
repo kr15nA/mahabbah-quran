@@ -45,7 +45,14 @@ export async function getAttendanceByClassDate(classId: number, date: string): P
   return rows as AttendanceRow[]
 }
 
-export async function getAttendanceSummaryByStudent(studentId: number, month?: string) {
+export async function getAttendanceSummaryByStudent(
+  studentId: number,
+  monthOrOptions?: string | { month?: string; startDate?: string; endDate?: string }
+) {
+  const month = typeof monthOrOptions === 'string' ? monthOrOptions : monthOrOptions?.month
+  const startDate = typeof monthOrOptions === 'object' ? monthOrOptions.startDate : undefined
+  const endDate = typeof monthOrOptions === 'object' ? monthOrOptions.endDate : undefined
+
   const rows = await sql`
     SELECT
       COUNT(*) FILTER (WHERE status = 'hadir')::int AS hadir,
@@ -56,16 +63,27 @@ export async function getAttendanceSummaryByStudent(studentId: number, month?: s
     FROM attendance
     WHERE student_id = ${studentId}
       AND (${month ?? null}::text IS NULL OR TO_CHAR(attendance_date, 'YYYY-MM') = ${month})
+      AND (${startDate ?? null}::date IS NULL OR attendance_date >= ${startDate}::date)
+      AND (${endDate ?? null}::date IS NULL OR attendance_date <= ${endDate}::date)
   `
   return rows[0] as { hadir: number; izin: number; sakit: number; alfa: number; total: number }
 }
 
-export async function getAttendanceByStudentMonth(studentId: number, month?: string): Promise<AttendanceRow[]> {
+export async function getAttendanceByStudentMonth(
+  studentId: number,
+  monthOrOptions?: string | { month?: string; startDate?: string; endDate?: string }
+): Promise<AttendanceRow[]> {
+  const month = typeof monthOrOptions === 'string' ? monthOrOptions : monthOrOptions?.month
+  const startDate = typeof monthOrOptions === 'object' ? monthOrOptions.startDate : undefined
+  const endDate = typeof monthOrOptions === 'object' ? monthOrOptions.endDate : undefined
+
   const rows = await sql`
     SELECT a.id, a.student_id, a.class_id, a.teacher_id, a.attendance_date, a.status, a.notes
     FROM attendance a
     WHERE a.student_id = ${studentId}
       AND (${month ?? null}::text IS NULL OR TO_CHAR(a.attendance_date, 'YYYY-MM') = ${month})
+      AND (${startDate ?? null}::date IS NULL OR a.attendance_date >= ${startDate}::date)
+      AND (${endDate ?? null}::date IS NULL OR a.attendance_date <= ${endDate}::date)
     ORDER BY a.attendance_date DESC
   `
   return rows as AttendanceRow[]

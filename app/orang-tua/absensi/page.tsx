@@ -3,8 +3,10 @@ import Link from 'next/link'
 import { getSession } from '@/lib/auth/session'
 import { resolveParentChildContext, studentIdToDbNumber } from '@/lib/guardians/parent-context'
 import { getAttendanceSummaryByStudent, getAttendanceByStudentMonth } from '@/lib/db/queries/attendance'
+import { getAcademicYears } from '@/lib/db/queries/academic-years'
 import { redirect } from 'next/navigation'
 import ChildSwitcher from '@/components/orang-tua/ChildSwitcher'
+import AcademicYearSwitcher from '@/components/orang-tua/AcademicYearSwitcher'
 
 function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -15,16 +17,26 @@ function getMonthName(monthStr: string) {
   return new Date(year, month - 1, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
 }
 
-export default async function ParentAbsensiPage({ searchParams }: { searchParams: Promise<{ child_id?: string; month?: string }> }) {
+export default async function ParentAbsensiPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ child_id?: string; month?: string; academic_year_id?: string }>
+}) {
   const session = await getSession()
   if (!session || session.role !== 'orang_tua') {
     redirect('/login')
   }
 
   const resolvedParams = await searchParams
+  const allYears = await getAcademicYears()
+  const activeYear = allYears.find((y) => y.isActive) || allYears[0]
+  const parsedYearId = resolvedParams.academic_year_id ? parseInt(resolvedParams.academic_year_id, 10) : undefined
+  const selectedYear = (parsedYearId ? allYears.find((y) => y.id === parsedYearId) : null) || activeYear
+
   const context = await resolveParentChildContext({
     userId: session.userId,
-    requestedChildId: resolvedParams.child_id
+    requestedChildId: resolvedParams.child_id,
+    academicYearId: selectedYear?.id,
   })
 
   if (context.status === 'NO_CHILDREN') {
@@ -85,8 +97,16 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
 
   // Determine active month
   const today = new Date()
-  const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
-  const month = resolvedParams.month && /^\d{4}-\d{2}$/.test(resolvedParams.month) ? resolvedParams.month : defaultMonth
+  const todayMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+  const defaultMonth =
+    selectedYear && !selectedYear.isActive
+      ? selectedYear.startDate.slice(0, 7)
+      : todayMonth
+
+  const month =
+    resolvedParams.month && /^\d{4}-\d{2}$/.test(resolvedParams.month)
+      ? resolvedParams.month
+      : defaultMonth
 
   // Calculate prev/next month for pagination
   const [mYear, mMonth] = month.split('-').map(Number)
@@ -95,27 +115,57 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
   const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
   const nextMonthStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`
 
-  // Fetch real attendance using DB numeric ID
+  // Fetch real attendance using DB numeric ID with date bounds
   const dbStudentId = studentIdToDbNumber(childId)
   const [summary, history] = await Promise.all([
-    getAttendanceSummaryByStudent(dbStudentId, month),
-    getAttendanceByStudentMonth(dbStudentId, month)
+    getAttendanceSummaryByStudent(dbStudentId, {
+      month,
+      startDate: selectedYear?.startDate,
+      endDate: selectedYear?.endDate,
+    }),
+    getAttendanceByStudentMonth(dbStudentId, {
+      month,
+      startDate: selectedYear?.startDate,
+      endDate: selectedYear?.endDate,
+    }),
   ])
 
   return (
     <div className="space-y-4 pb-20">
       <ChildSwitcher childrenData={children} activeChildId={childId} />
 
+      {/* Academic Year Switcher */}
+      {allYears.length > 0 && selectedYear && (
+        <AcademicYearSwitcher
+          academicYears={allYears.map((ay) => ({
+            id: ay.id,
+            name: ay.name,
+            isActive: ay.isActive,
+          }))}
+          selectedYearId={selectedYear.id}
+        />
+      )}
+
       {/* Month Filter */}
       <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
-        <Link href={`?child_id=${childId}&month=${prevMonthStr}`} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600">
+        <Link
+          href={`?child_id=${childId}&academic_year_id=${selectedYear?.id}&month=${prevMonthStr}`}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600"
+        >
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <div className="text-center">
           <h3 className="font-bold text-gray-900 text-xs">{getMonthName(month)}</h3>
-          <p className="text-[10px] text-gray-500">{child.student_name}</p>
+          <p className="text-[10px] text-gray-500">
+            {child.student_name}
+            {selectedYear ? ` · TA ${selectedYear.name}` : ''}
+            {child.class_name ? ` (${child.class_name})` : ''}
+          </p>
         </div>
-        <Link href={`?child_id=${childId}&month=${nextMonthStr}`} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600">
+        <Link
+          href={`?child_id=${childId}&academic_year_id=${selectedYear?.id}&month=${nextMonthStr}`}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600"
+        >
           <ChevronRight className="w-5 h-5" />
         </Link>
       </div>
@@ -144,7 +194,7 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm divide-y divide-gray-100 text-xs overflow-hidden">
         {history.length === 0 ? (
           <div className="p-6 text-center text-gray-500">
-            Tidak ada catatan absensi untuk bulan ini.
+            Tidak ada catatan absensi untuk bulan ini di tahun ajaran {selectedYear?.name}.
           </div>
         ) : (
           history.map((record) => (
@@ -155,9 +205,13 @@ export default async function ParentAbsensiPage({ searchParams }: { searchParams
               </div>
               <span
                 className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                  record.status === 'hadir' ? 'bg-emerald-100 text-emerald-800' :
-                  record.status === 'izin' ? 'bg-blue-100 text-blue-800' :
-                  record.status === 'sakit' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
+                  record.status === 'hadir'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : record.status === 'izin'
+                    ? 'bg-blue-100 text-blue-800'
+                    : record.status === 'sakit'
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-red-100 text-red-800'
                 }`}
               >
                 {record.status}
