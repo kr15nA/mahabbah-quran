@@ -9,14 +9,36 @@ import { getStudentPayments } from '@/lib/finance/queries/parent-finance'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await getSession(request)
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const canReadOwn = await hasPermission(session as any, 'finance.billing.read_own_children')
+    // Explicitly restrict to parent context (Case A: parent-only endpoint)
+    // Administrative payment inspection belongs on canonical /api/finance/payments
+    if (session.role === 'admin') {
+      return NextResponse.json(
+        {
+          error: 'Forbidden: Endpoint ini khusus konteks orang tua. Untuk akses pembayaran administratif, gunakan endpoint /api/finance/payments.',
+          code: 'PARENT_CONTEXT_REQUIRED',
+        },
+        { status: 403 }
+      )
+    }
+
+    if (session.role !== 'orang_tua') {
+      return NextResponse.json(
+        {
+          error: 'Forbidden: Hanya akun orang tua yang diizinkan mengakses data pembayaran santri.',
+          code: 'FORBIDDEN_ROLE',
+        },
+        { status: 403 }
+      )
+    }
+
+    const canReadOwn = await hasPermission(session, 'finance.billing.read_own_children')
     if (!canReadOwn) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Forbidden: Akses finansial santri tidak tersedia.' }, { status: 403 })
     }
 
     const searchParams = request.nextUrl.searchParams
