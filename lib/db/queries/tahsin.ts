@@ -100,3 +100,21 @@ export async function searchTahsin(params: {
     total: Number((countRows[0] as any).total)
   }
 }
+
+export async function getRecentTahsinByTeacher(teacherId: number, limit = 20) {
+  const rows = await sql`
+    SELECT 
+      tr.*, 
+      st.full_name AS student_name,
+      c.name AS class_name
+    FROM tahsin_records tr
+    JOIN students st ON st.id = tr.student_id
+    JOIN enrollments e ON e.student_id = st.id AND e.academic_year_id = (SELECT id FROM academic_years WHERE is_active = TRUE LIMIT 1)
+    JOIN classes c ON c.id = e.class_id
+    WHERE tr.teacher_id = ${teacherId}
+      AND st.deleted_at IS NULL
+    ORDER BY tr.session_date DESC, tr.id DESC
+    LIMIT ${limit}
+  `
+  return rows as (TahsinRow & { student_name: string; class_name: string })[]
+}

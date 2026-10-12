@@ -56,7 +56,11 @@ export async function getLearningReportsByTeacherDate(teacherId: number, date?: 
   return rows as LearningReportRow[]
 }
 
-export async function getLearningReportsByStudent(studentId: number, limit = 20): Promise<LearningReportRow[]> {
+export async function getLearningReportsByStudent(
+  studentId: number,
+  limit = 20,
+  options?: { startDate?: string; endDate?: string }
+): Promise<LearningReportRow[]> {
   const rows = await sql`
     SELECT
       lr.*,
@@ -74,6 +78,8 @@ export async function getLearningReportsByStudent(studentId: number, limit = 20)
     LEFT JOIN surahs sr ON sr.id = hr.surah_id
     LEFT JOIN classes c ON c.id = lr.class_id
     WHERE lr.student_id = ${studentId}
+      AND (${options?.startDate ?? null}::date IS NULL OR lr.report_date >= ${options?.startDate}::date)
+      AND (${options?.endDate ?? null}::date IS NULL OR lr.report_date <= ${options?.endDate}::date)
     ORDER BY lr.report_date DESC, lr.id DESC
     LIMIT ${limit}
   `

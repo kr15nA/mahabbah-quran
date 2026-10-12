@@ -21,6 +21,7 @@ import {
   Layers,
   Star,
   Shield,
+  History,
   FileDown,
   Heart,
   CreditCard,
@@ -87,6 +88,7 @@ const NAV_GROUPS = [
       { id: 'ai', href: '/admin/ai', label: 'AI Mahabbah', icon: Brain },
       { id: 'notifikasi', href: '/admin/notifikasi', label: 'Notifikasi', icon: Bell },
       { id: 'pengguna', href: '/admin/pengguna', label: 'Pengguna & Akses', icon: Shield },
+      { id: 'audit-logs', href: '/admin/audit-logs', label: 'Jejak Audit', icon: History },
       { id: 'import-export', href: '/admin/import-export', label: 'Import/Export', icon: FileDown },
       { id: 'pengaturan', href: '/admin/pengaturan', label: 'Pengaturan', icon: Settings },
     ]

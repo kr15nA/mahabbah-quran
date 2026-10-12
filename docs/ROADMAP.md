@@ -177,6 +177,15 @@
 - **OUTSTANDING WORK:** None
 - **NEXT ACTION:** None
 
+- **TASK ID:** ADMIN-CONFIG-001
+- **TITLE:** Persisted Institution Configuration
+- **DOMAIN:** Admin Portal
+- **STATUS:** IMPLEMENTED
+- **DEPENDENCIES:** PORTAL-ADMIN-001
+- **EVIDENCE:** Table `institution_settings`, migration 0025, route `/admin/pengaturan`, singleton query, audit trail logging.
+- **OUTSTANDING WORK:** None for MVP.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
+
 ## G. GURU PORTAL
 - **TASK ID:** PORTAL-GURU-001
 - **TITLE:** Core Guru Portal
@@ -187,6 +196,15 @@
 - **OUTSTANDING WORK:** None
 - **NEXT ACTION:** None
 
+- **TASK ID:** TAHSIN-GURU-001
+- **TITLE:** Standalone Guru Tahsin Assessment
+- **DOMAIN:** Guru Portal
+- **STATUS:** IMPLEMENTED
+- **DEPENDENCIES:** PORTAL-GURU-001
+- **EVIDENCE:** Route `/guru/tahsin`, Server Action `createTahsinAction`, Makhraj/Tajwid/Kelancaran/Ghunnah assessment, recent Tahsin history, requireStudentAccess verification.
+- **OUTSTANDING WORK:** None for MVP.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
+
 ## H. PARENT PORTAL
 - **TASK ID:** PORTAL-PARENT-001
 - **TITLE:** Parent Context Canonical Shell (C1, C2, C2.1)
@@ -196,6 +214,15 @@
 - **EVIDENCE:** `PARENT-PORTAL` audit docs.
 - **OUTSTANDING WORK:** None
 - **NEXT ACTION:** None
+
+- **TASK ID:** PARENT-HIST-001
+- **TITLE:** Parent Historical Academic-Year Views
+- **DOMAIN:** Parent Portal
+- **STATUS:** IMPLEMENTED
+- **DEPENDENCIES:** PORTAL-PARENT-001
+- **EVIDENCE:** AcademicYearSwitcher component, academicYearId in resolveParentChildContext, date-bounded reports and attendance on `/orang-tua/laporan` and `/orang-tua/absensi`. Tested with `test-parent-hist-001.ts`.
+- **OUTSTANDING WORK:** None for MVP.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
 
 ## I. SANTRI PORTAL
 - **TASK ID:** PORTAL-SANTRI-001
@@ -329,6 +356,15 @@
 - **OUTSTANDING WORK:** Full user-preference mappings and read-state synchronization.
 - **NEXT ACTION:** DEFERRED
 
+- **TASK ID:** NOTIF-GURU-SANTRI-001
+- **TITLE:** In-App Notification Inboxes (Guru & Santri)
+- **DOMAIN:** Notifications
+- **STATUS:** IMPLEMENTED
+- **DEPENDENCIES:** NOTIF-BASE-001
+- **EVIDENCE:** Routes `/guru/notifikasi` and `/santri/notifikasi` using `NotificationInboxClient` with individual and mark-all read capability.
+- **OUTSTANDING WORK:** None for MVP.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
+
 - **TASK ID:** NOTIF-EXT-001
 - **TITLE:** Email & WhatsApp Delivery
 - **DOMAIN:** Notifications
@@ -361,11 +397,11 @@
 - **TASK ID:** AUDIT-UI-001
 - **TITLE:** Audit Viewer UI
 - **DOMAIN:** Audit
-- **STATUS:** DEFERRED
+- **STATUS:** IMPLEMENTED
 - **DEPENDENCIES:** AUDIT-BASE-001
-- **EVIDENCE:** No frontend interface for logs.
-- **OUTSTANDING WORK:** Admin viewer for system trails.
-- **NEXT ACTION:** DEFERRED
+- **EVIDENCE:** Route `/admin/audit-logs`, AdminAuditLogsClient, countAuditLogs. Read-only viewer with filtering, pagination, and JSON diff modal.
+- **OUTSTANDING WORK:** None for MVP.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
 
 ## Q. FINANCE
 - **TASK ID:** FINANCE-V1

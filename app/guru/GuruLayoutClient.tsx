@@ -7,6 +7,8 @@ import {
   Calendar,
   FileText,
   BookMarked,
+  Sparkles,
+  Bell,
   LogOut,
 } from 'lucide-react'
 
@@ -15,8 +17,10 @@ const NAV = [
   { href: '/guru/santri', label: 'Santri Saya', icon: Users },
   { href: '/guru/absensi', label: 'Absensi', icon: Calendar },
   { href: '/guru/hafalan', label: 'Hafalan', icon: BookMarked },
+  { href: '/guru/tahsin', label: 'Tahsin', icon: Sparkles },
   { href: '/guru/tasmi', label: 'Tasmi', icon: BookMarked },
   { href: '/guru/laporan', label: 'Laporan', icon: FileText },
+  { href: '/guru/notifikasi', label: 'Notifikasi', icon: Bell },
 ]
 
 import AppShell from '@/components/layout/AppShell'

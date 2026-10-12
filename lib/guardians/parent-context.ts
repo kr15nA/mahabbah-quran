@@ -64,13 +64,13 @@ export type SafeChildDisplay = {
  * - Not soft-deleted (`deletedAt IS NULL`)
  * - Academic access granted (`canViewAcademic = true`)
  */
-export async function getAuthorizedAcademicChildren(userId: number): Promise<SafeChildDisplay[]> {
+export async function getAuthorizedAcademicChildren(userId: number, academicYearId?: number): Promise<SafeChildDisplay[]> {
   const rows = await sql`
     SELECT sp.student_id, s.full_name AS student_name, s.nickname AS student_nickname, s.photo_url AS student_photo,
       c.name AS class_name, p.name AS program_name, u.full_name AS teacher_name
     FROM student_parents sp
     JOIN students s ON s.id = sp.student_id
-    LEFT JOIN academic_years ay ON ay.is_active = TRUE
+    LEFT JOIN academic_years ay ON ${academicYearId ? sql`ay.id = ${academicYearId}` : sql`ay.is_active = TRUE`}
     LEFT JOIN enrollments e ON e.student_id = s.id AND e.academic_year_id = ay.id
     LEFT JOIN classes c ON c.id = e.class_id
     LEFT JOIN programs p ON p.id = c.program_id
@@ -110,9 +110,10 @@ export type ContextResolutionResult =
 export async function resolveParentChildContext(params: {
   userId: number
   requestedChildId?: string | number | null
+  academicYearId?: number | null
 }): Promise<ContextResolutionResult> {
   
-  const authorizedChildren = await getAuthorizedAcademicChildren(params.userId)
+  const authorizedChildren = await getAuthorizedAcademicChildren(params.userId, params.academicYearId ? Number(params.academicYearId) : undefined)
 
   if (authorizedChildren.length === 0) {
     return { status: 'NO_CHILDREN' }
