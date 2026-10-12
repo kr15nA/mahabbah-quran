@@ -1,109 +1,240 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
-import { Receipt, Search } from 'lucide-react'
+import { Receipt, CheckCircle2, AlertCircle, CreditCard, ChevronRight, User, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
+import { getSession } from '@/lib/auth/session'
+import { redirect } from 'next/navigation'
+import { resolveParentFinanceContext, studentIdToDbNumber } from '@/lib/guardians/parent-context'
+import { getStudentPayments } from '@/lib/finance/queries/parent-finance'
+import ChildSwitcher from '@/components/orang-tua/ChildSwitcher'
+import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
+import TopBar from '@/components/layout/TopBar'
 
-export default function ParentPaymentsPage() {
-  const [payments, setPayments] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+function formatCurrency(amount: string | number) {
+  const num = typeof amount === 'string' ? Number(amount) : amount
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num)
+}
 
-  useEffect(() => {
-    fetchPayments()
-  }, [])
+function getStatusBadge(status: string) {
+  switch (status) {
+    case 'PENDING':
+      return <Badge variant="warning">Sedang Diproses</Badge>
+    case 'CONFIRMED':
+      return <Badge variant="success">Berhasil</Badge>
+    case 'REFUNDED':
+      return <Badge variant="neutral">Dikembalikan</Badge>
+    case 'CANCELLED':
+      return <Badge variant="danger">Gagal/Dibatalkan</Badge>
+    default:
+      return <Badge variant="neutral">{status}</Badge>
+  }
+}
 
-  const fetchPayments = async () => {
-    try {
-      const res = await fetch('/api/orang-tua/pembayaran')
-      if (res.ok) {
-        const json = await res.json()
-        setPayments(json.data || [])
-      }
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setIsLoading(false)
-    }
+export default async function ParentPembayaranPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ child_id?: string }>
+}) {
+  const session = await getSession()
+  if (!session || session.role !== 'orang_tua') {
+    redirect('/login')
   }
 
-  const formatCurrency = (amount: string) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(amount))
-  }
+  const resolvedParams = await searchParams
+  const context = await resolveParentFinanceContext({
+    userId: session.userId,
+    requestedChildId: resolvedParams.child_id,
+  })
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'PENDING': return <Badge variant="warning">Sedang Diproses</Badge>
-      case 'CONFIRMED': return <Badge variant="success">Berhasil</Badge>
-      case 'REFUNDED': return <Badge variant="neutral">Dikembalikan</Badge>
-      case 'CANCELLED': return <Badge variant="danger">Gagal/Dibatalkan</Badge>
-      default: return <Badge variant="neutral">{status}</Badge>
-    }
-  }
-
-  return (
-    <div className="space-y-6 pb-24 md:pb-6">
-      <div className="px-4 pt-6">
-        <h2 className="text-xl font-bold text-gray-900">Riwayat Pembayaran</h2>
-        <p className="text-sm text-gray-500 mt-1">Laporan pembayaran tagihan anak-anak Anda</p>
-      </div>
-
-      <div className="px-4">
-        <div className="relative">
-          <Search className="w-5 h-5 absolute left-3 top-3 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Cari no. pembayaran atau nama anak..." 
-            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-[#18085A] text-sm"
-          />
+  if (context.status === 'NO_CHILDREN') {
+    return (
+      <div className="pb-24">
+        <TopBar title="Riwayat Pembayaran" showBack />
+        <div className="p-4 space-y-4 max-w-4xl mx-auto">
+          <Card className="p-8 flex flex-col items-center justify-center text-center">
+            <User className="w-12 h-12 text-gray-300 mb-3" />
+            <h3 className="text-gray-900 font-bold mb-1">Akses Keuangan Belum Tersedia</h3>
+            <p className="text-gray-500 text-sm max-w-md">
+              Akun Anda belum dihubungkan dengan data santri atau belum diberikan hak akses keuangan (can_view_finance).
+            </p>
+          </Card>
         </div>
       </div>
+    )
+  }
 
-      <div className="px-4 space-y-4">
-        {isLoading ? (
-          <div className="text-center py-8 text-gray-500">Memuat riwayat pembayaran...</div>
-        ) : payments.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 flex flex-col items-center bg-white rounded-2xl shadow-sm border border-gray-100">
-            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-              <Receipt className="w-8 h-8 text-gray-300" />
-            </div>
-            <p>Belum ada riwayat pembayaran.</p>
+  if (context.status === 'INVALID_CHILD') {
+    return (
+      <div className="pb-24">
+        <TopBar title="Riwayat Pembayaran" showBack />
+        <div className="p-4 space-y-4 max-w-4xl mx-auto">
+          <Card className="p-8 flex flex-col items-center justify-center text-center border-red-200 bg-red-50">
+            <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
+            <h3 className="text-red-900 font-bold mb-1">Identitas Santri Tidak Valid</h3>
+            <p className="text-red-700 text-sm max-w-md">Format ID santri yang diminta tidak valid.</p>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (context.status === 'FORBIDDEN_CHILD') {
+    return (
+      <div className="pb-24">
+        <TopBar title="Riwayat Pembayaran" showBack />
+        <div className="p-4 space-y-4 max-w-4xl mx-auto">
+          <Card className="p-8 flex flex-col items-center justify-center text-center border-red-200 bg-red-50">
+            <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
+            <h3 className="text-red-900 font-bold mb-1">Santri Tidak Ditemukan</h3>
+            <p className="text-red-700 text-sm max-w-md mb-4">
+              Anda tidak memiliki hak akses finansial untuk santri yang dipilih.
+            </p>
+            {context.children.length > 0 && (
+              <ChildSwitcher childrenData={context.children} activeChildId="" />
+            )}
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (context.status === 'CHILD_REQUIRED') {
+    return (
+      <div className="pb-24">
+        <TopBar title="Riwayat Pembayaran" showBack />
+        <div className="p-4 space-y-4 max-w-4xl mx-auto">
+          <Card className="p-8 flex flex-col items-center justify-center text-center">
+            <User className="w-12 h-12 text-gray-300 mb-3" />
+            <h3 className="text-gray-900 font-bold mb-1">Pilih Santri</h3>
+            <p className="text-gray-500 text-sm max-w-md mb-4">Silakan pilih santri untuk melihat riwayat pembayaran.</p>
+            <ChildSwitcher childrenData={context.children} activeChildId="" />
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  const activeChild = context.child
+  const allChildren = context.children
+  const childIdNum = studentIdToDbNumber(activeChild.student_id)
+
+  const payments = await getStudentPayments(childIdNum)
+  const totalPaid = payments
+    .filter(p => p.status === 'CONFIRMED')
+    .reduce((sum, p) => sum + Number(p.amount), 0)
+
+  return (
+    <div className="pb-24">
+      <TopBar title="Riwayat Pembayaran" showBack />
+
+      <div className="p-4 space-y-5 max-w-4xl mx-auto">
+        {/* Child Selector */}
+        {allChildren.length > 1 && (
+          <div className="space-y-1">
+            <div className="text-xs font-semibold text-gray-500 px-1">Pilih Santri</div>
+            <ChildSwitcher childrenData={allChildren} activeChildId={activeChild.student_id} />
           </div>
-        ) : (
-          payments.map((payment) => (
-            <Link key={payment.id} href={`/orang-tua/pembayaran/${payment.id}`} className="block">
-              <Card className="p-5 hover:border-[#18085A]/30 transition-colors shadow-sm active:scale-[0.98]">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <div className="text-xs text-gray-500 font-medium mb-1">
-                      {new Date(payment.paymentDate).toLocaleDateString('id-ID', {
-                        weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
-                      })}
-                    </div>
-                    <div className="font-semibold text-[#18085A]">{payment.studentName}</div>
-                  </div>
-                  {getStatusBadge(payment.status)}
-                </div>
-                
-                <div className="flex justify-between items-end border-t border-gray-50 pt-3 mt-3">
-                  <div className="text-sm text-gray-500">
-                    <div className="mb-0.5">No: {payment.paymentNumber}</div>
-                    <div className="text-xs bg-gray-100 px-2 py-1 rounded inline-block mt-1">
-                      {payment.paymentMethod}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-500 mb-0.5">Total Bayar</div>
-                    <div className="font-bold text-gray-900 font-mono">
-                      {formatCurrency(payment.amount)}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </Link>
-          ))
         )}
+
+        {/* Selected Child Identity Banner */}
+        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-full bg-[#18085A] text-[#FBBF24] font-bold text-base flex items-center justify-center shrink-0">
+              {activeChild.student_name.charAt(0)}
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-bold text-gray-900 text-base truncate">{activeChild.student_name}</h2>
+              <p className="text-xs text-gray-500">{activeChild.class_name || 'Santri Mahabbah'}</p>
+            </div>
+          </div>
+          <Link
+            href={`/orang-tua/tagihan?child_id=${activeChild.student_id}`}
+            className="flex items-center gap-1 text-xs font-semibold text-[#18085A] hover:underline shrink-0 bg-indigo-50 px-3 py-1.5 rounded-lg"
+          >
+            <Receipt className="w-3.5 h-3.5" />
+            <span>Lihat Tagihan</span>
+          </Link>
+        </div>
+
+        {/* Total Confirmed Payments Card */}
+        <div className="bg-gradient-to-br from-[#18085A] to-[#2E1065] text-white p-5 rounded-2xl shadow-sm">
+          <div className="flex items-center gap-1.5 text-xs text-indigo-200 mb-1">
+            <ShieldCheck className="w-4 h-4 text-green-400" />
+            <span>Total Pembayaran Berhasil</span>
+          </div>
+          <div className="text-2xl font-bold font-mono tracking-tight">
+            {formatCurrency(totalPaid)}
+          </div>
+          <div className="text-xs text-indigo-300 mt-1">
+            {payments.filter(p => p.status === 'CONFIRMED').length} transaksi terkonfirmasi
+          </div>
+        </div>
+
+        {/* Payment History List */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="font-bold text-gray-900 text-sm">Transaksi Pembayaran ({payments.length})</h3>
+          </div>
+
+          {payments.length === 0 ? (
+            <Card className="p-8 flex flex-col items-center justify-center text-center">
+              <Receipt className="w-12 h-12 text-gray-300 mb-3" />
+              <div className="text-gray-900 font-medium mb-1">Belum Ada Transaksi</div>
+              <div className="text-gray-500 text-sm">Belum ada riwayat pembayaran untuk {activeChild.student_name}.</div>
+            </Card>
+          ) : (
+            payments.map((p) => (
+              <Link key={p.id} href={`/orang-tua/pembayaran/${p.id}`}>
+                <Card className="p-4 hover:border-[#18085A]/30 transition-all active:bg-gray-50 cursor-pointer mb-3">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="text-xs text-gray-400 font-mono mb-0.5">{p.paymentNumber}</div>
+                      <div className="text-sm font-semibold text-gray-800">
+                        {new Date(p.paymentDate).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </div>
+                    </div>
+                    {getStatusBadge(p.status)}
+                  </div>
+
+                  {/* Allocations summary */}
+                  {p.allocations && p.allocations.length > 0 && (
+                    <div className="my-2 p-2.5 bg-gray-50 rounded-xl space-y-1.5 border border-gray-100">
+                      {p.allocations.map((alloc) => (
+                        <div key={alloc.id} className="flex justify-between items-center text-xs">
+                          <span className="text-gray-600 font-medium">
+                            {alloc.feeTypeName} {alloc.period ? `(${alloc.period})` : ''}
+                          </span>
+                          <span className="font-mono text-gray-900 font-semibold">
+                            {formatCurrency(alloc.allocatedAmount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-end border-t border-gray-100 pt-3 text-xs mt-2">
+                    <div className="text-gray-500">
+                      <span>Metode:</span>
+                      <span className="ml-1.5 font-medium bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                        {p.paymentMethod}
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Total Bayar</div>
+                      <div className="font-mono font-bold text-base text-[#18085A]">
+                        {formatCurrency(p.amount)}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </Link>
+            ))
+          )}
+        </div>
       </div>
     </div>
   )

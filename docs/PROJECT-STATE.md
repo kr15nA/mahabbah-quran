@@ -59,6 +59,11 @@ COVERAGE-SPRINT-02 — Tahfiz & Learner Expansion (IMPLEMENTED)
 - SANTRI-PRACTICE-001 (IMPLEMENTED): Memorization self-practice mode at `/santri/latihan`. Masking, progressive hint, and repetition counters. Strictly decoupled from official academic grades without mutating hafalan/tasmi records.
 - REPORT-BATCH-001 (IMPLEMENTED): Class-level batch report export packaged into ZIP at `/api/learning-reports/batch-export`. Server-side scoping ensuring Admin and assigned Guru access, deterministic filenames, and batch summary text.
 
+COVERAGE-SPRINT-03 — Finance & Learner Transparency (IMPLEMENTED)
+- PARENT-FINANCE-001 (IMPLEMENTED): Multi-child billing and payment history at `/orang-tua/tagihan` and `/orang-tua/pembayaran`. Enforces `student_parents.can_view_finance = TRUE` server-side, isolated multi-child context with ChildSwitcher, itemized fee breakdown (gross, scholarship deduction, paid, outstanding), and payment receipt view.
+- PORTAL-SANTRI-003 (IMPLEMENTED): Read-only learner billing transparency at `/santri/tagihan`. Reused self-student profile and finance domain models. Shows itemized fee components, payment allocations, and strictly isolates data with zero parent or sibling leakage.
+- FINANCE-RECURRING-002 (IMPLEMENTED): Automated recurring billing execution via `/api/cron/recurring-billing`. Protected with constant-time Bearer `CRON_SECRET` validation, deterministic period/academic year resolution, chunked idempotent processing, zero duplicate billing guarantee, and system audit logging.
+
 CANONICAL DOCUMENTATION:
 ROADMAP-RECONCILIATION-001, ROADMAP-RECONCILIATION-002
 
