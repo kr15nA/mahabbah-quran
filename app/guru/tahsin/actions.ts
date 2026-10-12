@@ -40,6 +40,11 @@ export async function createTahsinAction(input: CreateTahsinInput) {
       return { success: false, error: 'Tanggal evaluasi tidak valid (format YYYY-MM-DD)' }
     }
 
+    const parsedDate = new Date(input.sessionDate)
+    if (isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== input.sessionDate) {
+      return { success: false, error: 'Tanggal evaluasi tidak valid' }
+    }
+
     const makhraj = Number(input.makhrajScore)
     const tajwid = Number(input.tajwidScore)
     const kelancaran = Number(input.kelancaranScore)

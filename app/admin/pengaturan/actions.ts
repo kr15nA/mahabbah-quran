@@ -28,8 +28,8 @@ export async function saveInstitutionSettingsAction(formData: FormData) {
       return { success: false, error: 'Ambang batas kehadiran harus berupa angka 1 - 100%' }
     }
 
-    if (!/^\d{2}:\d{2}$/.test(dailyReportSchedule)) {
-      return { success: false, error: 'Format jadwal laporan harian harus HH:MM (contoh: 16:30)' }
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(dailyReportSchedule)) {
+      return { success: false, error: 'Format jadwal laporan harian harus HH:MM valid 24 jam (contoh: 16:30)' }
     }
 
     await updateInstitutionSettings(

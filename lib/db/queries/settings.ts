@@ -55,9 +55,20 @@ export async function getInstitutionSettings(): Promise<InstitutionSettingsRow> 
       minAttendancePct: 70,
       dailyReportSchedule: "16:30",
     })
+    .onConflictDoNothing()
     .returning()
 
-  return inserted[0] as InstitutionSettingsRow
+  if (inserted.length > 0) {
+    return inserted[0] as InstitutionSettingsRow
+  }
+
+  const [fallback] = await db
+    .select()
+    .from(institutionSettings)
+    .where(eq(institutionSettings.id, 1))
+    .limit(1)
+
+  return fallback as InstitutionSettingsRow
 }
 
 /**
