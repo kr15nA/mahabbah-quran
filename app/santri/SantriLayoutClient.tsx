@@ -1,12 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Home, BookOpen, Book, Sparkles, User, Calendar, Bookmark, Star, Bell, LogOut } from 'lucide-react'
+import { Home, BookOpen, Book, Brain, Sparkles, User, Calendar, Bookmark, Star, Bell, LogOut } from 'lucide-react'
 
 const NAV = [
   { href: '/santri', label: 'Dashboard', icon: Home },
   { href: '/santri/profil', label: 'Profil Saya', icon: User },
   { href: '/santri/quran', label: "Al-Qur'an", icon: Book },
+  { href: '/santri/latihan', label: 'Latihan Mandiri', icon: Brain },
   { href: '/santri/akademik', label: 'Akademik', icon: BookOpen },
   { href: '/santri/kehadiran', label: 'Kehadiran', icon: Calendar },
   { href: '/santri/tahfiz', label: 'Tahfiz', icon: Bookmark },
