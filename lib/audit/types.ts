@@ -34,6 +34,7 @@ export const AuditEntityType = {
   ACADEMIC_YEAR:      'ACADEMIC_YEAR',
   ENROLLMENT:         'ENROLLMENT',
   TEACHER_ASSIGNMENT: 'TEACHER_ASSIGNMENT',
+  SYSTEM_SETTINGS:    'SYSTEM_SETTINGS',
   student_parents:    'student_parents',
 } as const
 

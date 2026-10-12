@@ -176,6 +176,13 @@
       "when": 1791023559824,
       "tag": "0024_easy_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791784433210,
+      "tag": "0025_glamorous_maelstrom",
+      "breakpoints": true
     }
   ]
 }

@@ -806,3 +806,16 @@ export const rateLimits = pgTable('rate_limits', {
 }, (table) => ({
   pk: primaryKey({ columns: [table.namespace, table.subjectKey] })
 }))
+
+export const institutionSettings = pgTable('institution_settings', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  institutionName: text('institution_name').notNull().default("Yayasan Rumah Tahfizh Mahabbah Qur'an Indonesia"),
+  shortName: varchar('short_name', { length: 100 }).default("Mahabbah Qur'an"),
+  address: text('address'),
+  phone: varchar('phone', { length: 50 }),
+  email: varchar('email', { length: 100 }),
+  minAttendancePct: integer('min_attendance_pct').notNull().default(70),
+  dailyReportSchedule: varchar('daily_report_schedule', { length: 10 }).notNull().default('16:30'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedBy: bigint('updated_by', { mode: 'number' }).references(() => users.id),
+})
