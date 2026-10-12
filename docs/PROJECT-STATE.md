@@ -53,6 +53,12 @@ COVERAGE-SPRINT-01 — Core Workflow Fill (IMPLEMENTED)
 - NOTIF-GURU-SANTRI-001 (IMPLEMENTED): In-app notification inboxes at `/guru/notifikasi` and `/santri/notifikasi` with individual and bulk mark-read support.
 - PARENT-HIST-001 (IMPLEMENTED): Historical academic-year selector for parent portal on `/orang-tua/laporan` and `/orang-tua/absensi` with strict server authorization via `resolveParentChildContext`.
 
+COVERAGE-SPRINT-02 — Tahfiz & Learner Expansion (IMPLEMENTED)
+- SANTRI-QURAN-001 (IMPLEMENTED): In-app Quran reader for Santri portal at `/santri/quran`. Canonical scripture service with 30-day cache, Arabic, Latin, Indonesian translation, Juz filter, and responsive reader restricted to authenticated Santri learner context.
+- MURAJAAH-HOME-001 (IMPLEMENTED): Parent home muroja'ah logging and Guru verification. Added `home_murajaah_records` table (migration 0026). Strict IDOR protection ensuring parents only log for linked children and teachers only verify assigned students. Audit trail integrated.
+- SANTRI-PRACTICE-001 (IMPLEMENTED): Memorization self-practice mode at `/santri/latihan`. Masking, progressive hint, and repetition counters. Strictly decoupled from official academic grades without mutating hafalan/tasmi records.
+- REPORT-BATCH-001 (IMPLEMENTED): Class-level batch report export packaged into ZIP at `/api/learning-reports/batch-export`. Server-side scoping ensuring Admin and assigned Guru access, deterministic filenames, and batch summary text.
+
 CANONICAL DOCUMENTATION:
 ROADMAP-RECONCILIATION-001, ROADMAP-RECONCILIATION-002
 

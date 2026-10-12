@@ -224,6 +224,15 @@
 - **OUTSTANDING WORK:** None for MVP.
 - **NEXT ACTION:** SYSTEM-QA-FINAL
 
+- **TASK ID:** MURAJAAH-HOME-001
+- **TITLE:** Parent Home Muroja'ah Logging & Guru Verification
+- **DOMAIN:** Parent Portal / Mahabbah Tahfiz
+- **STATUS:** IMPLEMENTED
+- **DEPENDENCIES:** PORTAL-PARENT-001, PORTAL-GURU-001
+- **EVIDENCE:** Table `home_murajaah_records` (migration 0026), `/orang-tua/tahfiz` HomeMurajaahSection with child scoping and audit logging, `/guru/hafalan` HomeMurajaahVerifySection with teacher assignment scoping, verified via `scripts/test-sprint-02-coverage.ts`.
+- **OUTSTANDING WORK:** None for MVP.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
+
 ## I. SANTRI PORTAL
 - **TASK ID:** PORTAL-SANTRI-001
 - **TITLE:** Full Portal Santri Phase D1 & D2
@@ -251,6 +260,24 @@
 - **EVIDENCE:** Identified as deferred in Portal D docs.
 - **OUTSTANDING WORK:** Unify learner-scoped billing visibility.
 - **NEXT ACTION:** Analysis required post Parent-Finance stabilization.
+
+- **TASK ID:** SANTRI-QURAN-001
+- **TITLE:** In-App Quran Reader for Santri Portal
+- **DOMAIN:** Santri Portal
+- **STATUS:** IMPLEMENTED
+- **DEPENDENCIES:** PORTAL-SANTRI-001, QURAN-SURAH-MASTER-001
+- **EVIDENCE:** Route `/santri/quran`, `lib/quran/service.ts` with 30-day cache, Surah list, detail reader with Arabic text, Latin transliteration, Indonesian translation, Juz filter, search, mobile navigation.
+- **OUTSTANDING WORK:** Audio reciter streaming (SANTRI-AUDIO-001).
+- **NEXT ACTION:** SYSTEM-QA-FINAL
+
+- **TASK ID:** SANTRI-PRACTICE-001
+- **TITLE:** Memorization Self-Practice Mode
+- **DOMAIN:** Santri Portal
+- **STATUS:** IMPLEMENTED
+- **DEPENDENCIES:** SANTRI-QURAN-001
+- **EVIDENCE:** Route `/santri/latihan`, masking/reveal mode, repetition (tikrar) counter, self-check drills, strictly unassessed without mutating hafalan/tasmi records.
+- **OUTSTANDING WORK:** Audio self-recording.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
 
 - **TASK ID:** QURAN-SURAH-MASTER-001
 - **TITLE:** Quran Surah Master Reference
@@ -284,11 +311,11 @@
 - **TASK ID:** REPORT-BATCH-001
 - **TITLE:** Batch & Cross-Year Reports
 - **DOMAIN:** Reporting
-- **STATUS:** DEFERRED
+- **STATUS:** IMPLEMENTED
 - **DEPENDENCIES:** REPORT-GEN-001
-- **EVIDENCE:** Not present in API.
-- **OUTSTANDING WORK:** Bulk export features.
-- **NEXT ACTION:** Requirements gathering.
+- **EVIDENCE:** Route `/api/learning-reports/batch-export`, class-level PDF generation packaged into PKZIP archive via Node zlib (`lib/utils/zip.ts`), `_RINGKASAN_BATCH` manifest, Admin and assigned Guru authorization, integration test `scripts/test-sprint-02-coverage.ts`.
+- **OUTSTANDING WORK:** Background worker/queue generation (OPS-QUEUE-001).
+- **NEXT ACTION:** SYSTEM-QA-FINAL
 
 - **TASK ID:** PDF-REPORT-001
 - **TITLE:** PDF Report Generation
