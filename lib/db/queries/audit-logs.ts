@@ -62,3 +62,22 @@ export async function getAuditLogs(filters: GetAuditLogsFilters = {}): Promise<A
 
   return rows as AuditLogWithActor[]
 }
+
+export async function countAuditLogs(filters: GetAuditLogsFilters = {}): Promise<number> {
+  const { actorUserId, action, entityType, entityId } = filters
+
+  const conditions = []
+  if (actorUserId !== undefined) conditions.push(eq(auditLogs.actorUserId, actorUserId))
+  if (action !== undefined) conditions.push(eq(auditLogs.action, action))
+  if (entityType !== undefined) conditions.push(eq(auditLogs.entityType, entityType))
+  if (entityId !== undefined) conditions.push(eq(auditLogs.entityId, entityId))
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+
+  const result = await db
+    .select({ count: drizzleSql`count(*)` })
+    .from(auditLogs)
+    .where(whereClause)
+
+  return Number(result[0]?.count || 0)
+}
