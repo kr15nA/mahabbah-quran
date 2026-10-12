@@ -1,4 +1,5 @@
 import { db } from '@/lib/db/client'
+import { txDb } from '@/lib/db/tx'
 import { users, students, studentParents, classes, enrollments, academicYears } from '@/drizzle/schema'
 import { eq, or, inArray, and, isNull } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
@@ -290,31 +291,33 @@ export async function parseAndValidateImport(fileBuffer: Buffer, type: DatasetTy
 export async function executeImport(type: DatasetType, validData: any[]): Promise<ExecuteImportResult> {
   if (validData.length === 0) return { count: 0 }
 
-  const tx = db
-  const credentials: ImportedCredential[] = []
+  return await txDb.transaction(async (tx) => {
+    let credentials: ImportedCredential[] | undefined = undefined
 
-  if (type === 'guru' || type === 'orang_tua') {
-    const inserts = await Promise.all(
-      validData.map(async (d) => {
-        const tempPw = generateTemporaryPassword()
-        const hashedPw = await bcrypt.hash(tempPw, 10)
-        credentials.push({
-          fullName: d.full_name,
-          identifier: d.email || d.phone || '-',
-          temporaryPassword: tempPw,
+    if (type === 'guru' || type === 'orang_tua') {
+      const generatedCreds: ImportedCredential[] = []
+      const inserts = await Promise.all(
+        validData.map(async (d) => {
+          const tempPw = generateTemporaryPassword()
+          const hashedPw = await bcrypt.hash(tempPw, 10)
+          generatedCreds.push({
+            fullName: d.full_name,
+            identifier: d.email || d.phone || '-',
+            temporaryPassword: tempPw,
+          })
+          return {
+            fullName: d.full_name,
+            email: d.email,
+            phone: d.phone,
+            role: type,
+            passwordHash: hashedPw,
+            mustChangePassword: true,
+          }
         })
-        return {
-          fullName: d.full_name,
-          email: d.email,
-          phone: d.phone,
-          role: type,
-          passwordHash: hashedPw,
-          mustChangePassword: true,
-        }
-      })
-    )
-    await tx.insert(users).values(inserts)
-  }
+      )
+      await tx.insert(users).values(inserts)
+      credentials = generatedCreds.length > 0 ? generatedCreds : undefined
+    }
 
     if (type === 'santri') {
       const [activeYear] = await tx.select({ id: academicYears.id })
@@ -368,6 +371,7 @@ export async function executeImport(type: DatasetType, validData: any[]): Promis
         }
       }
     }
-    
-  return { count: validData.length, credentials: credentials.length > 0 ? credentials : undefined }
+
+    return { count: validData.length, credentials }
+  })
 }
