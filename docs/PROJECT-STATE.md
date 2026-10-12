@@ -64,6 +64,20 @@ COVERAGE-SPRINT-03 — Finance & Learner Transparency (IMPLEMENTED)
 - PORTAL-SANTRI-003 (IMPLEMENTED): Read-only learner billing transparency at `/santri/tagihan`. Reused self-student profile and finance domain models. Shows itemized fee components, payment allocations, and strictly isolates data with zero parent or sibling leakage.
 - FINANCE-RECURRING-002 (IMPLEMENTED): Automated recurring billing execution via `/api/cron/recurring-billing`. Protected with constant-time Bearer `CRON_SECRET` validation, deterministic period/academic year resolution, chunked idempotent processing, zero duplicate billing guarantee, and system audit logging.
 
+COVERAGE-SPRINT-04 — Onboarding Security, Learner Audio & Operational Readiness (IMPLEMENTED)
+- IMPORT-ONBOARDING-001 (IMPLEMENTED): Secure imported user credential lifecycle. Additive migration 0027 adds `users.must_change_password`. Cryptographically random one-time credentials generated upon import, returned one-time to SUPER_ADMIN, with forced password change gating via `/ubah-password` before portal access.
+- SANTRI-AUDIO-001 (IMPLEMENTED): Quran learner reciter audio playback at `/santri/quran`. Integrated 6 canonical reciters from `equran.id` upstream, full-surah and per-ayah audio playback controls with single-active-stream invariant and automatic navigation cleanup. No microphone recording or AI pronunciation grading.
+- OPS-BASE-001 (IMPLEMENTED): Operational readiness and config hardening. Lightweight health check probe at `GET /api/health` verifying application and DB connectivity (`SELECT 1`), centralized `getCronSecret()` helper in `lib/config/env.ts` with sanitized error reporting, parent payment auth harmonization at `/api/orang-tua/pembayaran`, and cron runbook documentation at `docs/operations/CRON-RECURRING-BILLING.md`.
+- SEC-REGRESSION-GAPS-001 (IMPLEMENTED): Expanded automated security regression suite (`scripts/test-security-regression-gaps.ts`). Covers imported user lifecycle gating, report share cryptographic token verification (with expiration and revocation enforcement), santri IDOR learner-context locking, parent finance soft-delete denial (`student_parents.deleted_at IS NOT NULL`), and centralized cron secret authentication fail-closed semantics.
+
+DEFERRED TASKS (REMAINS DEFERRED):
+- ACAD-SOFT-DELETE-001 (DEFERRED)
+- OPS-QUEUE-001 (DEFERRED)
+- NOTIF-EXT-001 (DEFERRED)
+- UNIT-FOUNDATION-001 (DEFERRED)
+- FINANCE-GATEWAY-001 (DEFERRED)
+- Microphone / AI pronunciation grading (DEFERRED)
+
 CANONICAL DOCUMENTATION:
 ROADMAP-RECONCILIATION-001, ROADMAP-RECONCILIATION-002
 

@@ -267,8 +267,17 @@
 - **STATUS:** IMPLEMENTED
 - **DEPENDENCIES:** PORTAL-SANTRI-001, QURAN-SURAH-MASTER-001
 - **EVIDENCE:** Route `/santri/quran`, `lib/quran/service.ts` with 30-day cache, Surah list, detail reader with Arabic text, Latin transliteration, Indonesian translation, Juz filter, search, mobile navigation.
-- **OUTSTANDING WORK:** Audio reciter streaming (SANTRI-AUDIO-001).
+- **OUTSTANDING WORK:** None.
 - **NEXT ACTION:** SYSTEM-QA-FINAL
+
+- **TASK ID:** SANTRI-AUDIO-001
+- **TITLE:** In-App Quran Learner Reciter Audio Playback
+- **DOMAIN:** Santri Portal
+- **STATUS:** IMPLEMENTED
+- **DEPENDENCIES:** SANTRI-QURAN-001
+- **EVIDENCE:** Route `/santri/quran`, `lib/quran/service.ts` exposing 6 verified canonical reciters from `equran.id`, full-surah audio player and per-ayah audio playback controls with single-active-stream invariant and automatic navigation cleanup. No microphone recording or AI pronunciation grading.
+- **OUTSTANDING WORK:** Post-sprint review/hardening.
+- **NEXT ACTION:** None.
 
 - **TASK ID:** SANTRI-PRACTICE-001
 - **TITLE:** Memorization Self-Practice Mode
@@ -367,11 +376,11 @@
 - **TASK ID:** IMPORT-ONBOARDING-001
 - **TITLE:** Imported User Onboarding & Password Reset
 - **DOMAIN:** Import / Export
-- **STATUS:** DEFERRED
+- **STATUS:** IMPLEMENTED
 - **DEPENDENCIES:** IMPORT-EXPORT-001
-- **EVIDENCE:** No workflows found for onboarding.
-- **OUTSTANDING WORK:** Temporary password distribution and forced reset flow.
-- **NEXT ACTION:** DEFERRED
+- **EVIDENCE:** Migration 0027 (`users.must_change_password`), cryptographically random temporary password generator, one-time credential display for SUPER_ADMIN, `/ubah-password` forced reset flow, server-side middleware and RBAC gating.
+- **OUTSTANDING WORK:** Post-sprint review/hardening.
+- **NEXT ACTION:** None.
 
 ## N. NOTIFICATIONS
 - **TASK ID:** NOTIF-BASE-001
@@ -497,13 +506,22 @@
 
 ## S. OPERATIONS / PRODUCTION
 - **TASK ID:** OPS-BASE-001
-- **TITLE:** Operational Readiness
+- **TITLE:** Operational Readiness & Config Hardening
 - **DOMAIN:** Operations
-- **STATUS:** UNKNOWN
+- **STATUS:** IMPLEMENTED
 - **DEPENDENCIES:** None
-- **EVIDENCE:** No documentation found for observability, DB backup, or recovery checklists.
-- **OUTSTANDING WORK:** Establish monitoring, logging, and data retention policies.
-- **NEXT ACTION:** Create deployment checklist.
+- **EVIDENCE:** Health check route `/api/health` with `SELECT 1` DB probe, centralized `getCronSecret()` helper in `lib/config/env.ts` with sanitized non-leaking errors, parent payment auth harmonization in `/api/orang-tua/pembayaran`, and cron deployment runbook `docs/operations/CRON-RECURRING-BILLING.md`.
+- **OUTSTANDING WORK:** Post-sprint review/hardening.
+- **NEXT ACTION:** None.
+
+- **TASK ID:** SEC-REGRESSION-GAPS-001
+- **TITLE:** Security Regression Coverage Expansion
+- **DOMAIN:** Operations / Security
+- **STATUS:** IMPLEMENTED
+- **DEPENDENCIES:** None
+- **EVIDENCE:** Comprehensive test suite `scripts/test-security-regression-gaps.ts` integrated into `scripts/run-security-suite.ts`. Covers imported user password lifecycle gating, report share token validation/expiration/revocation, santri IDOR learner-context locking, parent finance soft-delete denial (`student_parents.deleted_at IS NOT NULL`), and centralized cron secret timing-safe authentication.
+- **OUTSTANDING WORK:** Post-sprint review/hardening.
+- **NEXT ACTION:** None.
 
 - **TASK ID:** SYSTEM-QA-FINAL
 - **TITLE:** Final System Production QA
