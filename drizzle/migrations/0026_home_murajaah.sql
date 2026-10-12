@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS "home_murajaah_records" (
   CONSTRAINT "home_murajaah_ayah_start_check" CHECK ("ayah_start" >= 1),
   CONSTRAINT "home_murajaah_ayah_end_check" CHECK ("ayah_end" >= "ayah_start")
 );
-
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "home_murajaah_student_date_idx" ON "home_murajaah_records" ("student_id", "session_date");
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "home_murajaah_status_idx" ON "home_murajaah_records" ("status");
