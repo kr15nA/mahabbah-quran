@@ -29,7 +29,7 @@ export interface InvoiceDraftInput {
   description?: string
   amount: bigint
   dueDate: string
-  createdBy: number
+  createdBy?: number | null
 }
 
 // Ensure MONTHLY period is YYYY-MM
@@ -86,7 +86,7 @@ export async function createInvoiceDraft(input: InvoiceDraftInput): Promise<numb
       amount: input.amount,
       dueDate: input.dueDate,
       status: 'DRAFT',
-      createdBy: input.createdBy
+      createdBy: input.createdBy ?? null
     }).returning({ id: financeInvoices.id })
 
     if (input.period) {
@@ -107,7 +107,7 @@ export async function createInvoiceDraft(input: InvoiceDraftInput): Promise<numb
     }
 
     await tx.insert(auditLogs).values({
-      actorUserId: input.createdBy,
+      actorUserId: input.createdBy ?? null,
       action: 'CREATE',
       entityType: 'INVOICE',
       entityId: result.id,

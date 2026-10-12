@@ -17,7 +17,7 @@ export interface RecurringGeneratorInput {
   academicYearId: number
   feeTypeId: number
   period: string
-  actorId: number
+  actorId?: number | null
 }
 
 function validatePeriodFormat(period: string) {
@@ -156,7 +156,7 @@ async function lookupExistingInvoice(studentId: number, academicYearId: number, 
   return invoice?.id || null
 }
 
-export async function prepareRecurringBillingRun(input: Omit<RecurringGeneratorInput, 'actorId'> & { actorId: number }) {
+export async function prepareRecurringBillingRun(input: RecurringGeneratorInput) {
   const config = await resolveConfig(input.academicYearId, input.feeTypeId, input.period)
   
   return await financeDb.transaction(async (tx) => {
@@ -172,18 +172,18 @@ export async function prepareRecurringBillingRun(input: Omit<RecurringGeneratorI
         feeTypeId: input.feeTypeId,
         period: input.period,
         status: 'PENDING',
-        startedBy: input.actorId,
+        startedBy: input.actorId ?? null,
         startedAt: new Date()
       }).returning()
       run = newRun
     } else if (run.status === 'COMPLETED' || run.status === 'COMPLETED_WITH_ERRORS' || run.status === 'FAILED') {
       [run] = await tx.update(financeBillingRuns)
-        .set({ status: 'RUNNING', startedBy: input.actorId, startedAt: new Date(), updatedAt: new Date() })
+        .set({ status: 'RUNNING', startedBy: input.actorId ?? null, startedAt: new Date(), updatedAt: new Date() })
         .where(eq(financeBillingRuns.id, run.id))
         .returning()
     } else if (run.status === 'PENDING') {
       [run] = await tx.update(financeBillingRuns)
-        .set({ status: 'RUNNING', startedBy: input.actorId, startedAt: new Date(), updatedAt: new Date() })
+        .set({ status: 'RUNNING', startedBy: input.actorId ?? null, startedAt: new Date(), updatedAt: new Date() })
         .where(eq(financeBillingRuns.id, run.id))
         .returning()
     }
@@ -228,7 +228,7 @@ async function reconcileRunCounters(runId: number) {
     .where(eq(financeBillingRuns.id, runId))
 }
 
-export async function processRecurringBillingRunChunk(runId: number, actorId: number, chunkSize: number = 50, targetItemIds?: number[]) {
+export async function processRecurringBillingRunChunk(runId: number, actorId?: number | null, chunkSize: number = 50, targetItemIds?: number[]) {
   if (chunkSize > 50) chunkSize = 50
 
   const [run] = await db.select().from(financeBillingRuns).where(eq(financeBillingRuns.id, runId))
@@ -283,7 +283,7 @@ export async function processRecurringBillingRunChunk(runId: number, actorId: nu
         description: `Tagihan Bulanan ${config.feeTypeName} ${run.period}`,
         amount: config.grossAmount,
         dueDate: config.dueDate,
-        createdBy: actorId
+        createdBy: actorId ?? null
       })
 
       await db.update(financeBillingRunItems)
