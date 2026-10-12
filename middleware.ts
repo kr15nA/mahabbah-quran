@@ -3,6 +3,11 @@ import { jwtVerify } from 'jose'
 
 import { getJwtSecretKey } from '@/lib/auth/session'
 
+// Explicit allowlist of cron endpoints that intentionally perform authoritative Bearer CRON_SECRET authentication
+const ALLOWED_CRON_ROUTES = new Set([
+  '/api/cron/recurring-billing',
+])
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
@@ -20,10 +25,11 @@ export async function middleware(req: NextRequest) {
 
   // Public routes
   if (
+    pathname === '/api/health' ||
+    pathname.startsWith('/api/health/') ||
+    ALLOWED_CRON_ROUTES.has(pathname) ||
     pathname.startsWith('/login') || 
     pathname.startsWith('/api/auth') || 
-    pathname.startsWith('/api/health') ||
-    pathname.startsWith('/api/cron') ||
     pathname.startsWith('/api/share') ||
     pathname.startsWith('/share') ||
     pathname.startsWith('/_next') || 
