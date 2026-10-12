@@ -349,11 +349,11 @@ export async function getClassStudentReportsForBatch(params: {
 }): Promise<BatchClassReportItem[]> {
   const rows = await sql`
     SELECT 
-      st.id AS student_id,
+      st.id::int AS student_id,
       st.full_name AS student_name,
-      c.id AS class_id,
+      c.id::int AS class_id,
       c.name AS class_name,
-      lr.id AS report_id,
+      lr.id::int AS report_id,
       lr.report_date,
       lr.attendance_status,
       lr.hafalan_record_id,
