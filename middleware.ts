@@ -22,6 +22,8 @@ export async function middleware(req: NextRequest) {
   if (
     pathname.startsWith('/login') || 
     pathname.startsWith('/api/auth') || 
+    pathname.startsWith('/api/health') ||
+    pathname.startsWith('/api/cron') ||
     pathname.startsWith('/api/share') ||
     pathname.startsWith('/share') ||
     pathname.startsWith('/_next') || 

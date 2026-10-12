@@ -51,3 +51,13 @@ export function getAiGatewayApiKey(): string {
   }
   return result.data
 }
+
+export function getCronSecret(): string {
+  const schema = z.string().min(1, 'Cannot be empty')
+  const result = schema.safeParse(process.env.CRON_SECRET)
+  if (!result.success) {
+    throw createSanitizedError('CRON_SECRET', result.error)
+  }
+  return result.data
+}
+

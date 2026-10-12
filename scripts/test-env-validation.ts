@@ -1,5 +1,5 @@
 import assert from 'assert'
-import { getDatabaseUrl, getJwtSecret, getAnthropicApiKey, getBlobToken } from '../lib/config/env'
+import { getDatabaseUrl, getJwtSecret, getAnthropicApiKey, getBlobToken, getCronSecret } from '../lib/config/env'
 
 async function runTests() {
   console.log('=== SEC-PLATFORM-002 Env Validation Tests ===\n')
@@ -97,8 +97,29 @@ async function runTests() {
     assert.doesNotThrow(() => getBlobToken())
     console.log('✅ Valid BLOB_READ_WRITE_TOKEN passes')
 
-    // E. SECRET LEAK TEST
-    console.log('\n--- E. SECRET LEAK TEST ---')
+    // E. CRON_SECRET
+    console.log('\n--- E. CRON_SECRET ---')
+
+    delete process.env.CRON_SECRET
+    assert.throws(() => getCronSecret(), (err: Error) => {
+      assert.ok(err.message.includes('CRON_SECRET'))
+      return true
+    }, 'Missing CRON_SECRET should throw on invocation')
+    console.log('✅ Missing CRON_SECRET throws on invocation safely')
+
+    process.env.CRON_SECRET = ''
+    assert.throws(() => getCronSecret(), (err: Error) => {
+      assert.ok(err.message.includes('CRON_SECRET'))
+      return true
+    }, 'Empty CRON_SECRET should throw on invocation')
+    console.log('✅ Empty CRON_SECRET throws on invocation safely')
+
+    process.env.CRON_SECRET = 'valid-super-secure-cron-token-123'
+    assert.doesNotThrow(() => getCronSecret())
+    console.log('✅ Valid CRON_SECRET passes')
+
+    // F. SECRET LEAK TEST
+    console.log('\n--- F. SECRET LEAK TEST ---')
     
     const fakeDbPass = 'SUPER_SECRET_DB_PASS_123'
     process.env.DATABASE_URL = `mysql://user:${fakeDbPass}@localhost/db`
