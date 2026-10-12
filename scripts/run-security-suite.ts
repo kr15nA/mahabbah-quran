@@ -13,7 +13,8 @@ const AUTH_SUITE = [
 ]
 
 const AUTHZ_SUITE = [
-  'scripts/test-audit-log.ts'
+  'scripts/test-audit-log.ts',
+  'scripts/test-security-regression-gaps.ts'
 ]
 
 async function isPortOccupied(port: number): Promise<boolean> {
@@ -199,6 +200,7 @@ function printSummary(results: { script: string, status: 'PASS' | 'FAIL', durati
     else if (r.script.includes('login-enumeration')) name = 'LOGIN ENUMERATION'
     else if (r.script.includes('login-ratelimit')) name = 'LOGIN RATE LIMIT'
     else if (r.script.includes('audit-log')) name = 'AUDIT / AUTHZ'
+    else if (r.script.includes('regression-gaps')) name = 'SEC REGRESSION GAPS'
     else name = r.script
 
     const paddedName = name.padEnd(25, ' ')
