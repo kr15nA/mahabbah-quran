@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, AuthError } from '@/lib/auth/rbac'
 import { db } from '@/lib/db/client'
-import { teacherAssignments } from '@/drizzle/schema'
+import { teacherAssignments, academicYears } from '@/drizzle/schema'
 import { eq, and } from 'drizzle-orm'
 import { getClassStudentReportsForBatch } from '@/lib/db/queries/learning-reports'
 import { getAttendanceSummaryByStudent } from '@/lib/db/queries/attendance'
@@ -10,6 +10,7 @@ import { createZipArchive, ZipEntry } from '@/lib/utils/zip'
 import { format } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
+export const MAX_BATCH_REPORTS = 50
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,29 +35,49 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'classId harus berupa angka bulat valid' }, { status: 400 })
     }
 
-    const academicYearId = academicYearIdStr ? parseInt(academicYearIdStr) : undefined
+    let academicYearId: number | undefined = academicYearIdStr ? parseInt(academicYearIdStr) : undefined
+    if (academicYearIdStr && (isNaN(academicYearId!) || academicYearId! <= 0)) {
+      return NextResponse.json({ error: 'academicYearId harus berupa angka bulat valid' }, { status: 400 })
+    }
+
+    if (!academicYearId) {
+      const activeYear = await db
+        .select({ id: academicYears.id })
+        .from(academicYears)
+        .where(eq(academicYears.isActive, true))
+        .limit(1)
+
+      if (activeYear.length > 0) {
+        academicYearId = activeYear[0].id
+      }
+    }
 
     // Authoritative RBAC check:
-    // Only SUPER_ADMIN and authorized GURU assigned to this class may batch export.
+    // Only SUPER_ADMIN and authorized GURU assigned to this class and academic year may batch export.
     // Parent and Santri are strictly blocked.
     if (role !== 'SUPER_ADMIN' && role !== 'GURU') {
       return NextResponse.json({ error: 'Akses ditolak: Hanya Admin dan Guru pembimbing yang dapat melakukan ekspor batch.' }, { status: 403 })
     }
 
     if (role === 'GURU') {
+      if (!academicYearId) {
+        return NextResponse.json({ error: 'Tahun ajaran tidak valid atau tidak ditemukan tahun ajaran aktif.' }, { status: 400 })
+      }
+
       const isAssigned = await db
         .select({ id: teacherAssignments.id })
         .from(teacherAssignments)
         .where(
           and(
             eq(teacherAssignments.teacherId, session.userId),
-            eq(teacherAssignments.classId, classId)
+            eq(teacherAssignments.classId, classId),
+            eq(teacherAssignments.academicYearId, academicYearId)
           )
         )
         .limit(1)
 
       if (isAssigned.length === 0) {
-        return NextResponse.json({ error: 'Akses ditolak: Anda tidak ditugaskan pada kelas ini.' }, { status: 403 })
+        return NextResponse.json({ error: 'Akses ditolak: Anda tidak ditugaskan pada kelas dan tahun ajaran ini.' }, { status: 403 })
       }
     }
 
@@ -69,6 +90,15 @@ export async function GET(req: NextRequest) {
 
     if (reportItems.length === 0) {
       return NextResponse.json({ error: 'Tidak ada santri terdaftar di kelas ini.' }, { status: 404 })
+    }
+
+    if (reportItems.length > MAX_BATCH_REPORTS) {
+      return NextResponse.json(
+        {
+          error: `Batas maksimum ekspor batch terlampaui (maksimal ${MAX_BATCH_REPORTS} santri, ditemukan ${reportItems.length}). Hubungi administrator untuk ekspor skala besar.`
+        },
+        { status: 400 }
+      )
     }
 
     const className = reportItems[0]?.class_name || `Kelas-${classId}`
@@ -122,7 +152,7 @@ export async function GET(req: NextRequest) {
       const pdfBuffer = await generateStudentReportPdf(pdfData)
       const safeStudentName = item.student_name.replace(/[^a-z0-9]/gi, '_').toLowerCase()
       const itemDateClean = typeof itemDate === 'string' ? itemDate.replace(/-/g, '') : format(new Date(itemDate), 'yyyyMMdd')
-      const pdfFilename = `laporan-${safeClassName}-${safeStudentName}-${itemDateClean}.pdf`
+      const pdfFilename = `laporan-${safeClassName}-${item.student_id}-${safeStudentName}-${itemDateClean}.pdf`
 
       zipEntries.push({
         name: pdfFilename,
