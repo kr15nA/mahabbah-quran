@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useRef, useEffect } from 'react'
 import { SurahRow } from '@/lib/db/queries/surahs'
-import { QuranSurahDetail } from '@/lib/quran/service'
+import { QuranSurahDetail, QURAN_RECITERS } from '@/lib/quran/service'
 import { getSurahDetailAction } from './actions'
 import { 
   Search, 
@@ -13,7 +13,11 @@ import {
   AlertCircle, 
   Loader2, 
   Filter,
-  Sparkles
+  Sparkles,
+  Play,
+  Pause,
+  Square,
+  Volume2
 } from 'lucide-react'
 
 interface SantriQuranClientProps {
@@ -28,6 +32,118 @@ export default function SantriQuranClient({ initialSurahs }: SantriQuranClientPr
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [errorDetail, setErrorDetail] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  // Audio Playback State
+  const [selectedReciter, setSelectedReciter] = useState<string>('05')
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false)
+  const [playingTarget, setPlayingTarget] = useState<
+    { type: 'surah' } | { type: 'ayah'; ayahNumber: number } | null
+  >(null)
+  const [audioLoading, setAudioLoading] = useState(false)
+  const [audioError, setAudioError] = useState<string | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.src = ''
+    }
+    setIsPlayingAudio(false)
+    setPlayingTarget(null)
+    setAudioLoading(false)
+    setAudioError(null)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ''
+      }
+    }
+  }, [])
+
+  const playAudioUrl = (url: string, target: { type: 'surah' } | { type: 'ayah'; ayahNumber: number }) => {
+    setAudioError(null)
+
+    // Toggle pause if clicking current playing target
+    if (
+      isPlayingAudio &&
+      audioRef.current &&
+      ((target.type === 'surah' && playingTarget?.type === 'surah') ||
+       (target.type === 'ayah' && playingTarget?.type === 'ayah' && playingTarget.ayahNumber === target.ayahNumber))
+    ) {
+      audioRef.current.pause()
+      setIsPlayingAudio(false)
+      return
+    }
+
+    // Resume if paused on same target
+    if (
+      !isPlayingAudio &&
+      audioRef.current &&
+      audioRef.current.src === url &&
+      ((target.type === 'surah' && playingTarget?.type === 'surah') ||
+       (target.type === 'ayah' && playingTarget?.type === 'ayah' && playingTarget.ayahNumber === target.ayahNumber))
+    ) {
+      audioRef.current
+        .play()
+        .then(() => setIsPlayingAudio(true))
+        .catch((e) => {
+          console.error('Audio play error:', e)
+          setAudioError('Gagal memutar audio')
+        })
+      return
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause()
+    }
+
+    try {
+      const audio = new Audio(url)
+      audioRef.current = audio
+      setPlayingTarget(target)
+      setAudioLoading(true)
+
+      audio.oncanplay = () => {
+        setAudioLoading(false)
+      }
+
+      audio.onplay = () => {
+        setIsPlayingAudio(true)
+        setAudioLoading(false)
+      }
+
+      audio.onpause = () => {
+        setIsPlayingAudio(false)
+      }
+
+      audio.onended = () => {
+        setIsPlayingAudio(false)
+        setPlayingTarget(null)
+      }
+
+      audio.onerror = (e) => {
+        console.error('Audio load error:', e)
+        setIsPlayingAudio(false)
+        setPlayingTarget(null)
+        setAudioLoading(false)
+        setAudioError('Audio tidak dapat diputar atau koneksi terputus')
+      }
+
+      audio.play().catch((err) => {
+        console.error('Audio play exception:', err)
+        setIsPlayingAudio(false)
+        setPlayingTarget(null)
+        setAudioLoading(false)
+        setAudioError('Gagal memutar audio. Silakan coba lagi.')
+      })
+    } catch (err) {
+      console.error('Audio creation error:', err)
+      setAudioError('Browser tidak mendukung pemutaran format audio ini')
+    }
+  }
 
   // Filter surahs by search and juz
   const filteredSurahs = useMemo(() => {
@@ -46,6 +162,7 @@ export default function SantriQuranClient({ initialSurahs }: SantriQuranClientPr
   }, [initialSurahs, search, selectedJuz])
 
   const handleSelectSurah = async (surahNumber: number) => {
+    stopAudio()
     setActiveSurahNumber(surahNumber)
     setLoadingDetail(true)
     setErrorDetail(null)
@@ -81,6 +198,7 @@ export default function SantriQuranClient({ initialSurahs }: SantriQuranClientPr
           <div className="flex items-center justify-between gap-2 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
             <button
               onClick={() => {
+                stopAudio()
                 setActiveSurahNumber(null)
                 setSurahDetail(null)
                 setErrorDetail(null)
@@ -164,7 +282,79 @@ export default function SantriQuranClient({ initialSurahs }: SantriQuranClientPr
                     </span>
                   </div>
                 </div>
+
+                {/* Reciter Audio Control Bar */}
+                <div className="relative z-10 mt-5 pt-4 border-t border-white/15 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Volume2 className="w-4 h-4 text-amber-300 shrink-0" />
+                    <span className="text-purple-200 font-medium text-[11px]">Qari:</span>
+                    <select
+                      value={selectedReciter}
+                      onChange={(e) => {
+                        stopAudio()
+                        setSelectedReciter(e.target.value)
+                      }}
+                      className="bg-white/15 hover:bg-white/20 text-white border border-white/25 rounded-xl px-2.5 py-1 text-xs outline-none focus:ring-2 focus:ring-amber-300 transition"
+                    >
+                      {QURAN_RECITERS.map((r) => (
+                        <option key={r.id} value={r.id} className="text-gray-900 bg-white">
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {surahDetail.audioFull && surahDetail.audioFull[selectedReciter] && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = surahDetail.audioFull?.[selectedReciter]
+                          if (url) playAudioUrl(url, { type: 'surah' })
+                        }}
+                        disabled={audioLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold rounded-xl transition shadow-xs disabled:opacity-50"
+                      >
+                        {isPlayingAudio && playingTarget?.type === 'surah' ? (
+                          <>
+                            <Pause className="w-3.5 h-3.5" />
+                            <span>Jeda Surah</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            <span>Putar Surah</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {isPlayingAudio && (
+                      <button
+                        type="button"
+                        onClick={stopAudio}
+                        className="p-1.5 bg-white/15 hover:bg-white/25 text-white rounded-xl transition"
+                        title="Hentikan Audio"
+                      >
+                        <Square className="w-3.5 h-3.5 fill-current" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
+
+              {/* Audio Error Alert */}
+              {audioError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between text-xs text-red-700 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{audioError}</span>
+                  </div>
+                  <button onClick={() => setAudioError(null)} className="text-red-500 hover:text-red-700 text-xs font-bold">
+                    Tutup
+                  </button>
+                </div>
+              )}
 
               {/* Bismillah Banner for surahs other than Al-Fatihah (1) and At-Taubah (9) */}
               {surahDetail.nomor !== 1 && surahDetail.nomor !== 9 && (
@@ -184,7 +374,11 @@ export default function SantriQuranClient({ initialSurahs }: SantriQuranClientPr
                   <div
                     key={ayah.nomorAyat}
                     id={`ayah-${ayah.nomorAyat}`}
-                    className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs hover:border-purple-200 transition space-y-4"
+                    className={`bg-white p-5 rounded-2xl border shadow-xs transition space-y-4 ${
+                      isPlayingAudio && playingTarget?.type === 'ayah' && playingTarget.ayahNumber === ayah.nomorAyat
+                        ? 'border-[#4B21A2] ring-2 ring-purple-100 bg-purple-50/20'
+                        : 'border-gray-100 hover:border-purple-200'
+                    }`}
                   >
                     {/* Header bar of Ayah card */}
                     <div className="flex items-center justify-between border-b border-gray-100 pb-3">
@@ -196,6 +390,34 @@ export default function SantriQuranClient({ initialSurahs }: SantriQuranClientPr
                           QS. {surahDetail.namaLatin}:{ayah.nomorAyat}
                         </span>
                       </div>
+
+                      {ayah.audio && ayah.audio[selectedReciter] && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = ayah.audio?.[selectedReciter]
+                            if (url) playAudioUrl(url, { type: 'ayah', ayahNumber: ayah.nomorAyat })
+                          }}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold transition ${
+                            isPlayingAudio && playingTarget?.type === 'ayah' && playingTarget.ayahNumber === ayah.nomorAyat
+                              ? 'bg-[#4B21A2] text-white shadow-xs'
+                              : 'bg-purple-50 text-[#4B21A2] hover:bg-purple-100'
+                          }`}
+                          title={`Putar Ayat ${ayah.nomorAyat}`}
+                        >
+                          {isPlayingAudio && playingTarget?.type === 'ayah' && playingTarget.ayahNumber === ayah.nomorAyat ? (
+                            <>
+                              <Pause className="w-3 h-3" />
+                              <span className="text-[11px]">Memutar</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3 h-3 fill-current" />
+                              <span className="text-[11px]">Putar</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
 
                     {/* Arabic Text */}
