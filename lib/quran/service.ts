@@ -30,6 +30,7 @@ export async function getCanonicalSurahDetail(surahNumber: number): Promise<Qura
 
   try {
     const res = await fetch(`https://equran.id/api/v2/surat/${num}`, {
+      signal: AbortSignal.timeout(5000),
       next: { revalidate: 86400 * 30 }, // 30-day cache
     })
 
