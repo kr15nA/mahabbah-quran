@@ -253,13 +253,13 @@
 - **NEXT ACTION:** None.
 
 - **TASK ID:** PORTAL-SANTRI-003
-- **TITLE:** Santri Finance
+- **TITLE:** Santri Finance / Learner Transparency
 - **DOMAIN:** Santri Portal
-- **STATUS:** DEFERRED
+- **STATUS:** IMPLEMENTED
 - **DEPENDENCIES:** FINANCE-PARENT-001
-- **EVIDENCE:** Identified as deferred in Portal D docs.
-- **OUTSTANDING WORK:** Unify learner-scoped billing visibility.
-- **NEXT ACTION:** Analysis required post Parent-Finance stabilization.
+- **EVIDENCE:** Route `/santri/tagihan` implemented as read-only server component with `requireSelfStudentProfile` / learner context verification, itemized fee breakdown (gross, scholarship deduction, paid, outstanding balance), and payment allocations with strict zero parent/sibling data leakage.
+- **OUTSTANDING WORK:** Post-sprint review/hardening.
+- **NEXT ACTION:** None.
 
 - **TASK ID:** SANTRI-QURAN-001
 - **TITLE:** In-App Quran Reader for Santri Portal
@@ -470,20 +470,20 @@
 - **TASK ID:** FINANCE-RECURRING-002
 - **TITLE:** Recurring Billing Phase D (Automation)
 - **DOMAIN:** Finance
-- **STATUS:** DEFERRED
+- **STATUS:** IMPLEMENTED
 - **DEPENDENCIES:** FINANCE-RECURRING-001
-- **EVIDENCE:** Noted as deferred in Phase C docs.
-- **OUTSTANDING WORK:** Implement cron-driven issuance.
-- **NEXT ACTION:** Requirements gathering.
+- **EVIDENCE:** Route `/api/cron/recurring-billing` with constant-time Bearer `CRON_SECRET` authentication, deterministic period and academic year resolution, chunked idempotent processing, zero duplicate billing guarantee, and system audit logging.
+- **OUTSTANDING WORK:** Post-sprint review/hardening.
+- **NEXT ACTION:** None.
 
 - **TASK ID:** FINANCE-PARENT-001
-- **TITLE:** Parent Finance UI Redesign
+- **TITLE:** Parent Finance Multi-Child Billing Views
 - **DOMAIN:** Finance
-- **STATUS:** DEFERRED
+- **STATUS:** IMPLEMENTED
 - **DEPENDENCIES:** PORTAL-PARENT-001
-- **EVIDENCE:** Identified as deferred epic in audit docs.
-- **OUTSTANDING WORK:** Unified billing summary for parents.
-- **NEXT ACTION:** Requirements analysis.
+- **EVIDENCE:** Routes `/orang-tua/tagihan` and `/orang-tua/pembayaran` implemented with `getAuthorizedFinanceChildren`, server-side `can_view_finance = true` enforcement, ChildSwitcher multi-child context, itemized fee breakdown, and payment history receipts.
+- **OUTSTANDING WORK:** Post-sprint review/hardening.
+- **NEXT ACTION:** None.
 
 ## R. UI / UX
 - **TASK ID:** UI-BASE-001
@@ -805,10 +805,10 @@ The following historical tasks from previous phases and legacy documentation hav
 - **NOTES:** Adopted into canonical audit tasks.
 
 - **HISTORICAL TASK ID:** PARENT-FINANCE-001
-- **STATUS:** DEFERRED
+- **STATUS:** IMPLEMENTED
 - **CANONICAL PARENT:** FINANCE-PARENT-001
-- **EVIDENCE:** Deferred epic.
-- **NOTES:** Re-indexed as canonical FINANCE-PARENT-001.
+- **EVIDENCE:** COVERAGE-SPRINT-03 (`PARENT-FINANCE-001`).
+- **NOTES:** Implemented under COVERAGE-SPRINT-03.
 
 - **HISTORICAL TASK ID:** RBAC-MANAGEMENT-001
 - **STATUS:** PASS
