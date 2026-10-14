@@ -1,12 +1,15 @@
 # Mahabbah System — Current Project State
 
 LAST VERIFIED:
-2026-09-30
+2026-10-14
 
 REPOSITORY:
 mahabbah-quran
 
 LAST VERIFIED APPLICATION BASELINE:
+COVERAGE-SPRINT-04 — Onboarding Security, Learner Audio & Operational Readiness (PASS / MERGED)
+- Scope: Imported user credential lifecycle & forced password reset, Santri Quran audio playback with 6 canonical reciters, operational health endpoint (`/api/health`), centralized cron secret helper & narrowed cron middleware allowlist, atomic import transactions, parent payment role harmonization, and expanded security regression suite.
+- Evidence: Independent code review PASS — SAFE TO MERGE (`COVERAGE-SPRINT-04-HARDENING-REVIEW.md`), `npx tsc --noEmit` PASS, `npm run security:test:fast` PASS, `npm run build` PASS (97 static & dynamic routes generated), merged to main via merge commit `97499e1`.
 PORTAL-SANTRI-002 — Santri Portal Phase D3 (PASS)
 - Scope: Santri loading/skeleton states, error boundary, mobile UX polish, existing empty states verified, no domain/business expansion.
 - Evidence: Santri D1 & D2 tests PASS (37/37 assertions), security:test:fast PASS, typecheck/diff PASS, loading/error runtime verified, mobile verification PASS.
@@ -64,11 +67,11 @@ COVERAGE-SPRINT-03 — Finance & Learner Transparency (IMPLEMENTED)
 - PORTAL-SANTRI-003 (IMPLEMENTED): Read-only learner billing transparency at `/santri/tagihan`. Reused self-student profile and finance domain models. Shows itemized fee components, payment allocations, and strictly isolates data with zero parent or sibling leakage.
 - FINANCE-RECURRING-002 (IMPLEMENTED): Automated recurring billing execution via `/api/cron/recurring-billing`. Protected with constant-time Bearer `CRON_SECRET` validation, deterministic period/academic year resolution, chunked idempotent processing, zero duplicate billing guarantee, and system audit logging.
 
-COVERAGE-SPRINT-04 — Onboarding Security, Learner Audio & Operational Readiness (IMPLEMENTED)
-- IMPORT-ONBOARDING-001 (IMPLEMENTED): Secure imported user credential lifecycle. Additive migration 0027 adds `users.must_change_password`. Cryptographically random one-time credentials generated upon import, returned one-time to SUPER_ADMIN, with forced password change gating via `/ubah-password` before portal access.
-- SANTRI-AUDIO-001 (IMPLEMENTED): Quran learner reciter audio playback at `/santri/quran`. Integrated 6 canonical reciters from `equran.id` upstream, full-surah and per-ayah audio playback controls with single-active-stream invariant and automatic navigation cleanup. No microphone recording or AI pronunciation grading.
-- OPS-BASE-001 (IMPLEMENTED): Operational readiness and config hardening. Lightweight health check probe at `GET /api/health` verifying application and DB connectivity (`SELECT 1`), centralized `getCronSecret()` helper in `lib/config/env.ts` with sanitized error reporting, parent payment auth harmonization at `/api/orang-tua/pembayaran`, and cron runbook documentation at `docs/operations/CRON-RECURRING-BILLING.md`.
-- SEC-REGRESSION-GAPS-001 (IMPLEMENTED): Expanded automated security regression suite (`scripts/test-security-regression-gaps.ts`). Covers imported user lifecycle gating, report share cryptographic token verification (with expiration and revocation enforcement), santri IDOR learner-context locking, parent finance soft-delete denial (`student_parents.deleted_at IS NOT NULL`), and centralized cron secret authentication fail-closed semantics.
+COVERAGE-SPRINT-04 — Onboarding Security, Learner Audio & Operational Readiness (PASS / MERGED)
+- IMPORT-ONBOARDING-001 (PASS): Secure imported user credential lifecycle. Additive migration 0027 adds `users.must_change_password`. Cryptographically random one-time credentials generated upon import, returned one-time to SUPER_ADMIN, with forced password change gating via `/ubah-password` before portal access. Hardened with atomic database transaction (`txDb.transaction()`) on import and verified regression tests.
+- SANTRI-AUDIO-001 (PASS): Quran learner reciter audio playback at `/santri/quran`. Integrated 6 canonical reciters from `equran.id` upstream, full-surah and per-ayah audio playback controls with single-active-stream invariant and automatic navigation cleanup. No microphone recording or AI pronunciation grading.
+- OPS-BASE-001 (PASS): Operational readiness and config hardening. Lightweight health check probe at `GET /api/health` verifying application and DB connectivity (`SELECT 1`), centralized `getCronSecret()` helper in `lib/config/env.ts` with sanitized error reporting, parent payment auth harmonization at `/api/orang-tua/pembayaran` (explicit 403 for non-parent roles), narrowed cron middleware allowlist (`/api/cron/recurring-billing`), and cron runbook documentation at `docs/operations/CRON-RECURRING-BILLING.md`.
+- SEC-REGRESSION-GAPS-001 (PASS): Expanded automated security regression suite (`scripts/test-security-regression-gaps.ts`). Covers imported user lifecycle gating, report share cryptographic token verification (with expiration and revocation enforcement), santri IDOR learner-context locking, parent finance soft-delete denial (`student_parents.deleted_at IS NOT NULL`), and centralized cron secret authentication fail-closed semantics. Hardening verified with `scripts/test-sprint-04-hardening.ts`.
 
 DEFERRED TASKS (REMAINS DEFERRED):
 - ACAD-SOFT-DELETE-001 (DEFERRED)

@@ -273,11 +273,11 @@
 - **TASK ID:** SANTRI-AUDIO-001
 - **TITLE:** In-App Quran Learner Reciter Audio Playback
 - **DOMAIN:** Santri Portal
-- **STATUS:** IMPLEMENTED
+- **STATUS:** PASS
 - **DEPENDENCIES:** SANTRI-QURAN-001
-- **EVIDENCE:** Route `/santri/quran`, `lib/quran/service.ts` exposing 6 verified canonical reciters from `equran.id`, full-surah audio player and per-ayah audio playback controls with single-active-stream invariant and automatic navigation cleanup. No microphone recording or AI pronunciation grading.
-- **OUTSTANDING WORK:** Post-sprint review/hardening.
-- **NEXT ACTION:** None.
+- **EVIDENCE:** Route `/santri/quran`, `lib/quran/service.ts` exposing 6 verified canonical reciters from `equran.id`, full-surah audio player and per-ayah audio playback controls with single-active-stream invariant and automatic navigation cleanup. No microphone recording or AI pronunciation grading. Merged in COVERAGE-SPRINT-04.
+- **OUTSTANDING WORK:** None.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
 
 - **TASK ID:** SANTRI-PRACTICE-001
 - **TITLE:** Memorization Self-Practice Mode
@@ -376,11 +376,11 @@
 - **TASK ID:** IMPORT-ONBOARDING-001
 - **TITLE:** Imported User Onboarding & Password Reset
 - **DOMAIN:** Import / Export
-- **STATUS:** IMPLEMENTED
+- **STATUS:** PASS
 - **DEPENDENCIES:** IMPORT-EXPORT-001
-- **EVIDENCE:** Migration 0027 (`users.must_change_password`), cryptographically random temporary password generator, one-time credential display for SUPER_ADMIN, `/ubah-password` forced reset flow, server-side middleware and RBAC gating.
-- **OUTSTANDING WORK:** Post-sprint review/hardening.
-- **NEXT ACTION:** None.
+- **EVIDENCE:** Migration 0027 (`users.must_change_password`), cryptographically random temporary password generator, one-time credential display for SUPER_ADMIN, `/ubah-password` forced reset flow, server-side middleware and RBAC gating. Hardened with atomic database transaction (`txDb.transaction()`) on import and verified regression tests. Merged in COVERAGE-SPRINT-04.
+- **OUTSTANDING WORK:** None.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
 
 ## N. NOTIFICATIONS
 - **TASK ID:** NOTIF-BASE-001
@@ -508,20 +508,20 @@
 - **TASK ID:** OPS-BASE-001
 - **TITLE:** Operational Readiness & Config Hardening
 - **DOMAIN:** Operations
-- **STATUS:** IMPLEMENTED
+- **STATUS:** PASS
 - **DEPENDENCIES:** None
-- **EVIDENCE:** Health check route `/api/health` with `SELECT 1` DB probe, centralized `getCronSecret()` helper in `lib/config/env.ts` with sanitized non-leaking errors, parent payment auth harmonization in `/api/orang-tua/pembayaran`, and cron deployment runbook `docs/operations/CRON-RECURRING-BILLING.md`.
-- **OUTSTANDING WORK:** Post-sprint review/hardening.
-- **NEXT ACTION:** None.
+- **EVIDENCE:** Health check route `/api/health` with `SELECT 1` DB probe, centralized `getCronSecret()` helper in `lib/config/env.ts` with sanitized non-leaking errors, parent payment auth harmonization in `/api/orang-tua/pembayaran` (explicit 403 for non-parent roles), narrowed cron middleware allowlist (`/api/cron/recurring-billing`), and cron deployment runbook `docs/operations/CRON-RECURRING-BILLING.md`. Merged in COVERAGE-SPRINT-04.
+- **OUTSTANDING WORK:** None.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
 
 - **TASK ID:** SEC-REGRESSION-GAPS-001
 - **TITLE:** Security Regression Coverage Expansion
 - **DOMAIN:** Operations / Security
-- **STATUS:** IMPLEMENTED
+- **STATUS:** PASS
 - **DEPENDENCIES:** None
-- **EVIDENCE:** Comprehensive test suite `scripts/test-security-regression-gaps.ts` integrated into `scripts/run-security-suite.ts`. Covers imported user password lifecycle gating, report share token validation/expiration/revocation, santri IDOR learner-context locking, parent finance soft-delete denial (`student_parents.deleted_at IS NOT NULL`), and centralized cron secret timing-safe authentication.
-- **OUTSTANDING WORK:** Post-sprint review/hardening.
-- **NEXT ACTION:** None.
+- **EVIDENCE:** Comprehensive test suite `scripts/test-security-regression-gaps.ts` integrated into `scripts/run-security-suite.ts` and `scripts/test-sprint-04-hardening.ts`. Covers imported user password lifecycle gating, report share token validation/expiration/revocation, santri IDOR learner-context locking, parent finance soft-delete denial (`student_parents.deleted_at IS NOT NULL`), and centralized cron secret timing-safe authentication. Merged in COVERAGE-SPRINT-04.
+- **OUTSTANDING WORK:** None.
+- **NEXT ACTION:** SYSTEM-QA-FINAL
 
 - **TASK ID:** SYSTEM-QA-FINAL
 - **TITLE:** Final System Production QA
