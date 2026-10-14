@@ -51,9 +51,11 @@ export async function POST(req: NextRequest) {
       role: user.role,
       fullName: user.full_name,
       email: user.email,
+      mustChangePassword: Boolean(user.must_change_password),
     })
 
-    return NextResponse.json({ success: true, role: user.role, redirect: '/auth/landing' })
+    const redirect = user.must_change_password ? '/ubah-password' : '/auth/landing'
+    return NextResponse.json({ success: true, role: user.role, redirect })
   } catch (error) {
     console.error('Login error:', error)
     if (error instanceof Error) {

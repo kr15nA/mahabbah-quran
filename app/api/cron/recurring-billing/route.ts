@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'node:crypto'
+import { getCronSecret } from '@/lib/config/env'
 import { db } from '@/lib/db/client'
 import {
   financeRecurringBillingConfigs,
@@ -26,8 +27,10 @@ function verifyCronAuth(request: NextRequest): { valid: boolean; status?: number
     }
   }
 
-  const configuredSecret = process.env.CRON_SECRET
-  if (!configuredSecret) {
+  let configuredSecret: string
+  try {
+    configuredSecret = getCronSecret()
+  } catch {
     return {
       valid: false,
       status: 500,

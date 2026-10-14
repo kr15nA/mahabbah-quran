@@ -13,6 +13,7 @@ export default function ImportExportClient() {
   const [isPending, startTransition] = useTransition()
   const [validationResult, setValidationResult] = useState<ValidationResult<any> | null>(null)
   const [importStatus, setImportStatus] = useState<{type: 'success'|'error', text: string} | null>(null)
+  const [importedCredentials, setImportedCredentials] = useState<Array<{ fullName: string, identifier: string, temporaryPassword: string }> | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,12 +22,14 @@ export default function ImportExportClient() {
       setFile(selected)
       setValidationResult(null)
       setImportStatus(null)
+      setImportedCredentials(null)
     }
   }
 
   const handleValidate = async () => {
     if (!file) return
     setImportStatus(null)
+    setImportedCredentials(null)
     const formData = new FormData()
     formData.append('file', file)
     formData.append('type', datasetType)
@@ -50,6 +53,11 @@ export default function ImportExportClient() {
         setImportStatus({ type: 'error', text: res.error })
       } else {
         setImportStatus({ type: 'success', text: `Berhasil mengimpor ${res.count} data` })
+        if (res.credentials && res.credentials.length > 0) {
+          setImportedCredentials(res.credentials)
+        } else {
+          setImportedCredentials(null)
+        }
         setFile(null)
         setValidationResult(null)
         if (fileInputRef.current) fileInputRef.current.value = ''
@@ -61,6 +69,7 @@ export default function ImportExportClient() {
     setFile(null)
     setValidationResult(null)
     setImportStatus(null)
+    setImportedCredentials(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -110,6 +119,48 @@ export default function ImportExportClient() {
           <div className={`p-4 rounded-xl flex items-center gap-2 mb-6 ${importStatus.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
             {importStatus.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             <span className="font-semibold">{importStatus.text}</span>
+          </div>
+        )}
+
+        {importedCredentials && importedCredentials.length > 0 && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl animate-in fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+              <div>
+                <h4 className="font-bold text-amber-900 text-sm">Kredensial Sementara (Hanya Ditampilkan Sekali)</h4>
+                <p className="text-xs text-amber-700">Simpan kredensial ini sekarang untuk dibagikan ke pengguna. Akun diwajibkan mengganti password saat login pertama kali.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const text = importedCredentials.map(c => `${c.fullName}\t${c.identifier}\t${c.temporaryPassword}`).join('\n')
+                  navigator.clipboard.writeText(`Nama\tEmail/HP\tPassword Sementara\n${text}`)
+                  alert('Kredensial berhasil disalin ke clipboard.')
+                }}
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition w-fit"
+              >
+                Salin Semua Kredensial
+              </button>
+            </div>
+            <div className="max-h-60 overflow-y-auto bg-white border border-amber-200 rounded-lg">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-amber-100/50 sticky top-0 font-bold text-amber-900">
+                  <tr>
+                    <th className="px-3 py-2">Nama</th>
+                    <th className="px-3 py-2">Email/HP</th>
+                    <th className="px-3 py-2 font-mono">Password Sementara</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 font-mono">
+                  {importedCredentials.map((c, i) => (
+                    <tr key={i} className="hover:bg-amber-50/50">
+                      <td className="px-3 py-2 font-sans font-medium text-gray-900">{c.fullName}</td>
+                      <td className="px-3 py-2 text-gray-700">{c.identifier}</td>
+                      <td className="px-3 py-2 font-bold text-[#4B21A2] select-all">{c.temporaryPassword}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 

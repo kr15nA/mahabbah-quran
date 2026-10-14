@@ -43,9 +43,9 @@ export async function executeImportAction(type: DatasetType, validData: any[]) {
       return { error: 'Tidak ada data valid untuk diimpor' }
     }
 
-    const count = await executeImport(type, validData)
+    const result = await executeImport(type, validData)
     
-    return { success: true, count }
+    return { success: true, count: result.count, credentials: result.credentials }
   } catch (err: any) {
     console.error('Execution error:', err)
     return { error: 'Gagal mengeksekusi import' }

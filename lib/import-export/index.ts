@@ -1,10 +1,33 @@
 import { db } from '@/lib/db/client'
+import { txDb } from '@/lib/db/tx'
 import { users, students, studentParents, classes, enrollments, academicYears } from '@/drizzle/schema'
 import { eq, or, inArray, and, isNull } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import * as xlsx from 'xlsx'
+import crypto from 'crypto'
 
 export type DatasetType = 'santri' | 'guru' | 'orang_tua' | 'parent_santri'
+
+export interface ImportedCredential {
+  fullName: string
+  identifier: string
+  temporaryPassword: string
+}
+
+export interface ExecuteImportResult {
+  count: number
+  credentials?: ImportedCredential[]
+}
+
+export function generateTemporaryPassword(): string {
+  const charset = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  const bytes = crypto.randomBytes(9)
+  let rand = ''
+  for (let i = 0; i < 9; i++) {
+    rand += charset[bytes[i] % charset.length]
+  }
+  return `Mq#${rand}`
+}
 
 export interface ValidationError {
   row: number
@@ -265,20 +288,35 @@ export async function parseAndValidateImport(fileBuffer: Buffer, type: DatasetTy
 // EXECUTION
 // ---------------------------------------------------------
 
-export async function executeImport(type: DatasetType, validData: any[]) {
-  if (validData.length === 0) return 0
+export async function executeImport(type: DatasetType, validData: any[]): Promise<ExecuteImportResult> {
+  if (validData.length === 0) return { count: 0 }
 
-  const tx = db
+  return await txDb.transaction(async (tx) => {
+    let credentials: ImportedCredential[] | undefined = undefined
+
     if (type === 'guru' || type === 'orang_tua') {
-      const hashedPw = await bcrypt.hash('Mahabbah123!', 10) // Temporary password
-      const inserts = validData.map(d => ({
-        fullName: d.full_name,
-        email: d.email,
-        phone: d.phone,
-        role: type,
-        passwordHash: hashedPw
-      }))
+      const generatedCreds: ImportedCredential[] = []
+      const inserts = await Promise.all(
+        validData.map(async (d) => {
+          const tempPw = generateTemporaryPassword()
+          const hashedPw = await bcrypt.hash(tempPw, 10)
+          generatedCreds.push({
+            fullName: d.full_name,
+            identifier: d.email || d.phone || '-',
+            temporaryPassword: tempPw,
+          })
+          return {
+            fullName: d.full_name,
+            email: d.email,
+            phone: d.phone,
+            role: type,
+            passwordHash: hashedPw,
+            mustChangePassword: true,
+          }
+        })
+      )
       await tx.insert(users).values(inserts)
+      credentials = generatedCreds.length > 0 ? generatedCreds : undefined
     }
 
     if (type === 'santri') {
@@ -333,6 +371,7 @@ export async function executeImport(type: DatasetType, validData: any[]) {
         }
       }
     }
-    
-  return validData.length
+
+    return { count: validData.length, credentials }
+  })
 }

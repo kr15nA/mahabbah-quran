@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
+import type { NextRequest } from 'next/server'
 
 import { getJwtSecret } from '../config/env'
 
@@ -13,6 +14,7 @@ export type SessionPayload = {
   role: 'guru' | 'orang_tua' | 'admin'
   fullName: string
   email?: string | null
+  mustChangePassword?: boolean
 }
 
 export async function createSession(payload: SessionPayload): Promise<string> {
@@ -34,10 +36,16 @@ export async function createSession(payload: SessionPayload): Promise<string> {
   return token
 }
 
-export async function getSession(): Promise<SessionPayload | null> {
+export async function getSession(req?: NextRequest): Promise<SessionPayload | null> {
   try {
-    const cookieStore = await cookies()
-    const token = cookieStore.get('mq_session')?.value
+    let token: string | undefined
+    if (req) {
+      token = req.cookies.get('mq_session')?.value
+    }
+    if (!token) {
+      const cookieStore = await cookies()
+      token = cookieStore.get('mq_session')?.value
+    }
     if (!token) return null
 
     const { payload } = await jwtVerify(token, getJwtSecretKey())

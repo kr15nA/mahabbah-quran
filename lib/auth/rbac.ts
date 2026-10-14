@@ -20,9 +20,12 @@ export function normalizeRole(role: string): CanonicalRole {
   throw new AuthError(403, 'Role not supported')
 }
 
-export async function requireAuth(): Promise<{ session: SessionPayload; role: CanonicalRole }> {
+export async function requireAuth(options?: { allowPasswordChange?: boolean }): Promise<{ session: SessionPayload; role: CanonicalRole }> {
   const session = await getSession()
   if (!session) throw new AuthError(401, 'Unauthorized')
+  if (session.mustChangePassword && !options?.allowPasswordChange) {
+    throw new AuthError(403, 'Password change required')
+  }
   return { session, role: normalizeRole(session.role) }
 }
 

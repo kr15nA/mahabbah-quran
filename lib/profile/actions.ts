@@ -154,7 +154,7 @@ export async function changeMyPassword(formData: FormData) {
     
     await txDb.transaction(async (tx) => {
       await tx.update(users)
-        .set({ passwordHash: newHash, updatedAt: new Date() })
+        .set({ passwordHash: newHash, mustChangePassword: false, updatedAt: new Date() })
         .where(eq(users.id, userId))
         
       await tx.insert(auditLogs).values({

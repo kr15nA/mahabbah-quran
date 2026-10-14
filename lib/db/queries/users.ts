@@ -10,6 +10,7 @@ export type UserRow = {
   avatar_url: string | null
   fcm_token: string | null
   is_active: boolean
+  must_change_password: boolean
   last_login_at: Date | null
   created_at: Date
   updated_at: Date

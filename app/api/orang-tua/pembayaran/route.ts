@@ -1,40 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth, hasPermission } from '@/lib/auth/rbac'
+import { getSession } from '@/lib/auth/session'
+import { hasPermission } from '@/lib/auth/rbac'
 import { db } from '@/lib/db/client'
-import { studentParents, students } from '@/drizzle/schema'
+import { studentParents } from '@/drizzle/schema'
 import { eq, and, isNull } from 'drizzle-orm'
 import { normalizeStudentId } from '@/lib/guardians/parent-context'
 import { getStudentPayments } from '@/lib/finance/queries/parent-finance'
 
 export async function GET(request: NextRequest) {
   try {
-    const { session, role } = await requireAuth()
-    const isParent = await hasPermission(session, 'finance.billing.read_own_children')
-    if (!isParent && role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const session = await getSession(request)
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Explicitly restrict to parent context (Case A: parent-only endpoint)
+    // Administrative payment inspection belongs on canonical /api/finance/payments
+    if (session.role === 'admin') {
+      return NextResponse.json(
+        {
+          error: 'Forbidden: Endpoint ini khusus konteks orang tua. Untuk akses pembayaran administratif, gunakan endpoint /api/finance/payments.',
+          code: 'PARENT_CONTEXT_REQUIRED',
+        },
+        { status: 403 }
+      )
+    }
+
+    if (session.role !== 'orang_tua') {
+      return NextResponse.json(
+        {
+          error: 'Forbidden: Hanya akun orang tua yang diizinkan mengakses data pembayaran santri.',
+          code: 'FORBIDDEN_ROLE',
+        },
+        { status: 403 }
+      )
+    }
+
+    const canReadOwn = await hasPermission(session, 'finance.billing.read_own_children')
+    if (!canReadOwn) {
+      return NextResponse.json({ error: 'Forbidden: Akses finansial santri tidak tersedia.' }, { status: 403 })
     }
 
     const searchParams = request.nextUrl.searchParams
     const rawChildId = searchParams.get('child_id')
 
-    let allowedStudentIds: number[] = []
-
-    if (role === 'SUPER_ADMIN') {
-      const all = await db.select({ id: students.id }).from(students)
-      allowedStudentIds = all.map(s => s.id)
-    } else {
-      const linked = await db.select({ studentId: studentParents.studentId })
-        .from(studentParents)
-        .where(
-          and(
-            eq(studentParents.parentId, session.userId),
-            eq(studentParents.isActive, true),
-            isNull(studentParents.deletedAt),
-            eq(studentParents.canViewFinance, true)
-          )
+    const linked = await db.select({ studentId: studentParents.studentId })
+      .from(studentParents)
+      .where(
+        and(
+          eq(studentParents.parentId, session.userId),
+          eq(studentParents.isActive, true),
+          isNull(studentParents.deletedAt),
+          eq(studentParents.canViewFinance, true)
         )
-      allowedStudentIds = linked.map(s => s.studentId)
-    }
+      )
+
+    const allowedStudentIds = linked.map(s => s.studentId)
 
     if (allowedStudentIds.length === 0) {
       return NextResponse.json({ data: [] })
@@ -60,7 +81,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: flattened })
   } catch (err: any) {
-    if (err.name === 'AuthError') return NextResponse.json({ error: err.message }, { status: err.status })
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
