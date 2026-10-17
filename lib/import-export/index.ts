@@ -192,11 +192,18 @@ export async function parseAndValidateImport(fileBuffer: Buffer, type: DatasetTy
     }
   }
 
+  const seenBatchEmails = new Set<string>()
+  const seenBatchPhones = new Set<string>()
+  const seenParentStudent = new Set<string>()
+
   for (const row of rawData) {
     let rowValid = true
 
     if (type === 'guru' || type === 'orang_tua') {
-      const { full_name, email, phone } = row
+      const full_name = typeof row.full_name === 'string' ? row.full_name.trim() : row.full_name
+      const email = typeof row.email === 'string' ? row.email.trim().toLowerCase() : ''
+      const phone = typeof row.phone === 'string' ? row.phone.trim() : ''
+
       if (!full_name) {
         errors.push({ row: rowIndex, field: 'full_name', error: 'Nama lengkap wajib diisi', value: full_name })
         rowValid = false
@@ -208,19 +215,33 @@ export async function parseAndValidateImport(fileBuffer: Buffer, type: DatasetTy
       if (email && existingEmails.includes(email)) {
         errors.push({ row: rowIndex, field: 'email', error: 'Email sudah terdaftar', value: email })
         rowValid = false
+      } else if (email && seenBatchEmails.has(email)) {
+        errors.push({ row: rowIndex, field: 'email', error: 'Email duplikat di dalam file import', value: email })
+        rowValid = false
       }
       if (phone && existingPhones.includes(phone)) {
         errors.push({ row: rowIndex, field: 'phone', error: 'Nomor telepon sudah terdaftar', value: phone })
         rowValid = false
+      } else if (phone && seenBatchPhones.has(phone)) {
+        errors.push({ row: rowIndex, field: 'phone', error: 'Nomor telepon duplikat di dalam file import', value: phone })
+        rowValid = false
       }
       
       if (rowValid) {
+        if (email) seenBatchEmails.add(email)
+        if (phone) seenBatchPhones.add(phone)
         validData.push({ full_name, email: email || null, phone: phone || null })
       }
     }
 
     if (type === 'santri') {
-      const { full_name, nickname, gender, date_of_birth, enrollment_date, class_id } = row
+      const full_name = typeof row.full_name === 'string' ? row.full_name.trim() : row.full_name
+      const nickname = typeof row.nickname === 'string' ? row.nickname.trim() : row.nickname
+      const gender = typeof row.gender === 'string' ? row.gender.trim() : row.gender
+      const date_of_birth = typeof row.date_of_birth === 'string' ? row.date_of_birth.trim() : row.date_of_birth
+      const enrollment_date = typeof row.enrollment_date === 'string' ? row.enrollment_date.trim() : row.enrollment_date
+      const class_id = row.class_id
+
       if (!full_name) {
         errors.push({ row: rowIndex, field: 'full_name', error: 'Nama wajib diisi', value: full_name })
         rowValid = false
@@ -247,7 +268,10 @@ export async function parseAndValidateImport(fileBuffer: Buffer, type: DatasetTy
     }
 
     if (type === 'parent_santri') {
-      const { parent_email, student_id, relationship, is_primary } = row
+      const parent_email = typeof row.parent_email === 'string' ? row.parent_email.trim().toLowerCase() : ''
+      const student_id = row.student_id
+      const relationship = typeof row.relationship === 'string' ? row.relationship.trim() : row.relationship
+      const is_primary = row.is_primary
       const sId = parseInt(student_id)
 
       if (!parent_email) {
@@ -263,7 +287,14 @@ export async function parseAndValidateImport(fileBuffer: Buffer, type: DatasetTy
         rowValid = false
       }
 
+      const relKey = `${parent_email}_${sId}`
+      if (rowValid && seenParentStudent.has(relKey)) {
+        errors.push({ row: rowIndex, field: 'student_id', error: 'Relasi santri dan orang tua duplikat di dalam file import', value: student_id })
+        rowValid = false
+      }
+
       if (rowValid) {
+        seenParentStudent.add(relKey)
         validData.push({
           parent_id: existingParents.get(parent_email)!,
           student_id: sId,
@@ -295,6 +326,26 @@ export async function executeImport(type: DatasetType, validData: any[]): Promis
     let credentials: ImportedCredential[] | undefined = undefined
 
     if (type === 'guru' || type === 'orang_tua') {
+      const emails = validData.map(d => d.email).filter(Boolean) as string[]
+      const phones = validData.map(d => d.phone).filter(Boolean) as string[]
+
+      const collisionConditions = []
+      if (emails.length > 0) collisionConditions.push(inArray(users.email, emails))
+      if (phones.length > 0) collisionConditions.push(inArray(users.phone, phones))
+
+      if (collisionConditions.length > 0) {
+        const collisions = await tx
+          .select({ id: users.id, email: users.email, phone: users.phone })
+          .from(users)
+          .where(or(...collisionConditions))
+
+        if (collisions.length > 0) {
+          throw new Error(
+            `Import rejected: User collision detected for ${collisions.map(c => c.email || c.phone).join(', ')}`
+          )
+        }
+      }
+
       const generatedCreds: ImportedCredential[] = []
       const inserts = await Promise.all(
         validData.map(async (d) => {

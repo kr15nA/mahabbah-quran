@@ -23,11 +23,13 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  const normalizedPath = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+
   // Public routes
   if (
     pathname === '/api/health' ||
     pathname.startsWith('/api/health/') ||
-    ALLOWED_CRON_ROUTES.has(pathname) ||
+    ALLOWED_CRON_ROUTES.has(normalizedPath) ||
     pathname.startsWith('/login') || 
     pathname.startsWith('/api/auth') || 
     pathname.startsWith('/api/share') ||

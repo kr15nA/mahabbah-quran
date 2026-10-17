@@ -36,6 +36,23 @@ export async function createSession(payload: SessionPayload): Promise<string> {
   return token
 }
 
+/**
+ * Resolves and verifies the authenticated user session from the mq_session JWT cookie.
+ *
+ * Caller Guidelines:
+ * - Provide req (NextRequest): In API Route Handlers (app/api/...) where the incoming
+ *   NextRequest object is explicitly available in the route handler signature.
+ * - Omit req: In Server Components (page.tsx, layout.tsx), Server Actions (actions.ts),
+ *   and internal auth helpers (e.g. requireAuth()) where cookies() from next/headers is the
+ *   canonical App Router context.
+ *
+ * Acquisition Precedence & Fallback Invariant:
+ * 1. If req is provided, mq_session is first extracted from req.cookies.
+ * 2. If token is not present in req (or req is omitted), it accesses cookies() from next/headers.
+ * 3. In both acquisition paths, the token MUST cryptographically pass jwtVerify(token, getJwtSecretKey()).
+ *    Expired tokens, tampered signatures, unsupported algorithms, or missing claims unconditionally fail
+ *    closed and return null. No untrusted token sources (e.g. query strings or body parameters) are permitted.
+ */
 export async function getSession(req?: NextRequest): Promise<SessionPayload | null> {
   try {
     let token: string | undefined

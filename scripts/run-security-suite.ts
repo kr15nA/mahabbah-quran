@@ -14,7 +14,8 @@ const AUTH_SUITE = [
 
 const AUTHZ_SUITE = [
   'scripts/test-audit-log.ts',
-  'scripts/test-security-regression-gaps.ts'
+  'scripts/test-security-regression-gaps.ts',
+  'scripts/test-sec-followup-001.ts'
 ]
 
 async function isPortOccupied(port: number): Promise<boolean> {
