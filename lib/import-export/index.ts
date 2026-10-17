@@ -295,6 +295,26 @@ export async function executeImport(type: DatasetType, validData: any[]): Promis
     let credentials: ImportedCredential[] | undefined = undefined
 
     if (type === 'guru' || type === 'orang_tua') {
+      const emails = validData.map(d => d.email).filter(Boolean) as string[]
+      const phones = validData.map(d => d.phone).filter(Boolean) as string[]
+
+      const collisionConditions = []
+      if (emails.length > 0) collisionConditions.push(inArray(users.email, emails))
+      if (phones.length > 0) collisionConditions.push(inArray(users.phone, phones))
+
+      if (collisionConditions.length > 0) {
+        const collisions = await tx
+          .select({ id: users.id, email: users.email, phone: users.phone })
+          .from(users)
+          .where(or(...collisionConditions))
+
+        if (collisions.length > 0) {
+          throw new Error(
+            `Import rejected: User collision detected for ${collisions.map(c => c.email || c.phone).join(', ')}`
+          )
+        }
+      }
+
       const generatedCreds: ImportedCredential[] = []
       const inserts = await Promise.all(
         validData.map(async (d) => {
