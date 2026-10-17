@@ -5,6 +5,14 @@ pdfMake.vfs = pdfFonts
 import { TDocumentDefinitions } from 'pdfmake/interfaces'
 
 export async function generateStudentReportPdf(data: any): Promise<Buffer> {
+  const studentName = data?.studentName || 'Santri'
+  const reportDate = data?.reportDate ? new Date(data.reportDate).toLocaleDateString('id-ID') : '-'
+  const attendance = data?.attendance || {}
+  const hadir = (attendance.hadir ?? 0).toString()
+  const izin = (attendance.izin ?? 0).toString()
+  const sakit = (attendance.sakit ?? 0).toString()
+  const alfa = (attendance.alfa ?? 0).toString()
+
   const docDefinition: TDocumentDefinitions = {
     defaultStyle: {
       font: 'Roboto',
@@ -16,7 +24,7 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
     pageMargins: [40, 60, 40, 60],
     header: (currentPage, pageCount) => {
       return {
-        text: `Laporan Perkembangan Santri - ${data.studentName} - Halaman ${currentPage} / ${pageCount}`,
+        text: `Laporan Perkembangan Santri - ${studentName} - Halaman ${currentPage} / ${pageCount}`,
         alignment: 'right',
         fontSize: 8,
         color: '#666666',
@@ -50,10 +58,10 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
         table: {
           widths: [100, 'auto', '*'],
           body: [
-            ['Nama Lengkap', ':', { text: data.studentName, bold: true }],
-            ['Nama Panggilan', ':', data.nickname || '-'],
-            ['Kelas', ':', data.className],
-            ['Periode Laporan', ':', new Date(data.reportDate).toLocaleDateString('id-ID')],
+            ['Nama Lengkap', ':', { text: studentName, bold: true }],
+            ['Nama Panggilan', ':', data?.nickname || '-'],
+            ['Kelas', ':', data?.className || '-'],
+            ['Periode Laporan', ':', reportDate],
           ]
         },
         margin: [0, 0, 0, 15]
@@ -65,6 +73,7 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
         layout: 'lightHorizontalLines',
         table: {
           headerRows: 1,
+          dontBreakRows: true,
           widths: ['*', '*', '*', '*'],
           body: [
             [
@@ -74,10 +83,10 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
               { text: 'Alfa', bold: true, fillColor: '#f3f4f6' }
             ],
             [
-              data.attendance.hadir.toString(),
-              data.attendance.izin.toString(),
-              data.attendance.sakit.toString(),
-              data.attendance.alfa.toString()
+              hadir,
+              izin,
+              sakit,
+              alfa
             ]
           ]
         },
@@ -86,10 +95,11 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
 
       // Hafalan
       { text: 'HAFALAN TERAKHIR', style: 'sectionHeader' },
-      data.hafalan ? {
+      data?.hafalan ? {
         layout: 'lightHorizontalLines',
         table: {
           headerRows: 1,
+          dontBreakRows: true,
           widths: ['*', '*', '*', '*'],
           body: [
             [
@@ -99,9 +109,11 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
               { text: 'Nilai', bold: true, fillColor: '#f3f4f6' }
             ],
             [
-              data.hafalan.surahName,
-              `${data.hafalan.ayahStart} - ${data.hafalan.ayahEnd}`,
-              data.hafalan.type === 'hafalan_baru' ? 'Hafalan Baru' : 'Muraja\'ah',
+              data.hafalan.surahName || '-',
+              data.hafalan.ayahStart && data.hafalan.ayahEnd
+                ? `${data.hafalan.ayahStart} - ${data.hafalan.ayahEnd}`
+                : '-',
+              data.hafalan.type === 'hafalan_baru' ? 'Hafalan Baru' : "Muraja'ah",
               data.hafalan.score?.toString() || '-'
             ]
           ]
@@ -111,10 +123,11 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
 
       // Tahsin
       { text: 'TAHSIN', style: 'sectionHeader' },
-      data.tahsin ? {
+      data?.tahsin ? {
         layout: 'lightHorizontalLines',
         table: {
           headerRows: 1,
+          dontBreakRows: true,
           widths: ['*', '*', '*', '*'],
           body: [
             [
@@ -140,6 +153,7 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
         layout: 'lightHorizontalLines',
         table: {
           headerRows: 1,
+          dontBreakRows: true,
           widths: ['*', '*', '*'],
           body: [
             [
@@ -148,9 +162,9 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
               { text: 'Nilai Adab', bold: true, fillColor: '#f3f4f6' }
             ],
             [
-              data.report.hafalanScore?.toString() || '-',
-              data.report.tahsinScore?.toString() || '-',
-              data.report.adabScore?.toString() || '-'
+              data?.report?.hafalanScore?.toString() || '-',
+              data?.report?.tahsinScore?.toString() || '-',
+              data?.report?.adabScore?.toString() || '-'
             ]
           ]
         },
@@ -160,14 +174,14 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
       // Catatan Guru
       { text: 'CATATAN GURU', style: 'sectionHeader' },
       {
-        text: data.report.teacherNotes || 'Tidak ada catatan.',
-        italics: !data.report.teacherNotes,
-        color: !data.report.teacherNotes ? 'gray' : 'black',
+        text: data?.report?.teacherNotes || 'Tidak ada catatan.',
+        italics: !data?.report?.teacherNotes,
+        color: !data?.report?.teacherNotes ? 'gray' : 'black',
         margin: [0, 0, 0, 15]
       },
 
       // Catatan AI
-      ...(data.report.aiParentAdvice ? [
+      ...(data?.report?.aiParentAdvice ? [
         { text: 'SARAN UNTUK ORANG TUA', style: 'sectionHeader' } as any,
         {
           text: data.report.aiParentAdvice,
@@ -199,5 +213,6 @@ export async function generateStudentReportPdf(data: any): Promise<Buffer> {
   }
 
   const doc = pdfMake.createPdf(docDefinition)
-  return await doc.getBuffer()
+  const rawBuffer = await doc.getBuffer()
+  return Buffer.from(rawBuffer)
 }
