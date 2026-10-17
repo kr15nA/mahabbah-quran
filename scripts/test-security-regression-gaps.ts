@@ -77,12 +77,12 @@ async function runRegressionGapsSuite() {
       {
         full_name: `Guru Test ${testId}`,
         email: `guru_sec_${testId}@test.mahabbah.id`,
-        phone: '081211112222',
+        phone: `0812${testId}1`,
       },
       {
         full_name: `Ortu Test ${testId}`,
         email: `ortu_sec_${testId}@test.mahabbah.id`,
-        phone: '081233334444',
+        phone: `0812${testId}2`,
       },
     ]
 
@@ -173,19 +173,25 @@ async function runRegressionGapsSuite() {
     assert.strictEqual(rotatedPageRes.status, 200, 'Normal route allowed after flag is cleared')
     console.log('✅ A.4 Password rotation lifecycle unlocks portal features')
 
-    // A.5 Re-importing existing accounts preserves existing password
+    // A.5 Re-importing existing accounts preserves existing password and rejects duplicate creation
     const beforeHash = userA.passwordHash
-    await executeImport('guru', [
-      {
-        full_name: userA.fullName,
-        email: userA.email,
-        phone: userA.phone || '081211112222',
-      },
-    ])
+    let reimportRejected = false
+    try {
+      await executeImport('guru', [
+        {
+          full_name: userA.fullName,
+          email: userA.email,
+          phone: userA.phone || `0812${testId}3`,
+        },
+      ])
+    } catch {
+      reimportRejected = true
+    }
+    assert.strictEqual(reimportRejected, true, 'Re-import with existing email must reject to prevent duplicate account creation')
 
     const [afterReimport] = await db.select().from(users).where(eq(users.id, userA.id))
     assert.strictEqual(afterReimport.passwordHash, beforeHash, 'Re-import must NOT overwrite existing password hash')
-    console.log('✅ A.5 Existing user password preserved during re-import')
+    console.log('✅ A.5 Existing user password preserved during re-import and duplicate collision rejected')
 
     // =========================================================================
     // B. REPORT SHARE SECURITY REGRESSION
